@@ -133,6 +133,47 @@
   table.compare td:nth-child(3){color:var(--green-dark);font-weight:500}
   .compare-note{margin-top:16px;font-size:13px;color:var(--ink-soft);background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px}
 
+  /* GUIDE */
+  .guide-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media (max-width:860px){.guide-grid{grid-template-columns:1fr 1fr}}
+  @media (max-width:600px){.guide-grid{grid-template-columns:1fr}}
+  .guide-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);display:flex;flex-direction:column}
+  .guide-icon{width:40px;height:40px;border-radius:12px;background:var(--green-dim);color:var(--green-dark);display:flex;align-items:center;justify-content:center;margin-bottom:14px;flex-shrink:0}
+  .guide-icon svg{width:20px;height:20px}
+  .guide-card h3{font-size:15px;font-weight:600;margin-bottom:8px;line-height:1.35}
+  .guide-card p{font-size:13px;color:var(--ink-soft);margin-bottom:14px;flex:1}
+  .guide-cat-tag{font-size:10.5px;font-weight:700;letter-spacing:.3px;color:var(--green);text-transform:uppercase;margin-bottom:6px;display:block}
+
+  .guide-modal{position:fixed;inset:0;background:rgba(20,22,14,0.6);z-index:550;display:none;align-items:flex-end;justify-content:center;padding:0}
+  .guide-modal.open{display:flex}
+  @media (min-width:640px){.guide-modal{align-items:center;padding:24px}}
+  .guide-modal-box{background:var(--cream);width:100%;max-width:720px;max-height:92vh;border-radius:22px 22px 0 0;display:flex;flex-direction:column;overflow:hidden;box-shadow:var(--shadow-lg)}
+  @media (min-width:640px){.guide-modal-box{border-radius:22px;max-height:85vh}}
+  .guide-modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
+  .guide-modal-head span{font-family:'Fraunces',serif;font-weight:600;font-size:16px}
+  .guide-modal-close{background:var(--surface2);border:none;border-radius:50%;width:34px;height:34px;font-size:15px;cursor:pointer;flex-shrink:0}
+  .guide-modal-body{padding:20px;overflow-y:auto;flex:1}
+
+  .guide-search{width:100%;border:1.5px solid var(--border);border-radius:100px;padding:11px 16px;font-family:inherit;font-size:14px;background:var(--surface);margin-bottom:14px}
+  .guide-search:focus{outline:none;border-color:var(--green)}
+  .guide-filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .guide-list-item{border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:10px;background:var(--surface);cursor:pointer;transition:border-color .15s}
+  .guide-list-item:hover{border-color:var(--green)}
+  .guide-list-item h4{font-size:14.5px;font-weight:600;margin-bottom:4px}
+  .guide-list-item p{font-size:12.5px;color:var(--ink-soft)}
+  .guide-list-empty{text-align:center;color:var(--ink-faint);font-size:13.5px;padding:30px 10px}
+
+  .guide-back{background:none;border:none;color:var(--green-dark);font-weight:600;font-size:13.5px;cursor:pointer;margin-bottom:14px;padding:0;display:inline-flex;align-items:center;gap:5px}
+  .guide-article-cat{font-size:11px;font-weight:700;letter-spacing:.4px;color:var(--green);text-transform:uppercase;display:block;margin-bottom:6px}
+  .guide-article-title{font-size:19px;font-weight:600;margin-bottom:14px;font-family:'Fraunces',serif;line-height:1.3}
+  .guide-article-content p{font-size:14px;color:var(--ink-soft);margin-bottom:12px;line-height:1.65}
+  .guide-article-content ul,.guide-article-content ol{margin:0 0 12px 20px;font-size:14px;color:var(--ink-soft);line-height:1.6}
+  .guide-article-content li{margin-bottom:5px}
+  .guide-article-content strong{color:var(--ink)}
+  .guide-warning{background:var(--red-dim);border:1px solid rgba(193,80,63,0.25);border-radius:var(--radius-sm);padding:14px 16px;font-size:13px;color:var(--red);margin:16px 0}
+  .guide-warning strong{color:var(--red)}
+  .guide-article-cta{margin-top:8px;width:100%}
+
   /* FAQ */
   .faq-item{border-bottom:1px solid var(--border)}
   .faq-item:first-child{border-top:1px solid var(--border)}
@@ -208,7 +249,7 @@
   <section class="hero wrap">
     <div class="hero-grid">
       <div>
-        <span class="eyebrow">Yến Phụng (Agapornis) tuyển chọn</span>
+        <span class="eyebrow">Yến Phụng tuyển chọn</span>
         <h1>Yến Phụng tuyển chọn dành cho người coi trọng chất lượng và nguồn gốc</h1>
         <p class="hero-desc">Chúng tôi cung cấp những cá thể Yến Phụng được tuyển chọn về ngoại hình, màu sắc và tình trạng thực tế. Một số cá thể có nguồn từ đàn giống Hà Lan và có hồ sơ, giấy tờ liên quan theo phạm vi thực tế.</p>
         <ul class="hero-list">
@@ -317,6 +358,17 @@
     <div class="compare-note">Giá cao hơn không tự động đồng nghĩa với tốt hơn. Khách nên đánh giá dựa trên nguồn thông tin, tình trạng thực tế, hình ảnh, mức độ phù hợp và uy tín người bán.</div>
   </section>
 
+  <!-- GUIDE -->
+  <section id="guide" class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Kiến thức</span>
+      <h2>Cẩm nang nuôi Yến Phụng cho người mới</h2>
+      <p>Những kiến thức nền tảng giúp bạn chuẩn bị đúng trước khi đón chim về, chăm sóc an toàn và nhận biết sớm các dấu hiệu bất thường.</p>
+    </div>
+    <div class="guide-grid" id="guide-grid"></div>
+    <button class="btn btn-outline btn-lg" id="guide-open-all" onclick="openGuideLibrary()" style="margin-top:20px">Xem toàn bộ cẩm nang</button>
+  </section>
+
   <!-- FAQ -->
   <section id="faq" class="wrap">
     <div class="section-head">
@@ -416,6 +468,16 @@
   <button class="lightbox-nav lightbox-next" onclick="lightboxNav(1)">›</button>
 </div>
 
+<div class="guide-modal" id="guide-modal">
+  <div class="guide-modal-box">
+    <div class="guide-modal-head">
+      <span id="guide-modal-title">Cẩm nang nuôi Yến Phụng</span>
+      <button class="guide-modal-close" onclick="closeGuideModal()" aria-label="Đóng">✕</button>
+    </div>
+    <div class="guide-modal-body" id="guide-modal-body"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -447,8 +509,68 @@ const faqData = [
   ['Có cam kết chim sinh sản không?','Không. Khả năng sinh sản phụ thuộc vào giới tính, độ tuổi, sức khỏe, cách ghép cặp và điều kiện chăm sóc.'],
   ['Người mới nên chọn chim nào?','Nên chọn chim đã tự ăn, hoạt động tốt, dễ chăm và phù hợp với điều kiện thực tế của gia đình.'],
   ['Có giảm giá không?','Giá niêm yết theo từng cá thể. Chính sách mua theo cặp hoặc nhiều con sẽ được trao đổi riêng nếu có.'],
-  ['Sau khi mua có được hướng dẫn không?','Có. Khách được hướng dẫn cơ bản về lồng, thức ăn, môi trường và cách theo dõi chim trong những ngày đầu.']
+  ['Sau khi mua có được hướng dẫn không?','Có. Khách được hướng dẫn cơ bản về lồng, thức ăn, môi trường và cách theo dõi chim trong những ngày đầu.'],
+  ['Một ngày cho chim ăn mấy lần?','Nếu là chim đã tự ăn, bạn chỉ cần luôn có thức ăn và nước sạch trong lồng, mỗi ngày kiểm tra và thay nước mới là đủ.'],
+  ['Chim non và chim đã tự ăn khác nhau thế nào?','Chim non cần người đút bột nhiều lần mỗi ngày và rất dễ gặp nguy hiểm nếu chăm sai cách. Chim đã tự ăn có thể tự ăn hạt, phù hợp hơn nhiều với người mới bắt đầu.'],
+  ['Một con hay một cặp sẽ tốt hơn?','Nếu mục tiêu là nuôi làm thú cưng và tương tác nhiều, một con sẽ dễ gắn bó với chủ hơn. Nếu bạn không có nhiều thời gian ở nhà, nuôi một cặp sẽ giúp chúng đỡ cô đơn.'],
+  ['Nuôi Yến Phụng có ồn không?','Yến Phụng có hót và gọi nhau vào ban ngày nhưng tiếng nhỏ hơn nhiều so với các loài vẹt lớn. Nuôi trong nhà, đa số mọi người đều thấy dễ chịu.'],
+  ['Nuôi Yến Phụng có hôi không?','Nếu vệ sinh lồng thường xuyên và thay giấy lót định kỳ thì gần như không có mùi khó chịu — mùi chủ yếu đến từ phân và thức ăn thừa để lâu ngày.'],
+  ['Có cần tắm cho chim không?','Có. Bạn có thể đặt khay nước để chim tự tắm hoặc phun sương nhẹ khi trời nóng, nhưng không nên ép chim tắm khi trời lạnh.'],
+  ['Bao lâu phải vệ sinh lồng?','Nên thay nước mỗi ngày, thay giấy lót khoảng 1–2 ngày một lần, và vệ sinh toàn bộ lồng khoảng mỗi tuần một lần.'],
+  ['Yến Phụng sống được bao nhiêu năm?','Nếu được chăm sóc tốt, Yến Phụng thường sống khoảng 10–15 năm, một số cá thể có thể sống lâu hơn.'],
+  ['Có nên thả chim bay trong nhà?','Có thể, nhưng chỉ khi nhà đã đóng kín cửa, không có quạt trần đang chạy, không có chó mèo trong phòng, và chim đã quen với môi trường xung quanh.'],
+  ['Nuôi một mình chim có buồn không?','Nếu chủ dành thời gian chơi với chim mỗi ngày thì hoàn toàn ổn. Nếu bạn thường xuyên vắng nhà, nên cân nhắc nuôi thêm một bé nữa.'],
+  ['Chim có cắn người không?','Có thể, nhưng đa số chỉ cắn khi sợ hãi hoặc để tự vệ. Nếu được làm quen đúng cách, chim thường rất thân thiện.'],
+  ['Bao lâu thì chim quen chủ?','Tuỳ từng cá thể, nhưng nếu dành thời gian tiếp xúc mỗi ngày, nhiều bé có thể quen chủ chỉ sau vài tuần.'],
+  ['Có cần cắt cánh không?','Không bắt buộc. Nhiều người vẫn nuôi chim bay tự nhiên trong không gian an toàn. Nếu muốn cắt cánh, cần thực hiện đúng kỹ thuật để không ảnh hưởng tới chim.'],
+  ['Có cần mua lồng thật lớn không?','Không nhất thiết, chỉ cần lồng đủ rộng để chim dang cánh và di chuyển thoải mái — nếu có điều kiện thì lồng càng rộng càng tốt.'],
+  ['Mới mua về có nên chơi ngay không?','Không nên. Nên để chim nghỉ ngơi và làm quen môi trường khoảng 1–3 ngày trước khi bắt đầu tiếp xúc nhiều.'],
+  ['Có thể nuôi chung với loài chim khác không?','Có thể trong một số trường hợp, nhưng cần theo dõi tính cách từng con vì một số cá thể có thể tranh giành lãnh thổ hoặc thức ăn.'],
+  ['Khi nào nên đưa chim đi khám?','Nếu chim bỏ ăn, xù lông liên tục, khó thở, tiêu chảy kéo dài hoặc ít vận động hẳn, nên liên hệ bác sĩ thú y có kinh nghiệm với chim càng sớm càng tốt.'],
+  ['Người mới nên chọn loại Yến Phụng nào?','Nếu mới bắt đầu, nên ưu tiên chim đã tự ăn, sức khỏe tốt, hoạt bát và không cần quá hiếm màu — đây thường là lựa chọn dễ chăm sóc và phù hợp nhất để làm quen với việc nuôi chim.']
 ];
+
+const guideCategories = ['Tất cả','Bắt đầu nuôi','Thức ăn và dinh dưỡng','Lồng và môi trường','Làm quen và huấn luyện','Sức khỏe và an toàn'];
+
+const guideWarningBox = `<div class="guide-warning"><strong>Lưu ý:</strong> Nội dung này chỉ nhằm cung cấp kiến thức chăm sóc cơ bản, không thay thế việc khám và chẩn đoán của bác sĩ thú y. Nếu chim bỏ ăn, khó thở, chảy máu, nằm đáy lồng hoặc suy yếu nhanh, hãy liên hệ bác sĩ thú y có kinh nghiệm về chim càng sớm càng tốt.</div>`;
+
+const guideData = [
+{id:'chon-non-hay-tu-an', category:'Bắt đầu nuôi', title:'Người mới nên chọn chim non hay chim đã tự ăn?', excerpt:'Chọn đúng độ tuổi giúp người mới giảm đáng kể rủi ro chăm sóc sai.', content:`<p>Người chưa từng nuôi nên ưu tiên chim đã tự ăn ổn định. Đây là những bé đã có thể tự ăn thức ăn phù hợp và không còn phụ thuộc hoàn toàn vào việc đút bột.</p><p>Chim còn quá non có thể dễ làm quen với con người nhưng đòi hỏi người nuôi phải biết kiểm soát nhiệt độ thức ăn, lượng ăn, lịch ăn, vệ sinh dụng cụ và theo dõi diều. Chỉ một sai sót nhỏ cũng có thể gây sặc, bỏng diều, nhiễm trùng hoặc suy dinh dưỡng.</p><p>Khi mua chim, hãy hỏi rõ:</p><ul><li>Chim đã tự ăn hoàn toàn hay vẫn còn cần đút hỗ trợ?</li><li>Chim đang ăn loại thức ăn nào?</li><li>Đã tự uống nước chưa?</li><li>Cân nặng và hoạt động có ổn định không?</li><li>Có video chim tự ăn thực tế hay không?</li></ul><p><strong>Khuyến nghị:</strong> Người mới không nên chọn chim chưa tự ăn chỉ vì mong muốn chim nhanh thuần.</p>`},
+{id:'mot-con-hay-mot-cap', category:'Bắt đầu nuôi', title:'Nên nuôi một con hay một cặp?', excerpt:'Lựa chọn phụ thuộc vào thời gian bạn có thể dành cho chim.', content:`<p>Nuôi một con thường phù hợp với người muốn tương tác, tập đứng tay và xây dựng sự gắn bó giữa chim với chủ. Tuy nhiên, chủ cần dành thời gian trò chuyện, chơi và cho chim vận động mỗi ngày.</p><p>Nuôi một cặp phù hợp với người thường xuyên vắng nhà vì hai bé có thể giao tiếp và hoạt động cùng nhau. Tuy nhiên, khi sống theo cặp, chim có thể tập trung vào bạn đồng hành nhiều hơn và cần thời gian thuần lâu hơn.</p><p>Bạn nên chọn:</p><ul><li><strong>Một con:</strong> khi muốn nuôi làm thú cưng và có thời gian tương tác.</li><li><strong>Một cặp:</strong> khi thường xuyên vắng nhà hoặc muốn chim có bạn đồng loại.</li><li><strong>Không ghép vội:</strong> nếu chưa biết giới tính, tính cách và tình trạng sức khỏe của từng bé.</li></ul><p>Không nên mua thêm chim chỉ để "chữa buồn" mà không chuẩn bị đủ lồng, không gian và thời gian chăm sóc.</p>`},
+{id:'chuan-bi-truoc-khi-don', category:'Bắt đầu nuôi', title:'Cần chuẩn bị gì trước khi đón chim về?', excerpt:'Chuẩn bị trước giúp chim giảm căng thẳng trong những ngày đầu.', content:`<p>Trước khi đón chim, hãy chuẩn bị:</p><ul><li>Lồng đủ rộng.</li><li>Cóng thức ăn và cóng nước.</li><li>Cầu đậu bằng gỗ tự nhiên, có kích thước khác nhau.</li><li>Thức ăn đúng loại chim đang ăn tại nơi bán.</li><li>Giấy trắng hoặc giấy không mùi để lót đáy.</li><li>Một khu vực yên tĩnh, thoáng nhưng không có gió lùa.</li><li>Lồng vận chuyển an toàn.</li><li>Thông tin liên hệ của người bán và bác sĩ thú y có kinh nghiệm về chim.</li></ul><p>Không nên thay đồng thời lồng, thức ăn và lịch sinh hoạt ngay trong ngày đầu. Thay đổi quá nhiều có thể khiến chim căng thẳng và bỏ ăn.</p>`},
+{id:'bay-ngay-dau', category:'Bắt đầu nuôi', title:'Bảy ngày đầu tiên sau khi đón chim về', excerpt:'Giai đoạn đầu nên ưu tiên quan sát thay vì cố bắt hoặc thuần ngay.', content:`<p><strong>Ngày 1–2:</strong></p><ul><li>Đặt chim ở nơi yên tĩnh.</li><li>Giữ đúng loại thức ăn chim đang quen.</li><li>Hạn chế bắt chim.</li><li>Theo dõi chim có ăn, uống và đi phân bình thường không.</li></ul><p><strong>Ngày 3–4:</strong></p><ul><li>Ngồi gần lồng và nói chuyện nhẹ nhàng.</li><li>Đưa tay đến gần từ từ nhưng chưa cố chạm vào chim.</li><li>Quan sát phản ứng sợ hãi hoặc bình tĩnh.</li></ul><p><strong>Ngày 5–7:</strong></p><ul><li>Có thể bắt đầu tập chim nhận thức ăn thưởng từ tay.</li><li>Chỉ tập trong thời gian ngắn.</li><li>Dừng lại nếu chim hoảng loạn hoặc thở gấp.</li></ul><p>Không nên thả chim ra phòng ngay khi chưa quen người và chưa kiểm tra độ an toàn của không gian.</p>`},
+{id:'yen-phung-an-gi', category:'Thức ăn và dinh dưỡng', title:'Yến Phụng ăn gì?', excerpt:'Không nên chỉ cho chim ăn một loại hạt trong thời gian dài.', content:`<p>Khẩu phần nên đa dạng và phù hợp với tình trạng của từng cá thể. Có thể gồm:</p><ul><li>Thức ăn viên hoàn chỉnh dành cho vẹt nhỏ.</li><li>Hỗn hợp hạt phù hợp.</li><li>Rau xanh và rau củ được rửa sạch.</li><li>Một lượng nhỏ trái cây phù hợp.</li><li>Nước sạch mỗi ngày.</li></ul><p>Không nên xem chế độ toàn hạt là chế độ ăn hoàn chỉnh. Chế độ chỉ có hạt dễ thiếu một số dưỡng chất và có thể liên quan đến béo phì, gan nhiễm mỡ hoặc thiếu vitamin. Việc chuyển từ hạt sang thức ăn mới phải thực hiện từ từ, không được đột ngột để tránh chim không chịu ăn.</p><p>Khi bổ sung thức ăn mới:</p><ul><li>Cho lượng nhỏ.</li><li>Theo dõi chim có thực sự ăn hay chỉ cắn chơi.</li><li>Loại bỏ thức ăn tươi sau thời gian ngắn, không để ôi thiu.</li><li>Theo dõi phân và cân nặng.</li><li>Không cắt hoàn toàn thức ăn quen thuộc trong một lần.</li></ul>`},
+{id:'thuc-pham-khong-nen-an', category:'Thức ăn và dinh dưỡng', title:'Những thực phẩm không nên cho chim ăn', excerpt:'Một số thực phẩm của người có thể nguy hiểm với chim.', content:`<p>Không cho chim ăn tùy tiện thức ăn của người, đặc biệt là:</p><ul><li>Bơ quả.</li><li>Chocolate, cacao.</li><li>Cà phê, trà và đồ uống có caffeine.</li><li>Rượu bia.</li><li>Thực phẩm quá mặn.</li><li>Đồ chiên, nhiều dầu mỡ.</li><li>Thức ăn có nhiều đường.</li><li>Hành, tỏi với lượng không kiểm soát.</li><li>Thức ăn mốc, ôi hoặc lên men.</li><li>Hạt và phần lõi của những loại trái cây chưa xác định an toàn.</li></ul><p>Không tự dùng vitamin, thuốc bổ hoặc khoáng liều cao khi chưa có tư vấn chuyên môn. "Tự nhiên" không đồng nghĩa với an toàn.</p>`},
+{id:'san-cat-tieu-hoa', category:'Thức ăn và dinh dưỡng', title:'Chim có cần ăn sạn hoặc cát tiêu hóa không?', excerpt:'Yến Phụng bóc vỏ hạt nên thường không cần bổ sung sạn tiêu hóa.', content:`<p>Yến Phụng thường bóc vỏ hạt trước khi ăn, vì vậy không cần sạn để nghiền hạt giống như một số loài gia cầm.</p><p>Việc cho ăn quá nhiều sạn hoặc cát không phù hợp có thể gây vấn đề tiêu hóa. Không nên tự ý đặt cát xây dựng, cát biển hoặc sỏi nhỏ vào thức ăn.</p><p>Nếu cần bổ sung canxi hoặc khoáng, nên sử dụng sản phẩm dành riêng cho chim và theo hướng dẫn phù hợp. Budgie không cần grit như một phần bắt buộc trong khẩu phần.</p>`},
+{id:'nuoc-uong-thay-bao-lau', category:'Thức ăn và dinh dưỡng', title:'Nước uống cho chim phải thay bao lâu một lần?', excerpt:'Nước nhìn trong chưa chắc đã sạch.', content:`<p>Nên thay nước mới mỗi ngày và rửa sạch cóng nước. Nếu nước bị dính thức ăn, phân hoặc chất bẩn thì phải thay ngay.</p><p>Lưu ý:</p><ul><li>Không đặt cóng nước trực tiếp bên dưới cầu đậu.</li><li>Không chỉ châm thêm nước mới vào nước cũ.</li><li>Không dùng cóng có mùi hóa chất.</li><li>Không tự pha vitamin vào nước trong thời gian dài.</li><li>Nếu pha thuốc theo hướng dẫn bác sĩ, phải tuân thủ đúng liều và thời gian.</li></ul><p>Cóng thức ăn và nước nên được rửa hằng ngày, tráng kỹ để không còn cặn xà phòng hoặc hóa chất.</p>`},
+{id:'chon-long', category:'Lồng và môi trường', title:'Chọn lồng như thế nào?', excerpt:'Lồng nên ưu tiên chiều ngang, độ an toàn và khả năng vận động.', content:`<p>Lồng phải đủ rộng để chim có thể:</p><ul><li>Dang cánh mà không chạm hai bên.</li><li>Di chuyển giữa các cầu.</li><li>Leo trèo và vận động.</li><li>Tránh được cóng ăn, cóng nước khi đi phân.</li></ul><p>Ưu tiên:</p><ul><li>Lồng có chiều ngang rộng.</li><li>Nan lồng chắc chắn, khoảng cách phù hợp để chim không chui đầu ra.</li><li>Sơn và kim loại an toàn.</li><li>Cửa có khóa chắc.</li><li>Khay đáy dễ tháo vệ sinh.</li><li>Không có cạnh sắc hoặc dây kim loại thừa.</li></ul><p>Không nên nhồi quá nhiều đồ chơi khiến chim không còn không gian vận động.</p>`},
+{id:'bo-tri-cau-dau', category:'Lồng và môi trường', title:'Cách bố trí cầu đậu trong lồng', excerpt:'Cầu đậu phù hợp giúp bảo vệ bàn chân của chim.', content:`<p>Nên sử dụng nhiều cầu gỗ tự nhiên với đường kính và hình dạng khác nhau để bàn chân chim không phải bám ở một tư thế suốt ngày.</p><p>Cách bố trí:</p><ul><li>Không đặt cầu ngay phía trên cóng ăn và cóng nước.</li><li>Không đặt cầu quá sát trần.</li><li>Tạo khoảng trống để chim di chuyển.</li><li>Thay cầu khi bị mục, bẩn hoặc có cạnh sắc.</li><li>Tránh chỉ dùng cầu nhựa trơn có cùng một kích thước.</li></ul><p>Môi trường có cầu tự nhiên với độ dày khác nhau giúp chim sử dụng bàn chân đa dạng hơn và giảm nguy cơ tổn thương chân.</p>`},
+{id:'dat-long-o-dau', category:'Lồng và môi trường', title:'Đặt lồng chim ở đâu trong nhà?', excerpt:'Vị trí đặt lồng ảnh hưởng trực tiếp đến sự an toàn và tâm lý của chim.', content:`<p>Vị trí phù hợp nên:</p><ul><li>Thoáng nhưng không có gió lùa trực tiếp.</li><li>Có ánh sáng tự nhiên vừa phải.</li><li>Tránh nắng gắt giữa trưa.</li><li>Không đặt sát máy lạnh.</li><li>Không đặt ở nơi quá ồn.</li><li>Tránh xa chó, mèo và trẻ nhỏ chưa biết cách tiếp xúc.</li><li>Có một mặt lồng gần tường để chim cảm thấy an toàn hơn.</li></ul><p>Không nên đặt lồng trong bếp. Khói, hơi dầu, chất tẩy rửa và dụng cụ chống dính bị quá nhiệt đều có thể gây nguy hiểm cho chim.</p>`},
+{id:'ngu-va-che-ao-long', category:'Lồng và môi trường', title:'Chim cần ngủ bao nhiêu và che áo lồng thế nào?', excerpt:'Giấc ngủ ổn định giúp chim giảm căng thẳng và rối loạn hành vi.', content:`<p>Chim cần một khoảng thời gian ngủ đêm đều đặn trong môi trường yên tĩnh và tối vừa đủ.</p><p>Có thể che một phần hoặc toàn bộ lồng nếu:</p><ul><li>Vải sạch và thoáng khí.</li><li>Không làm lồng quá nóng.</li><li>Vẫn có sự lưu thông không khí.</li><li>Chim không hoảng sợ khi bị che.</li><li>Mở áo lồng theo giờ ổn định mỗi sáng.</li></ul><p>Không nên dùng áo lồng để bỏ mặc chim cả ngày hoặc ép chim im tiếng.</p>`},
+{id:'tam-cho-chim', category:'Lồng và môi trường', title:'Có cần tắm cho Yến Phụng không?', excerpt:'Nên tạo điều kiện để chim tự lựa chọn tắm.', content:`<p>Có thể cho chim tắm bằng:</p><ul><li>Khay nước sạch, nông.</li><li>Phun sương rất nhẹ bằng nước sạch.</li><li>Rau lá còn đọng nước sạch để chim cọ và tắm.</li></ul><p>Không dùng:</p><ul><li>Xà phòng.</li><li>Dầu gội.</li><li>Nước hoa.</li><li>Dung dịch tắm có hương liệu.</li><li>Hóa chất diệt ve không có chỉ định chuyên môn.</li></ul><p>Chỉ sử dụng nước sạch khi phun sương vì chim sẽ rỉa lông và có thể nuốt những chất còn bám lại trên lông. Không tắm khi trời lạnh, chim đang yếu hoặc nơi ở có gió lùa.</p>`},
+{id:'ve-sinh-long', category:'Lồng và môi trường', title:'Vệ sinh lồng chim đúng cách', excerpt:'Vệ sinh đều đặn giúp kiểm soát mùi và phát hiện sớm bất thường.', content:`<p><strong>Hằng ngày:</strong></p><ul><li>Thay nước.</li><li>Rửa cóng ăn và cóng nước.</li><li>Loại bỏ rau củ, trái cây còn thừa.</li><li>Kiểm tra giấy lót và phân chim.</li></ul><p><strong>Định kỳ:</strong></p><ul><li>Thay giấy lót.</li><li>Lau nan lồng.</li><li>Rửa khay đáy.</li><li>Vệ sinh cầu đậu và đồ chơi.</li><li>Kiểm tra các vị trí có phân hoặc thức ăn bám lâu ngày.</li></ul><p>Khi dùng chất vệ sinh: chỉ dùng sản phẩm an toàn, đưa chim ra khỏi khu vực vệ sinh, tráng lại thật kỹ, để khô hoàn toàn trước khi cho chim trở lại.</p><p>Việc quan sát giấy lót còn giúp nhận biết sớm thay đổi về số lượng, màu sắc hoặc độ lỏng của phân.</p>`},
+{id:'lam-quen-bot-so', category:'Làm quen và huấn luyện', title:'Cách làm quen để chim bớt sợ người', excerpt:'Thuần chim cần sự kiên nhẫn, không phải bắt giữ bằng sức mạnh.', content:`<p>Các bước cơ bản:</p><ol><li>Ngồi gần lồng để chim quen sự hiện diện.</li><li>Nói chuyện bằng giọng nhẹ nhàng.</li><li>Đưa thức ăn thưởng qua nan lồng.</li><li>Đặt tay trong lồng nhưng không đuổi bắt.</li><li>Tập cho chim bước lên một cầu cầm tay.</li><li>Sau đó mới tập bước lên ngón tay.</li></ol><p>Mỗi buổi tập chỉ nên kéo dài ngắn và kết thúc khi chim vẫn bình tĩnh.</p><p>Không nên:</p><ul><li>Rượt chim quanh lồng.</li><li>Nắm chặt chim để ép đứng tay.</li><li>La mắng hoặc gõ vào lồng.</li><li>Bỏ đói để bắt chim nhận thức ăn.</li><li>Tập khi chim đang mệt hoặc sợ hãi.</li></ul>`},
+{id:'tha-bay-trong-nha', category:'Làm quen và huấn luyện', title:'Khi nào có thể thả chim bay trong nhà?', excerpt:'Chỉ thả khi căn phòng đã được kiểm tra an toàn.', content:`<p>Trước khi thả chim:</p><ul><li>Đóng toàn bộ cửa ra vào và cửa sổ.</li><li>Kéo rèm hoặc giúp chim nhận biết bề mặt kính.</li><li>Tắt quạt trần và quạt có cánh hở.</li><li>Che bếp, nồi nước nóng và bồn cầu.</li><li>Đưa chó, mèo ra khỏi phòng.</li><li>Loại bỏ dây điện hở, cây độc và vật sắc nhọn.</li><li>Đảm bảo chim biết cách bước lên tay hoặc cầu cầm tay.</li></ul><p>Không nên thả chim ngoài trời dù đã thuần. Chỉ một tiếng động bất ngờ cũng có thể khiến chim hoảng sợ và bay mất. Quạt trần phải luôn được tắt khi chim được bay tự do; nhà bếp cũng là khu vực không an toàn đối với chim.</p>`},
+{id:'do-choi-phu-hop', category:'Làm quen và huấn luyện', title:'Đồ chơi nào phù hợp với Yến Phụng?', excerpt:'Đồ chơi giúp chim vận động, khám phá và giảm buồn chán.', content:`<p>Có thể sử dụng:</p><ul><li>Đồ chơi gặm an toàn.</li><li>Dây leo dành cho chim.</li><li>Xích đu.</li><li>Thang.</li><li>Bóng nhẹ.</li><li>Đồ chơi tìm thức ăn.</li><li>Giấy hoặc bìa sạch, không mực độc để xé.</li></ul><p>Cần kiểm tra thường xuyên: dây có bị tưa và quấn chân không, kim loại có bị gỉ không, đồ chơi có cạnh sắc không, chim có cắn nuốt mảnh nhựa hay không.</p><p>Không nên treo quá nhiều đồ chơi cùng lúc. Có thể thay đổi luân phiên để tạo sự mới mẻ.</p>`},
+{id:'guong-trong-long', category:'Làm quen và huấn luyện', title:'Có nên đặt gương trong lồng?', excerpt:'Một số chim có thể gắn bó quá mức với hình ảnh trong gương.', content:`<p>Gương không phải lúc nào cũng có hại, nhưng không nên xem gương là vật thay thế hoàn toàn cho tương tác hoặc bạn đồng loại.</p><p>Một số chim có thể: bảo vệ gương, mớm thức ăn liên tục cho hình ảnh, trở nên kích động, ít tương tác với chủ, thể hiện hành vi sinh sản quá mức.</p><p>Nếu xuất hiện các biểu hiện trên, nên tháo gương và thay bằng đồ chơi vận động hoặc tìm kiếm thức ăn.</p>`},
+{id:'dau-hieu-khoe-manh', category:'Sức khỏe và an toàn', title:'Dấu hiệu nhận biết một bé chim khỏe mạnh', excerpt:'Nên đánh giá tổng thể thay vì chỉ nhìn màu lông.', content:`<p>Một bé chim khỏe mạnh thường:</p><ul><li>Tỉnh táo và phản ứng với môi trường.</li><li>Đứng vững trên cầu.</li><li>Mắt sáng, không chảy dịch.</li><li>Mũi và vùng quanh mỏ sạch.</li><li>Thở nhẹ nhàng, không há mỏ.</li><li>Lông gọn, không xù liên tục.</li><li>Hậu môn sạch.</li><li>Ăn uống và đi phân đều.</li><li>Hai cánh cân đối.</li><li>Không có vết thương rõ ràng.</li></ul><p>Không nên mua chỉ dựa trên màu đẹp. Hãy yêu cầu xem video hoạt động, video tự ăn và tình trạng thực tế của đúng cá thể.</p>`},
+{id:'dau-hieu-benh', category:'Sức khỏe và an toàn', title:'Những dấu hiệu chim đang bị bệnh', excerpt:'Chim thường che giấu bệnh nên khi xuất hiện triệu chứng có thể đã khá yếu.', warning:true, content:`<p>Cần đặc biệt chú ý nếu chim:</p><ul><li>Xù lông kéo dài.</li><li>Ngủ nhiều bất thường.</li><li>Bỏ ăn hoặc ăn ít.</li><li>Ngồi dưới đáy lồng.</li><li>Không bám cầu chắc.</li><li>Thở gấp, há mỏ hoặc đuôi nhịp theo hơi thở.</li><li>Có dịch ở mắt hoặc mũi.</li><li>Nôn, tiêu chảy hoặc phân thay đổi rõ rệt.</li><li>Sụt cân.</li><li>Ít kêu và ít phản ứng.</li><li>Chảy máu hoặc bị chấn thương.</li></ul><p>Bỏ ăn, lờ đờ, khó thở, thay đổi cân nặng và xù lông kéo dài đều là những dấu hiệu cần được đánh giá sớm bởi bác sĩ thú y có kinh nghiệm về chim.</p><p>Không tự dùng thuốc kháng sinh, thuốc của người hoặc thuốc của loài vật khác.</p>`},
+{id:'chim-bo-an', category:'Sức khỏe và an toàn', title:'Làm gì khi chim bỏ ăn?', excerpt:'Bỏ ăn ở chim không nên được xem nhẹ.', warning:true, content:`<p>Nếu nghi chim bỏ ăn:</p><ol><li>Kiểm tra trong cóng còn thức ăn thật hay chỉ còn vỏ hạt.</li><li>Quan sát chim có uống nước không.</li><li>Đặt giấy sạch dưới đáy để theo dõi phân.</li><li>Giữ chim ở nơi yên tĩnh, ấm vừa phải.</li><li>Không ép đổ nước hoặc thức ăn vào miệng nếu không có kỹ năng.</li><li>Liên hệ bác sĩ thú y có kinh nghiệm về chim càng sớm càng tốt.</li></ol><p>Không nên chờ vài ngày với hy vọng chim tự khỏe. Chim nhỏ có thể suy kiệt nhanh khi không được cung cấp đủ dinh dưỡng và nước.</p>`},
+{id:'tu-mua-thuoc', category:'Sức khỏe và an toàn', title:'Có nên tự mua thuốc điều trị cho chim?', excerpt:'Cùng một biểu hiện có thể xuất phát từ nhiều nguyên nhân khác nhau.', warning:true, content:`<p>Không nên tự mua kháng sinh, thuốc trị tiêu chảy, thuốc nấm hoặc thuốc ký sinh trùng chỉ dựa vào triệu chứng nhìn thấy.</p><p>Ví dụ, xù lông và bỏ ăn có thể liên quan đến: nhiễm trùng, ký sinh trùng, ngộ độc, chấn thương, rối loạn tiêu hóa, bệnh hô hấp, suy dinh dưỡng, hoặc căng thẳng môi trường.</p><p>Dùng sai thuốc có thể che lấp triệu chứng, làm bệnh nặng hơn hoặc gây độc.</p><p>Website chỉ cung cấp kiến thức chăm sóc cơ bản, không thay thế chẩn đoán của bác sĩ thú y.</p>`},
+{id:'nuoi-chung-ngay', category:'Sức khỏe và an toàn', title:'Chim mới mua có nên nuôi chung ngay không?', excerpt:'Không nên đưa chim mới vào đàn ngay lập tức.', content:`<p>Chim mới nên được nuôi tách riêng trong một lồng khác để:</p><ul><li>Theo dõi việc ăn uống.</li><li>Quan sát phân.</li><li>Theo dõi dấu hiệu hô hấp.</li><li>Tránh lây bệnh cho đàn hiện tại.</li><li>Giúp chim làm quen từ từ.</li><li>Hạn chế đánh nhau và tranh lãnh thổ.</li></ul><p>Không dùng chung cóng ăn, cóng nước và dụng cụ vệ sinh giữa chim mới với đàn cũ trong giai đoạn theo dõi. Việc ghép chung chỉ nên thực hiện khi chim khỏe mạnh, đã thích nghi và hai bên không thể hiện hành vi tấn công.</p>`},
+{id:'sinh-san-ngay-khong', category:'Sức khỏe và an toàn', title:'Có nên cho Yến Phụng sinh sản ngay không?', excerpt:'Nuôi được chim sống khỏe không đồng nghĩa đã sẵn sàng cho sinh sản.', content:`<p>Người mới không nên vội đặt ổ sinh sản.</p><p>Trước khi ghép sinh sản cần xác định: giới tính, độ tuổi phù hợp, tình trạng sức khỏe, quan hệ huyết thống, chế độ dinh dưỡng, không gian nuôi, khả năng xử lý chim non bị bỏ, và khả năng xử lý trứng kẹt hoặc các tình huống cấp cứu.</p><p>Không đặt hộp kín trong lồng nếu không có mục đích sinh sản, vì các vị trí tối và kín có thể kích thích hành vi làm tổ, bảo vệ lãnh thổ và gây hung dữ.</p>`},
+{id:'checklist-hang-ngay', category:'Bắt đầu nuôi', title:'Checklist chăm sóc Yến Phụng mỗi ngày', excerpt:'Chỉ mất vài phút nhưng giúp phát hiện vấn đề sớm.', content:`<p><strong>Mỗi buổi sáng:</strong></p><ul><li>Kiểm tra chim có tỉnh táo không.</li><li>Kiểm tra lượng thức ăn đã ăn.</li><li>Thay nước mới.</li><li>Quan sát phân.</li><li>Loại bỏ thức ăn tươi còn thừa.</li><li>Kiểm tra nhiệt độ và gió lùa.</li></ul><p><strong>Trong ngày:</strong></p><ul><li>Cho chim vận động và tương tác.</li><li>Bổ sung thức ăn tươi phù hợp.</li><li>Quan sát tiếng thở và khả năng bám cầu.</li><li>Kiểm tra lồng, khóa cửa và đồ chơi.</li></ul><p><strong>Buổi tối:</strong></p><ul><li>Kiểm tra đủ thức ăn và nước.</li><li>Đưa chim về nơi yên tĩnh.</li><li>Tắt các thiết bị gây tiếng động lớn.</li><li>Duy trì giờ ngủ ổn định.</li></ul><p><strong>Mỗi tuần:</strong></p><ul><li>Vệ sinh kỹ lồng và phụ kiện.</li><li>Kiểm tra móng, mỏ, chân và lông.</li><li>Cân chim nếu có cân phù hợp.</li><li>Ghi nhận thay đổi bất thường.</li></ul>`}
+];
+
+const guideFeaturedIds = ['chon-non-hay-tu-an','chuan-bi-truoc-khi-don','yen-phung-an-gi','bay-ngay-dau','dau-hieu-khoe-manh','dau-hieu-benh'];
+
+const guideIcons = {
+  'Bắt đầu nuôi': '<svg viewBox="0 0 24 24" fill="none"><path d="M4 15c2-6 8-9 14-8-1 2-1 4 0 6-5 1-9 0-11-3 0 3 1 6 4 8-3 1-6 0-7-3z" fill="currentColor"/></svg>',
+  'Thức ăn và dinh dưỡng': '<svg viewBox="0 0 24 24" fill="none"><ellipse cx="12" cy="13" rx="7" ry="8" fill="currentColor"/><path d="M12 5c0-2 1-3 2-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  'Lồng và môi trường': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="6" width="16" height="14" rx="2"/><path d="M4 6l8-3 8 3M9 6v14M15 6v14"/></svg>',
+  'Làm quen và huấn luyện': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11V6a2 2 0 0 1 4 0v4M11 10V5a2 2 0 0 1 4 0v5M15 10V6a2 2 0 0 1 4 0v6c0 4-2 7-6 7s-6-2-7-5l-1.5-3a1.5 1.5 0 0 1 2.6-1.5L8 14"/></svg>',
+  'Sức khỏe và an toàn': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-9.3-9C1.4 8.8 3 5 6.7 5c2 0 3.4 1.2 4.3 2.6C11.9 6.2 13.3 5 15.3 5 19 5 20.6 8.8 19.3 12 17 16.5 12 21 12 21z"/><path d="M9 12h2l1-2 2 4 1-2h2"/></svg>'
+};
 
 const statusMap = {
   available: {label:'Đang tìm chủ', cls:'st-available'},
@@ -552,6 +674,99 @@ function lightboxNav(dir){
 document.getElementById('lightbox').addEventListener('click', e=>{ if(e.target.id==='lightbox') closeLightbox(); });
 
 // ---------- FAQ ----------
+// ---------- GUIDE (Cẩm nang) ----------
+let guideCurrentCat = 'Tất cả';
+let guideCurrentSearch = '';
+
+function renderGuideFeatured(){
+  const grid = document.getElementById('guide-grid');
+  const items = guideFeaturedIds.map(id => guideData.find(g=>g.id===id)).filter(Boolean);
+  grid.innerHTML = items.map(g=>`
+    <div class="guide-card">
+      <div class="guide-icon">${guideIcons[g.category]||''}</div>
+      <span class="guide-cat-tag">${esc(g.category)}</span>
+      <h3>${esc(g.title)}</h3>
+      <p>${esc(g.excerpt)}</p>
+      <button class="btn btn-outline btn-sm" onclick="openGuideArticle('${g.id}')">Xem hướng dẫn</button>
+    </div>`).join('');
+}
+
+function openGuideLibrary(){
+  guideCurrentCat = 'Tất cả';
+  guideCurrentSearch = '';
+  document.getElementById('guide-modal-title').textContent = 'Cẩm nang nuôi Yến Phụng';
+  renderGuideLibraryBody();
+  document.getElementById('guide-modal').classList.add('open');
+}
+
+function renderGuideLibraryBody(){
+  const body = document.getElementById('guide-modal-body');
+  const chips = guideCategories.map(c=>`<button class="chip ${c===guideCurrentCat?'active':''}" onclick="guideSetCat('${c.replace(/'/g,"\\'")}')">${esc(c)}</button>`).join('');
+  body.innerHTML = `
+    <input type="text" class="guide-search" id="guide-search-input" placeholder="Tìm theo tiêu đề hoặc nội dung..." value="${esc(guideCurrentSearch)}">
+    <div class="guide-filter-row">${chips}</div>
+    <div id="guide-list"></div>
+  `;
+  document.getElementById('guide-search-input').addEventListener('input', (e)=>{
+    guideCurrentSearch = e.target.value;
+    renderGuideList();
+  });
+  renderGuideList();
+}
+
+function guideSetCat(c){
+  guideCurrentCat = c;
+  renderGuideLibraryBody();
+}
+
+function renderGuideList(){
+  const listEl = document.getElementById('guide-list');
+  const q = guideCurrentSearch.trim().toLowerCase();
+  let items = guideData.filter(g => guideCurrentCat==='Tất cả' || g.category===guideCurrentCat);
+  if(q){
+    items = items.filter(g => g.title.toLowerCase().includes(q) || g.content.toLowerCase().includes(q) || g.excerpt.toLowerCase().includes(q));
+  }
+  if(items.length===0){
+    listEl.innerHTML = '<div class="guide-list-empty">Không tìm thấy bài viết phù hợp.</div>';
+    return;
+  }
+  listEl.innerHTML = items.map(g=>`
+    <div class="guide-list-item" onclick="openGuideArticle('${g.id}')">
+      <span class="guide-cat-tag">${esc(g.category)}</span>
+      <h4>${esc(g.title)}</h4>
+      <p>${esc(g.excerpt)}</p>
+    </div>`).join('');
+}
+
+function openGuideArticle(id){
+  const g = guideData.find(x=>x.id===id);
+  if(!g) return;
+  document.getElementById('guide-modal-title').textContent = g.category;
+  const body = document.getElementById('guide-modal-body');
+  body.innerHTML = `
+    <button class="guide-back" onclick="openGuideLibrary()">← Quay lại danh sách</button>
+    <span class="guide-article-cat">${esc(g.category)}</span>
+    <h3 class="guide-article-title">${esc(g.title)}</h3>
+    <div class="guide-article-content">${g.content}</div>
+    ${g.warning ? guideWarningBox : ''}
+    <button class="btn btn-primary guide-article-cta" onclick="closeGuideModal();goToSection('consult')">Cần tư vấn chọn chim</button>
+  `;
+  document.getElementById('guide-modal').classList.add('open');
+  body.scrollTop = 0;
+}
+
+function closeGuideModal(){
+  document.getElementById('guide-modal').classList.remove('open');
+}
+
+document.getElementById('guide-modal').addEventListener('click', e=>{ if(e.target.id==='guide-modal') closeGuideModal(); });
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape'){
+    closeGuideModal();
+    closeLightbox();
+  }
+});
+
 function renderFaq(){
   const wrap = document.getElementById('faq-list');
   wrap.innerHTML = faqData.map((f,i)=>`
@@ -668,6 +883,7 @@ function showToast(text){
 // ---------- INIT ----------
 document.getElementById('year').textContent = new Date().getFullYear();
 renderFaq();
+renderGuideFeatured();
 renderFollow();
 renderContact();
 loadBirds();
