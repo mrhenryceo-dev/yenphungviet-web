@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yến Phụng Việt — Yến Phụng tuyển chọn tại Lâm Đồng</title>
+<meta name="description" content="Yến Phụng tuyển chọn dành cho người coi trọng chất lượng và nguồn gốc. Xem chim đang bán, nhận tư vấn chọn chim phù hợp — ship toàn quốc từ Lâm Đồng.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --cream:#FBF7EE; --surface:#FFFFFF; --surface2:#F3EFE3;
+    --ink:#2A2E1F; --ink-soft:#5B5F4E; --ink-faint:#8A8D77;
+    --green:#3A7358; --green-dark:#264F39; --green-dim:rgba(58,115,88,0.10);
+    --yellow:#E0A03C; --yellow-dim:rgba(224,160,60,0.14);
+    --blue:#3D6E94; --blue-dim:rgba(61,110,148,0.10);
+    --red:#C1503F; --red-dim:rgba(193,80,63,0.10);
+    --border:rgba(42,46,31,0.12);
+    --radius:20px; --radius-sm:12px;
+    --shadow:0 4px 22px rgba(42,46,31,0.08);
+    --shadow-lg:0 10px 34px rgba(42,46,31,0.13);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation-duration:0.01ms !important;transition-duration:0.01ms !important}}
+  body{font-family:'Be Vietnam Pro',sans-serif;background:var(--cream);color:var(--ink);line-height:1.6;overflow-x:hidden}
+  h1,h2,h3,.display{font-family:'Fraunces',serif}
+  a{color:inherit}
+  img{max-width:100%;display:block}
+  button{font-family:inherit}
+  :focus-visible{outline:2.5px solid var(--green);outline-offset:2px}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+  .eyebrow{font-size:12px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:var(--green);margin-bottom:10px;display:block}
+  section{padding:56px 0}
+  .section-head{max-width:640px;margin-bottom:32px}
+  .section-head h2{font-size:clamp(24px,4vw,32px);font-weight:600;line-height:1.25;margin-bottom:10px}
+  .section-head p{color:var(--ink-soft);font-size:15px}
+
+  /* HEADER */
+  header{position:sticky;top:0;z-index:200;background:rgba(251,247,238,0.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+  .header-inner{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;max-width:1080px;margin:0 auto}
+  .brand{display:flex;align-items:center;gap:9px}
+  .brand-mark{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--blue));display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .brand-mark svg{width:19px;height:19px}
+  .brand-name{font-family:'Fraunces',serif;font-weight:600;font-size:17px;color:var(--green-dark);letter-spacing:-0.2px}
+  .header-ctas{display:flex;gap:8px}
+  .btn{border:none;border-radius:100px;font-family:inherit;font-weight:600;cursor:pointer;transition:transform .15s,box-shadow .15s;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;white-space:nowrap}
+  .btn:active{transform:scale(0.97)}
+  .btn-sm{padding:9px 14px;font-size:12.5px}
+  .btn-lg{padding:15px 26px;font-size:15px}
+  .btn-primary{background:var(--green);color:#fff;box-shadow:0 3px 12px rgba(58,115,88,0.3)}
+  .btn-ghost{background:var(--surface2);color:var(--ink)}
+  .btn-outline{background:transparent;border:1.5px solid var(--green);color:var(--green-dark)}
+
+  /* HERO */
+  .hero{padding:44px 0 20px;position:relative;overflow:hidden}
+  .hero-grid{display:grid;grid-template-columns:1.1fr 0.9fr;gap:40px;align-items:center}
+  @media (max-width:860px){.hero-grid{grid-template-columns:1fr;gap:28px}}
+  .hero h1{font-size:clamp(28px,5vw,44px);font-weight:700;line-height:1.18;letter-spacing:-0.5px;margin-bottom:16px;color:var(--ink)}
+  .hero-desc{color:var(--ink-soft);font-size:15.5px;margin-bottom:14px}
+  .hero-list{list-style:none;margin:18px 0 26px;display:flex;flex-direction:column;gap:9px}
+  .hero-list li{display:flex;gap:9px;align-items:flex-start;font-size:14px;color:var(--ink-soft)}
+  .hero-list li::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--green);margin-top:7px;flex-shrink:0}
+  .hero-ctas{display:flex;gap:10px;flex-wrap:wrap}
+  .hero-visual{position:relative;aspect-ratio:1/1;border-radius:28px;overflow:hidden;background:linear-gradient(160deg,var(--green-dim),var(--yellow-dim) 60%,var(--blue-dim));box-shadow:var(--shadow-lg)}
+  .hero-visual svg{width:100%;height:100%}
+
+  /* WHY GRID */
+  .why-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  @media (max-width:860px){.why-grid{grid-template-columns:1fr 1fr}}
+  @media (max-width:520px){.why-grid{grid-template-columns:1fr}}
+  .why-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px 18px;box-shadow:var(--shadow)}
+  .why-num{font-family:'Fraunces',serif;font-size:26px;font-weight:600;color:var(--green);margin-bottom:10px;display:block}
+  .why-card h3{font-size:15.5px;font-weight:600;margin-bottom:7px}
+  .why-card p{font-size:13.5px;color:var(--ink-soft)}
+  .why-note{margin-top:22px;background:var(--green-dim);border:1px solid rgba(58,115,88,0.18);border-radius:var(--radius-sm);padding:16px 18px;font-size:13.5px;color:var(--green-dark)}
+
+  /* LINES */
+  .lines-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media (max-width:860px){.lines-grid{grid-template-columns:1fr}}
+  .line-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column}
+  .line-visual{aspect-ratio:16/10;background:linear-gradient(135deg,var(--surface2),var(--cream))}
+  .line-visual svg{width:100%;height:100%}
+  .line-body{padding:18px 18px 20px;display:flex;flex-direction:column;flex:1}
+  .line-body h3{font-size:16.5px;font-weight:600;margin-bottom:8px}
+  .line-body p{font-size:13.5px;color:var(--ink-soft);margin-bottom:6px;flex:1}
+  .line-price{font-size:13px;font-weight:600;color:var(--green-dark);margin-bottom:14px}
+
+  /* FILTER CHIPS */
+  .filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+  .chip{padding:8px 15px;border-radius:100px;border:1.5px solid var(--border);background:var(--surface);font-size:13px;font-weight:500;color:var(--ink-soft);cursor:pointer;transition:all .15s}
+  .chip.active{background:var(--green);border-color:var(--green);color:#fff;font-weight:600}
+
+  /* BIRD CARDS — "hộ chiếu chim" signature style */
+  .birds-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+  .bird-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);position:relative}
+  .bird-photo{position:relative;aspect-ratio:4/3;background:var(--surface2);cursor:pointer;overflow:hidden}
+  .bird-photo img{width:100%;height:100%;object-fit:cover}
+  .bird-photo::before{content:'';position:absolute;top:0;left:0;right:0;height:10px;background-image:radial-gradient(circle,var(--cream) 3.5px,transparent 3.6px);background-size:16px 16px;background-position:4px -8px;z-index:2}
+  .bird-code-tag{position:absolute;top:14px;left:12px;background:rgba(42,46,31,0.72);color:#fff;font-size:10.5px;font-weight:700;letter-spacing:1px;padding:4px 9px;border-radius:6px;z-index:3;text-transform:uppercase}
+  .bird-status{position:absolute;top:14px;right:12px;font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:100px;z-index:3;box-shadow:0 2px 6px rgba(0,0,0,0.15)}
+  .st-available{background:var(--green);color:#fff}
+  .st-held{background:var(--yellow);color:#3a2a08}
+  .st-sold{background:var(--ink-faint);color:#fff}
+  .st-watch{background:var(--blue);color:#fff}
+  .bird-body{padding:16px 16px 18px}
+  .bird-desc{font-size:13.5px;color:var(--ink-soft);margin-bottom:12px;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+  .bird-foot{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .bird-price{font-family:'Fraunces',serif;font-weight:600;font-size:17px;color:var(--green-dark)}
+  .birds-empty{grid-column:1/-1;text-align:center;padding:40px 20px;color:var(--ink-faint);font-size:14px;background:var(--surface);border:1px dashed var(--border);border-radius:var(--radius)}
+
+  /* LIGHTBOX */
+  .lightbox{position:fixed;inset:0;background:rgba(20,22,14,0.88);z-index:500;display:none;align-items:center;justify-content:center;padding:24px}
+  .lightbox.open{display:flex}
+  .lightbox img{max-width:min(600px,92vw);max-height:80vh;border-radius:14px;object-fit:contain}
+  .lightbox-close{position:absolute;top:18px;right:18px;background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:50%;width:38px;height:38px;font-size:18px;cursor:pointer}
+  .lightbox-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:50%;width:42px;height:42px;font-size:20px;cursor:pointer}
+  .lightbox-prev{left:14px}.lightbox-next{right:14px}
+
+  /* COMPARE TABLE */
+  .compare-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow)}
+  table.compare{width:100%;border-collapse:collapse;background:var(--surface);font-size:13.5px;min-width:560px}
+  table.compare th,table.compare td{padding:13px 16px;text-align:left;border-bottom:1px solid var(--border)}
+  table.compare thead th{background:var(--surface2);font-weight:700;color:var(--ink);font-size:12.5px;text-transform:uppercase;letter-spacing:.4px}
+  table.compare tbody tr:last-child td{border-bottom:none}
+  table.compare td:first-child{font-weight:600;color:var(--ink-soft)}
+  table.compare td:nth-child(3){color:var(--green-dark);font-weight:500}
+  .compare-note{margin-top:16px;font-size:13px;color:var(--ink-soft);background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px}
+
+  /* FAQ */
+  .faq-item{border-bottom:1px solid var(--border)}
+  .faq-item:first-child{border-top:1px solid var(--border)}
+  .faq-q{width:100%;background:none;border:none;text-align:left;padding:18px 4px;font-size:14.5px;font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:12px;cursor:pointer;color:var(--ink)}
+  .faq-q .ic{flex-shrink:0;transition:transform .2s;color:var(--green);font-size:18px}
+  .faq-item.open .faq-q .ic{transform:rotate(45deg)}
+  .faq-a{max-height:0;overflow:hidden;transition:max-height .25s ease}
+  .faq-a-inner{padding:0 4px 18px;font-size:13.5px;color:var(--ink-soft)}
+
+  /* FORM */
+  .form-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px 24px;box-shadow:var(--shadow-lg)}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media (max-width:600px){.form-grid{grid-template-columns:1fr}}
+  .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+  .field.full{grid-column:1/-1}
+  .field label{font-size:12.5px;font-weight:600;color:var(--ink-soft)}
+  .field input,.field select,.field textarea{border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:11px 13px;font-family:inherit;font-size:14px;background:var(--cream);color:var(--ink)}
+  .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--green)}
+  .field textarea{resize:vertical;min-height:70px}
+  .radio-group,.check-group{display:flex;flex-wrap:wrap;gap:8px}
+  .pill-opt{position:relative}
+  .pill-opt input{position:absolute;opacity:0;width:100%;height:100%;cursor:pointer;margin:0}
+  .pill-opt span{display:block;padding:9px 14px;border-radius:100px;border:1.5px solid var(--border);font-size:13px;color:var(--ink-soft);background:var(--cream)}
+  .pill-opt input:checked + span{background:var(--green);border-color:var(--green);color:#fff;font-weight:600}
+  .consent-row{display:flex;align-items:flex-start;gap:10px;margin:8px 0 18px;font-size:13px;color:var(--ink-soft)}
+  .consent-row input{margin-top:3px}
+  .form-msg{font-size:13.5px;margin-top:10px;padding:11px 14px;border-radius:var(--radius-sm);display:none}
+  .form-msg.show{display:block}
+  .form-msg.ok{background:var(--green-dim);color:var(--green-dark)}
+  .form-msg.err{background:var(--red-dim);color:var(--red)}
+
+  /* FOLLOW */
+  .follow-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media (max-width:600px){.follow-grid{grid-template-columns:1fr}}
+  .follow-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px;display:flex;align-items:center;gap:16px;box-shadow:var(--shadow)}
+  .follow-icon{width:48px;height:48px;border-radius:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff}
+  .follow-body{flex:1}
+  .follow-body h3{font-size:15px;font-weight:600;margin-bottom:3px}
+  .follow-body p{font-size:12.5px;color:var(--ink-soft);margin-bottom:10px}
+
+  /* CONTACT + FOOTER */
+  .contact-card{background:var(--green-dark);color:#fff;border-radius:28px;padding:36px 28px;display:grid;grid-template-columns:1.1fr 0.9fr;gap:28px}
+  @media (max-width:760px){.contact-card{grid-template-columns:1fr}}
+  .contact-card h2{color:#fff;font-size:24px;margin-bottom:10px}
+  .contact-card p{color:rgba(255,255,255,0.78);font-size:14px;margin-bottom:20px}
+  .contact-list{list-style:none;display:flex;flex-direction:column;gap:11px}
+  .contact-list li{display:flex;gap:10px;align-items:center;font-size:14px}
+  .contact-list .lbl{color:rgba(255,255,255,0.6);min-width:76px;font-size:12.5px}
+  .contact-card .btn-primary{background:#fff;color:var(--green-dark)}
+  footer{padding:26px 0 40px;text-align:center;color:var(--ink-faint);font-size:12.5px}
+
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--ink);color:#fff;padding:12px 20px;border-radius:100px;font-size:13.5px;box-shadow:var(--shadow-lg);z-index:600;transition:transform .25s;max-width:90vw;text-align:center}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none"><path d="M4 14c2-6 8-9 14-8-1 2-1 4 0 6-5 1-9 0-11-3 0 3 1 6 4 8-3 1-6 0-7-3z" fill="#fff"/></svg></div>
+      <span class="brand-name">Yến Phụng Việt</span>
+    </div>
+    <div class="header-ctas">
+      <button class="btn btn-ghost btn-sm" onclick="scrollTo('birds')">Xem chim</button>
+      <button class="btn btn-primary btn-sm" onclick="scrollTo('consult')">Cần tư vấn</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- HERO -->
+  <section class="hero wrap">
+    <div class="hero-grid">
+      <div>
+        <span class="eyebrow">Yến Phụng (Agapornis) tuyển chọn</span>
+        <h1>Yến Phụng tuyển chọn dành cho người coi trọng chất lượng và nguồn gốc</h1>
+        <p class="hero-desc">Chúng tôi cung cấp những cá thể Yến Phụng được tuyển chọn về ngoại hình, màu sắc và tình trạng thực tế. Một số cá thể có nguồn từ đàn giống Hà Lan và có hồ sơ, giấy tờ liên quan theo phạm vi thực tế.</p>
+        <ul class="hero-list">
+          <li>Hình ảnh thật, đúng cá thể — không dùng ảnh mạng</li>
+          <li>Công khai độ tuổi, giới tính (nếu xác định được), tình trạng tự ăn, mức độ quen người</li>
+          <li>Tư vấn chọn chim phù hợp kinh nghiệm, mục đích nuôi và ngân sách</li>
+        </ul>
+        <div class="hero-ctas">
+          <button class="btn btn-primary btn-lg" onclick="scrollTo('birds')">Xem chim đang bán</button>
+          <button class="btn btn-outline btn-lg" onclick="scrollTo('consult')">Nhận tư vấn chọn chim</button>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+          <ellipse cx="200" cy="330" rx="150" ry="14" fill="#2A2E1F" opacity="0.06"/>
+          <rect x="192" y="180" width="10" height="150" rx="5" fill="#8A6A4A"/>
+          <path d="M110 220 Q200 195 300 225" stroke="#8A6A4A" stroke-width="8" fill="none" stroke-linecap="round"/>
+          <!-- bird 1 -->
+          <g transform="translate(130,150)">
+            <ellipse cx="0" cy="35" rx="34" ry="42" fill="#3A7358"/>
+            <ellipse cx="0" cy="10" rx="26" ry="26" fill="#E0A03C"/>
+            <circle cx="-8" cy="4" r="4" fill="#2A2E1F"/>
+            <path d="M-14 8 q-10 4 -12 10 q8 2 14 -2 z" fill="#C1503F"/>
+            <path d="M20 30 q26 8 22 34 q-20 -4 -26 -20 z" fill="#264F39"/>
+          </g>
+          <!-- bird 2 -->
+          <g transform="translate(255,140) scale(-1,1)">
+            <ellipse cx="0" cy="40" rx="30" ry="38" fill="#3D6E94"/>
+            <ellipse cx="0" cy="16" rx="23" ry="23" fill="#FBF7EE"/>
+            <circle cx="-7" cy="10" r="3.6" fill="#2A2E1F"/>
+            <path d="M-13 14 q-9 4 -11 9 q7 2 12 -2 z" fill="#E0A03C"/>
+            <path d="M18 34 q23 7 19 30 q-18 -4 -23 -18 z" fill="#2C5270"/>
+          </g>
+          <g opacity="0.5">
+            <path d="M60 90 q10 -14 26 -12 q-6 12 -26 12z" fill="#3A7358"/>
+            <path d="M320 100 q-8 -16 -24 -16 q4 14 24 16z" fill="#E0A03C"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHY -->
+  <section id="why" class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Khác biệt</span>
+      <h2>Vì sao giá chim của chúng tôi cao hơn?</h2>
+      <p>Chúng tôi không hướng đến việc bán chim rẻ nhất. Mục tiêu là cung cấp chim có chất lượng, thông tin rõ ràng và được chăm sóc có trách nhiệm.</p>
+    </div>
+    <div class="why-grid">
+      <div class="why-card"><span class="why-num">01</span><h3>Nguồn đàn được theo dõi</h3><p>Thông tin nguồn đàn và quá trình phát triển được theo dõi trong khả năng thực tế.</p></div>
+      <div class="why-card"><span class="why-num">02</span><h3>Tuyển chọn từng cá thể</h3><p>Không phải mọi con chim sinh ra đều được đưa lên bán. Chim được lựa chọn theo ngoại hình, màu sắc, hoạt động và tình trạng tổng thể.</p></div>
+      <div class="why-card"><span class="why-num">03</span><h3>Hình ảnh và thông tin thật</h3><p>Khách được xem đúng ảnh, video, tình trạng và giá của cá thể đang quan tâm.</p></div>
+      <div class="why-card"><span class="why-num">04</span><h3>Tư vấn rõ ràng</h3><p>Khách được tư vấn chọn chim phù hợp với kinh nghiệm, mục đích nuôi và ngân sách.</p></div>
+    </div>
+    <div class="why-note">Giá cao hơn không có nghĩa chúng tôi coi thường người bán chim giá thấp — mỗi mô hình phục vụ một nhu cầu khác nhau. Chúng tôi chỉ tập trung vào phần của mình: chất lượng và sự rõ ràng.</div>
+  </section>
+
+  <!-- LINES -->
+  <section id="lines" class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Dòng chim</span>
+      <h2>Các dòng chim đang cung cấp</h2>
+    </div>
+    <div class="lines-grid">
+      <div class="line-card">
+        <div class="line-visual"><svg viewBox="0 0 300 190"><rect width="300" height="190" fill="#F3EFE3"/><circle cx="150" cy="95" r="42" fill="#E0A03C"/><circle cx="150" cy="60" r="26" fill="#3A7358"/></svg></div>
+        <div class="line-body">
+          <h3>Yến Phụng phổ thông tuyển chọn</h3>
+          <p>Màu sắc đẹp, dễ tiếp cận, phù hợp với người mới. Giá tùy từng cá thể.</p>
+          <div class="line-price">Giá tham khảo: liên hệ theo từng đợt chim</div>
+          <button class="btn btn-outline btn-sm" onclick="filterLines('phổ thông')">Xem chim</button>
+        </div>
+      </div>
+      <div class="line-card">
+        <div class="line-visual"><svg viewBox="0 0 300 190"><rect width="300" height="190" fill="#F3EFE3"/><circle cx="150" cy="95" r="42" fill="#3D6E94"/><circle cx="150" cy="60" r="26" fill="#FBF7EE"/></svg></div>
+        <div class="line-body">
+          <h3>Yến Phụng nguồn đàn Hà Lan</h3>
+          <p>Hình thể đẹp, nguồn đàn được theo dõi. Giá thường cao hơn chim phổ thông. Chỉ ghi "nguồn đàn Hà Lan" khi có căn cứ thực tế.</p>
+          <div class="line-price">Giá tham khảo: cao hơn dòng phổ thông</div>
+          <button class="btn btn-outline btn-sm" onclick="filterLines('hà lan')">Xem chim</button>
+        </div>
+      </div>
+      <div class="line-card">
+        <div class="line-visual"><svg viewBox="0 0 300 190"><rect width="300" height="190" fill="#F3EFE3"/><circle cx="150" cy="95" r="42" fill="#C1503F"/><circle cx="150" cy="60" r="26" fill="#E0A03C"/></svg></div>
+        <div class="line-body">
+          <h3>Cá thể màu sắc / đặc điểm nổi bật</h3>
+          <p>Ngoại hình hoặc màu sắc đặc biệt. Giá xác định theo từng cá thể — không tuyên bố gen hiếm khi chưa đủ dữ liệu.</p>
+          <div class="line-price">Giá tham khảo: theo từng cá thể</div>
+          <button class="btn btn-outline btn-sm" onclick="filterLines('nổi bật')">Xem chim</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BIRDS -->
+  <section id="birds" class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Đang cập nhật</span>
+      <h2>Danh sách chim đang bán</h2>
+      <p>Bấm vào ảnh để xem thêm hình, bấm "Tôi quan tâm bé này" để được tư vấn ngay.</p>
+    </div>
+    <div class="filter-row" id="filter-row"></div>
+    <div class="birds-grid" id="birds-grid">
+      <div class="birds-empty">Đang tải danh sách chim...</div>
+    </div>
+  </section>
+
+  <!-- COMPARE -->
+  <section id="compare" class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">So sánh</span>
+      <h2>Chim ở đây khác gì so với chim ngoài thị trường?</h2>
+    </div>
+    <div class="compare-wrap">
+      <table class="compare">
+        <thead><tr><th>Tiêu chí</th><th>Chim phổ thông ngoài thị trường</th><th>Chim tuyển chọn của chúng tôi</th></tr></thead>
+        <tbody>
+          <tr><td>Giá bán</td><td>Thường thấp hơn</td><td>Thường cao hơn</td></tr>
+          <tr><td>Nguồn đàn</td><td>Có thể không được cung cấp</td><td>Công khai theo dữ liệu thực tế</td></tr>
+          <tr><td>Ảnh chim</td><td>Tùy người bán</td><td>Ảnh đúng cá thể</td></tr>
+          <tr><td>Tình trạng tự ăn</td><td>Có thể chưa rõ</td><td>Ghi rõ trước khi giao</td></tr>
+          <tr><td>Mức độ quen người</td><td>Có thể chưa đánh giá</td><td>Mô tả theo từng con</td></tr>
+          <tr><td>Hồ sơ</td><td>Tùy trường hợp</td><td>Công khai nếu có</td></tr>
+          <tr><td>Tư vấn</td><td>Tùy người bán</td><td>Có tư vấn chọn chim</td></tr>
+          <tr><td>Phù hợp người mới</td><td>Cần tự đánh giá</td><td>Được tư vấn theo từng cá thể</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="compare-note">Giá cao hơn không tự động đồng nghĩa với tốt hơn. Khách nên đánh giá dựa trên nguồn thông tin, tình trạng thực tế, hình ảnh, mức độ phù hợp và uy tín người bán.</div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Giải đáp</span>
+      <h2>Câu hỏi thường gặp</h2>
+    </div>
+    <div id="faq-list"></div>
+  </section>
+
+  <!-- FORM -->
+  <section id="consult" class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Bước tiếp theo</span>
+      <h2>Để lại thông tin, chú sẽ liên hệ tư vấn</h2>
+      <p>Điền nhanh vài thông tin bên dưới — chúng tôi sẽ chủ động gọi điện hoặc nhắn Zalo để tư vấn chọn chim phù hợp.</p>
+    </div>
+    <div class="form-card">
+      <form id="lead-form">
+        <div class="form-grid">
+          <div class="field"><label for="f-name">Họ và tên *</label><input id="f-name" required placeholder="Nguyễn Văn A"></div>
+          <div class="field"><label for="f-contact">Số điện thoại / Zalo *</label><input id="f-contact" required placeholder="09xxxxxxxx"></div>
+          <div class="field"><label for="f-province">Tỉnh / thành phố</label><input id="f-province" placeholder="VD: Đắk Lắk"></div>
+          <div class="field"><label for="f-bird">Mã chim đang quan tâm</label><input id="f-bird" placeholder="VD: YP-001"></div>
+        </div>
+
+        <div class="field full">
+          <label>Nhu cầu</label>
+          <div class="radio-group" id="grp-interest">
+            <label class="pill-opt"><input type="radio" name="interest" value="Mua một con" checked><span>Mua một con</span></label>
+            <label class="pill-opt"><input type="radio" name="interest" value="Mua một cặp"><span>Mua một cặp</span></label>
+            <label class="pill-opt"><input type="radio" name="interest" value="Chưa biết, cần tư vấn"><span>Chưa biết, cần tư vấn</span></label>
+          </div>
+        </div>
+
+        <div class="field full">
+          <label>Ngân sách</label>
+          <div class="radio-group" id="grp-budget">
+            <label class="pill-opt"><input type="radio" name="budget" value="Dưới 800.000 đồng/con" checked><span>Dưới 800k/con</span></label>
+            <label class="pill-opt"><input type="radio" name="budget" value="800.000–1.000.000 đồng/con"><span>800k–1tr/con</span></label>
+            <label class="pill-opt"><input type="radio" name="budget" value="1.000.000–1.500.000 đồng/con"><span>1tr–1.5tr/con</span></label>
+            <label class="pill-opt"><input type="radio" name="budget" value="Trên 1.500.000 đồng/con"><span>Trên 1.5tr/con</span></label>
+            <label class="pill-opt"><input type="radio" name="budget" value="Chưa xác định"><span>Chưa xác định</span></label>
+          </div>
+        </div>
+
+        <div class="field full">
+          <label>Kinh nghiệm nuôi</label>
+          <div class="radio-group" id="grp-exp">
+            <label class="pill-opt"><input type="radio" name="exp" value="Chưa từng nuôi" checked><span>Chưa từng nuôi</span></label>
+            <label class="pill-opt"><input type="radio" name="exp" value="Đã từng nuôi"><span>Đã từng nuôi</span></label>
+            <label class="pill-opt"><input type="radio" name="exp" value="Đang nuôi Yến Phụng"><span>Đang nuôi Yến Phụng</span></label>
+          </div>
+        </div>
+
+        <div class="field full"><label for="f-note">Ghi chú</label><textarea id="f-note" placeholder="Ví dụ: muốn tìm cặp dễ nuôi, màu xanh..."></textarea></div>
+
+        <label class="consent-row"><input type="checkbox" id="f-consent" required><span>Tôi đồng ý được Yến Phụng Việt liên hệ lại qua số điện thoại / Zalo đã cung cấp.</span></label>
+
+        <button type="submit" class="btn btn-primary btn-lg" id="submit-btn" style="width:100%">Gửi yêu cầu tư vấn</button>
+        <div class="form-msg" id="form-msg"></div>
+      </form>
+    </div>
+  </section>
+
+  <!-- FOLLOW -->
+  <section id="follow" class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Kênh chính thức</span>
+      <h2>Theo dõi Yến Phụng Việt</h2>
+    </div>
+    <div class="follow-grid" id="follow-grid"></div>
+  </section>
+
+  <!-- CONTACT -->
+  <section class="wrap">
+    <div class="contact-card">
+      <div>
+        <h2>Cần tư vấn nhanh?</h2>
+        <p>Gọi điện hoặc nhắn Zalo trực tiếp — chúng tôi tư vấn tận tình để bạn chọn đúng bé chim phù hợp.</p>
+        <button class="btn btn-primary btn-lg" onclick="scrollTo('consult')">Điền form tư vấn</button>
+      </div>
+      <ul class="contact-list" id="contact-list"></ul>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>© <span id="year"></span> Yến Phụng Việt — Yến Phụng tuyển chọn, ship toàn quốc từ Lâm Đồng.</p>
+  </div>
+</footer>
+
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <button class="lightbox-nav lightbox-prev" onclick="lightboxNav(-1)">‹</button>
+  <img id="lightbox-img" src="" alt="">
+  <button class="lightbox-nav lightbox-next" onclick="lightboxNav(1)">›</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ================== CẤU HÌNH — sửa trực tiếp ở đây ==================
+const SUPABASE_URL = 'https://bnumqtjzbyrtavsdlleq.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudW1xdGp6YnlydGF2c2RsbGVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyOTk1NjMsImV4cCI6MjA5NTg3NTU2M30.-Hhyqfe366_Xn8ECav4pg8MWWHJn_o_wsuh-OfI7HHo';
+
+const contactInfo = {
+  brandName: 'Yến Phụng Việt',
+  phone: '0967653899',
+  zaloUrl: 'https://zalo.me/0967653899',
+  telegramUrl: '',
+  address: 'Lâm Đồng — ship toàn quốc',
+  consultationHours: '8:00 – 20:00 hằng ngày',
+  tiktokUrl: 'https://www.tiktok.com/@chimyenphungviet',
+  youtubeUrl: '',
+  facebookUrl: ''
+};
+
+const faqData = [
+  ['Vì sao chim ở đây có giá cao hơn?','Giá được xác định theo từng cá thể dựa trên nguồn đàn, ngoại hình, màu sắc, độ tuổi, mức độ quen người, quá trình chăm sóc và hồ sơ thực tế.'],
+  ['Chim giá cao có chắc chắn tốt hơn không?','Không. Giá chỉ là một yếu tố. Khách cần xem thông tin, tình trạng thực tế và mức độ phù hợp.'],
+  ['Chim Hà Lan là gì?','Tuỳ từng cá thể: có thể là nhập trực tiếp, có bố mẹ nhập, hoặc có nguồn từ đàn giống Hà Lan. Chúng tôi không dùng chung một tuyên bố cho tất cả các bé.'],
+  ['Chim đã tự ăn chưa?','Thông tin này được ghi riêng trên từng thẻ chim. Người mới chỉ nên nhận chim đã tự ăn ổn định.'],
+  ['Chim đã quen người chưa?','Mức độ quen người được mô tả theo từng cá thể. Chúng tôi không cam kết chim sẽ lập tức thân thiện với mọi người.'],
+  ['Có xác định được trống mái không?','Chỉ công khai giới tính khi có đủ căn cứ. Trường hợp chưa chắc chắn sẽ ghi rõ trên thẻ chim.'],
+  ['Có giao chim đi tỉnh không?','Có, chúng tôi ship toàn quốc từ Lâm Đồng. Phương án vận chuyển cụ thể tuỳ địa điểm, thời tiết và tình trạng chim tại thời điểm giao.'],
+  ['Có giấy tờ không?','Chúng tôi ghi rõ loại giấy tờ và phạm vi áp dụng thực tế cho từng cá thể. Giấy kiểm lâm (nếu có) không mặc nhiên là chứng nhận sức khỏe, gen hay khả năng sinh sản.'],
+  ['Có cam kết chim sinh sản không?','Không. Khả năng sinh sản phụ thuộc vào giới tính, độ tuổi, sức khỏe, cách ghép cặp và điều kiện chăm sóc.'],
+  ['Người mới nên chọn chim nào?','Nên chọn chim đã tự ăn, hoạt động tốt, dễ chăm và phù hợp với điều kiện thực tế của gia đình.'],
+  ['Có giảm giá không?','Giá niêm yết theo từng cá thể. Chính sách mua theo cặp hoặc nhiều con sẽ được trao đổi riêng nếu có.'],
+  ['Sau khi mua có được hướng dẫn không?','Có. Khách được hướng dẫn cơ bản về lồng, thức ăn, môi trường và cách theo dõi chim trong những ngày đầu.']
+];
+
+const statusMap = {
+  available: {label:'Đang tìm chủ', cls:'st-available'},
+  held: {label:'Đã giữ chỗ', cls:'st-held'},
+  sold: {label:'Đã tìm được chủ', cls:'st-sold'},
+  watch: {label:'Đang theo dõi thêm', cls:'st-watch'}
+};
+// ================== HẾT PHẦN CẤU HÌNH ==================
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let allBirds = [];
+let currentFilter = 'all';
+let currentGallery = []; let currentGalleryIdx = 0;
+
+function scrollTo(id){ document.getElementById(id).scrollIntoView({behavior:'smooth', block:'start'}); }
+function fmtPrice(n){ if(n==null) return 'Liên hệ'; return Number(n).toLocaleString('vi-VN')+'đ'; }
+function esc(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+
+// ---------- BIRDS ----------
+async function loadBirds(){
+  const grid = document.getElementById('birds-grid');
+  try{
+    const { data, error } = await sb.from('birds').select('*').eq('published', true).order('display_order',{ascending:true}).order('created_at',{ascending:false});
+    if(error) throw error;
+    allBirds = data || [];
+  }catch(err){
+    console.error('Lỗi tải danh sách chim:', err);
+    grid.innerHTML = '<div class="birds-empty">Chưa tải được danh sách chim. Vui lòng thử lại sau hoặc liên hệ trực tiếp qua Zalo.</div>';
+    return;
+  }
+  buildFilters();
+  renderBirds();
+}
+
+function buildFilters(){
+  const row = document.getElementById('filter-row');
+  const lines = Array.from(new Set(allBirds.map(b=>b.bird_line).filter(Boolean)));
+  let html = `<button class="chip active" data-f="all" onclick="setFilter('all')">Tất cả</button>`;
+  lines.forEach(l=>{ html += `<button class="chip" data-f="${esc(l)}" onclick="setFilter('${esc(l).replace(/'/g,"\\'")}')">${esc(l)}</button>`; });
+  row.innerHTML = html;
+}
+
+function setFilter(f){
+  currentFilter = f;
+  document.querySelectorAll('#filter-row .chip').forEach(c=>c.classList.toggle('active', c.dataset.f===f));
+  renderBirds();
+}
+
+function filterLines(keyword){
+  scrollTo('birds');
+  const match = allBirds.find(b => (b.bird_line||'').toLowerCase().includes(keyword));
+  if(match){ setFilter(match.bird_line); } else { setFilter('all'); }
+}
+
+function renderBirds(){
+  const grid = document.getElementById('birds-grid');
+  let list = allBirds;
+  if(currentFilter !== 'all') list = list.filter(b => b.bird_line === currentFilter);
+  if(list.length === 0){
+    grid.innerHTML = '<div class="birds-empty">Hiện chưa có bé chim nào trong nhóm này. Ghé lại sau hoặc nhắn Zalo để được tư vấn nhé.</div>';
+    return;
+  }
+  grid.innerHTML = list.map(b=>{
+    const st = statusMap[b.status] || statusMap.available;
+    const gallery = JSON.stringify((b.gallery_urls&&b.gallery_urls.length?b.gallery_urls:[b.image_url]).filter(Boolean)).replace(/"/g,'&quot;');
+    return `
+    <div class="bird-card">
+      <div class="bird-photo" onclick='openLightbox(${gallery},0)'>
+        <span class="bird-code-tag">${esc(b.code)}</span>
+        <span class="bird-status ${st.cls}">${st.label}</span>
+        <img src="${esc(b.image_url||'')}" alt="${esc(b.name||b.code)}" loading="lazy" onerror="this.style.display='none'">
+      </div>
+      <div class="bird-body">
+        <p class="bird-desc">${esc(b.short_description||b.name||'')}</p>
+        <div class="bird-foot">
+          <span class="bird-price">${fmtPrice(b.price)}</span>
+          <button class="btn btn-primary btn-sm" onclick="interestIn('${esc(b.code).replace(/'/g,"\\'")}')">Tôi quan tâm bé này</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function interestIn(code){
+  document.getElementById('f-bird').value = code;
+  scrollTo('consult');
+}
+
+// ---------- LIGHTBOX ----------
+function openLightbox(urls, idx){
+  currentGallery = urls; currentGalleryIdx = idx;
+  document.getElementById('lightbox-img').src = urls[idx] || '';
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox(){ document.getElementById('lightbox').classList.remove('open'); }
+function lightboxNav(dir){
+  if(!currentGallery.length) return;
+  currentGalleryIdx = (currentGalleryIdx + dir + currentGallery.length) % currentGallery.length;
+  document.getElementById('lightbox-img').src = currentGallery[currentGalleryIdx];
+}
+document.getElementById('lightbox').addEventListener('click', e=>{ if(e.target.id==='lightbox') closeLightbox(); });
+
+// ---------- FAQ ----------
+function renderFaq(){
+  const wrap = document.getElementById('faq-list');
+  wrap.innerHTML = faqData.map((f,i)=>`
+    <div class="faq-item" id="faq-${i}">
+      <button class="faq-q" onclick="toggleFaq(${i})"><span>${esc(f[0])}</span><span class="ic">+</span></button>
+      <div class="faq-a" id="faq-a-${i}"><div class="faq-a-inner">${esc(f[1])}</div></div>
+    </div>`).join('');
+}
+function toggleFaq(i){
+  const item = document.getElementById('faq-'+i);
+  const body = document.getElementById('faq-a-'+i);
+  const isOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item.open').forEach(el=>{ el.classList.remove('open'); el.querySelector('.faq-a').style.maxHeight=null; });
+  if(!isOpen){ item.classList.add('open'); body.style.maxHeight = body.scrollHeight+'px'; }
+}
+
+// ---------- FOLLOW + CONTACT ----------
+function renderFollow(){
+  const grid = document.getElementById('follow-grid');
+  let html='';
+  if(contactInfo.tiktokUrl){
+    html += `<div class="follow-card">
+      <div class="follow-icon" style="background:#000"><svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><path d="M16.6 5.8a4.3 4.3 0 0 1-3-3.8h-3.1v13.7a2.6 2.6 0 1 1-1.9-2.5V9.9a5.8 5.8 0 1 0 5 5.7V9.4a7.4 7.4 0 0 0 4 1.2V7.5a4.3 4.3 0 0 1-1-1.7z"/></svg></div>
+      <div class="follow-body"><h3>TikTok — Yến Phụng Việt</h3><p>Video chim non lớn lên, reveal màu, hậu trường trại mỗi ngày.</p>
+      <a class="btn btn-outline btn-sm" href="${contactInfo.tiktokUrl}" target="_blank" rel="noopener">Xem TikTok</a></div>
+    </div>`;
+  }
+  if(contactInfo.youtubeUrl){
+    html += `<div class="follow-card">
+      <div class="follow-icon" style="background:#FF0000"><svg width="22" height="22" viewBox="0 0 24 24" fill="#fff"><path d="M23 12s0-3.6-.5-5.3c-.3-1-1-1.8-2-2C18.8 4.2 12 4.2 12 4.2s-6.8 0-8.5.5c-1 .2-1.7 1-2 2C1 8.4 1 12 1 12s0 3.6.5 5.3c.3 1 1 1.7 2 2 1.7.5 8.5.5 8.5.5s6.8 0 8.5-.5c1-.3 1.7-1 2-2 .5-1.7.5-5.3.5-5.3zM9.8 15.5V8.5l6.3 3.5-6.3 3.5z"/></svg></div>
+      <div class="follow-body"><h3>YouTube — Yến Phụng Việt</h3><p>Video dài hơn: hướng dẫn chăm sóc, tham quan trại.</p>
+      <a class="btn btn-outline btn-sm" href="${contactInfo.youtubeUrl}" target="_blank" rel="noopener">Xem YouTube</a></div>
+    </div>`;
+  }
+  grid.innerHTML = html || '<p style="color:var(--ink-faint);font-size:13.5px">Đang cập nhật kênh theo dõi.</p>';
+}
+
+function renderContact(){
+  const list = document.getElementById('contact-list');
+  let html = `<li><span class="lbl">Điện thoại</span><a href="tel:${contactInfo.phone}">${contactInfo.phone}</a></li>`;
+  html += `<li><span class="lbl">Zalo</span><a href="${contactInfo.zaloUrl}" target="_blank" rel="noopener">Nhắn Zalo</a></li>`;
+  if(contactInfo.telegramUrl) html += `<li><span class="lbl">Telegram</span><a href="${contactInfo.telegramUrl}" target="_blank" rel="noopener">Liên hệ Telegram</a></li>`;
+  html += `<li><span class="lbl">Khu vực</span><span>${esc(contactInfo.address)}</span></li>`;
+  html += `<li><span class="lbl">Tư vấn</span><span>${esc(contactInfo.consultationHours)}</span></li>`;
+  if(contactInfo.facebookUrl) html += `<li><span class="lbl">Facebook</span><a href="${contactInfo.facebookUrl}" target="_blank" rel="noopener">Trang Facebook</a></li>`;
+  list.innerHTML = html;
+}
+
+// ---------- FORM SUBMIT ----------
+function detectSource(){
+  const p = new URLSearchParams(location.search);
+  const s = (p.get('source') || p.get('utm_source') || '').toLowerCase();
+  if(s.includes('tiktok')) return 'TikTok';
+  if(s.includes('youtube')) return 'YouTube';
+  if(s.includes('facebook') || s.includes('fb')) return 'Facebook';
+  if(s.includes('zalo')) return 'Zalo';
+  if(s) return s;
+  return 'Link trực tiếp';
+}
+
+document.getElementById('lead-form').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const btn = document.getElementById('submit-btn');
+  const msg = document.getElementById('form-msg');
+  msg.className = 'form-msg';
+
+  const lead = {
+    full_name: document.getElementById('f-name').value.trim(),
+    contact: document.getElementById('f-contact').value.trim(),
+    province: document.getElementById('f-province').value.trim(),
+    bird_code: document.getElementById('f-bird').value.trim(),
+    interest_type: document.querySelector('input[name="interest"]:checked').value,
+    budget_range: document.querySelector('input[name="budget"]:checked').value,
+    experience_level: document.querySelector('input[name="exp"]:checked').value,
+    customer_note: document.getElementById('f-note').value.trim(),
+    source_page: location.href,
+    source: detectSource()
+  };
+
+  if(!lead.full_name || !lead.contact){
+    msg.textContent = 'Vui lòng nhập đầy đủ họ tên và số điện thoại / Zalo.';
+    msg.classList.add('show','err');
+    return;
+  }
+  if(!document.getElementById('f-consent').checked){
+    msg.textContent = 'Vui lòng đồng ý để chúng tôi có thể liên hệ lại.';
+    msg.classList.add('show','err');
+    return;
+  }
+
+  btn.disabled = true; btn.textContent = 'Đang gửi...';
+  try{
+    const { data, error } = await sb.functions.invoke('notify-lead', { body: lead });
+    if(error) throw error;
+    msg.textContent = 'Đã gửi yêu cầu tư vấn thành công! Chúng tôi sẽ liên hệ sớm nhất.';
+    msg.classList.add('show','ok');
+    showToast('Gửi thành công — sẽ liên hệ lại sớm nhé!');
+    e.target.reset();
+  }catch(err){
+    console.error('Lỗi gửi form:', err);
+    msg.textContent = 'Gửi không thành công. Vui lòng thử lại hoặc nhắn Zalo trực tiếp cho chúng tôi.';
+    msg.classList.add('show','err');
+  }finally{
+    btn.disabled = false; btn.textContent = 'Gửi yêu cầu tư vấn';
+  }
+});
+
+function showToast(text){
+  const t = document.getElementById('toast');
+  t.textContent = text; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3200);
+}
+
+// ---------- INIT ----------
+document.getElementById('year').textContent = new Date().getFullYear();
+renderFaq();
+renderFollow();
+renderContact();
+loadBirds();
+</script>
+</body>
+</html>
