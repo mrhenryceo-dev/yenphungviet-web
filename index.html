@@ -31,19 +31,19 @@
   img{max-width:100%;display:block}
   button{font-family:inherit}
   :focus-visible{outline:2.5px solid var(--green);outline-offset:2px}
-  .wrap{max-width:980px;margin:0 auto;padding:0 32px}
-  @media (max-width:480px){.wrap{padding:0 24px}}
+  .wrap{max-width:980px;margin:0 auto;padding-inline:32px}
+  @media (max-width:480px){.wrap{padding-inline:24px}}
   h1,h2,h3,p,li,span,a,button,label,td,th{overflow-wrap:break-word;word-break:break-word}
   .eyebrow{font-size:12px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:var(--green);margin-bottom:10px;display:block}
-  section{padding:56px 0}
+  section{padding-block:56px}
   .section-head{max-width:640px;margin-bottom:32px}
   .section-head h2{font-size:clamp(24px,4vw,32px);font-weight:600;line-height:1.25;margin-bottom:10px}
   .section-head p{color:var(--ink-soft);font-size:15px}
 
   /* HEADER */
   header{position:sticky;top:0;z-index:200;background:rgba(251,247,238,0.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
-  .header-inner{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 32px;max-width:980px;margin:0 auto}
-  @media (max-width:480px){.header-inner{padding:14px 24px}}
+  .header-inner{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:14px;padding-inline:32px;max-width:980px;margin:0 auto}
+  @media (max-width:480px){.header-inner{padding-inline:24px}}
   .brand{display:flex;align-items:center;gap:9px}
   .brand-mark{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--blue));display:flex;align-items:center;justify-content:center;flex-shrink:0}
   .brand-mark svg{width:19px;height:19px}
@@ -58,7 +58,7 @@
   .btn-outline{background:transparent;border:1.5px solid var(--green);color:var(--green-dark)}
 
   /* HERO */
-  .hero{padding:44px 0 20px;position:relative;overflow:hidden}
+  .hero{padding-block:44px 20px;position:relative;overflow:hidden}
   .hero-grid{display:grid;grid-template-columns:1.1fr 0.9fr;gap:40px;align-items:center}
   @media (max-width:860px){.hero-grid{grid-template-columns:1fr;gap:28px}}
   .hero h1{font-size:clamp(26px,7vw,44px);font-weight:700;line-height:1.22;letter-spacing:-0.3px;margin-bottom:16px;color:var(--ink)}
