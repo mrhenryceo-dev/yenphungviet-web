@@ -23,7 +23,7 @@
     --shadow-lg:0 10px 34px rgba(42,46,31,0.13);
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-  html{scroll-behavior:smooth}
+  html{scroll-behavior:smooth;overflow-x:hidden;width:100%}
   @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation-duration:0.01ms !important;transition-duration:0.01ms !important}}
   body{font-family:'Be Vietnam Pro',sans-serif;background:var(--cream);color:var(--ink);line-height:1.6;overflow-x:hidden}
   h1,h2,h3,.display{font-family:'Fraunces',serif}
@@ -32,6 +32,8 @@
   button{font-family:inherit}
   :focus-visible{outline:2.5px solid var(--green);outline-offset:2px}
   .wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+  @media (max-width:480px){.wrap{padding:0 18px}}
+  h1,h2,h3,p,li,span,a,button,label,td,th{overflow-wrap:break-word;word-break:break-word}
   .eyebrow{font-size:12px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:var(--green);margin-bottom:10px;display:block}
   section{padding:56px 0}
   .section-head{max-width:640px;margin-bottom:32px}
@@ -58,7 +60,8 @@
   .hero{padding:44px 0 20px;position:relative;overflow:hidden}
   .hero-grid{display:grid;grid-template-columns:1.1fr 0.9fr;gap:40px;align-items:center}
   @media (max-width:860px){.hero-grid{grid-template-columns:1fr;gap:28px}}
-  .hero h1{font-size:clamp(28px,5vw,44px);font-weight:700;line-height:1.18;letter-spacing:-0.5px;margin-bottom:16px;color:var(--ink)}
+  .hero h1{font-size:clamp(26px,7vw,44px);font-weight:700;line-height:1.22;letter-spacing:-0.3px;margin-bottom:16px;color:var(--ink)}
+  @media (max-width:400px){.eyebrow{letter-spacing:1px;font-size:11px}}
   .hero-desc{color:var(--ink-soft);font-size:15.5px;margin-bottom:14px}
   .hero-list{list-style:none;margin:18px 0 26px;display:flex;flex-direction:column;gap:9px}
   .hero-list li{display:flex;gap:9px;align-items:flex-start;font-size:14px;color:var(--ink-soft)}
@@ -193,8 +196,8 @@
       <span class="brand-name">Yến Phụng Việt</span>
     </div>
     <div class="header-ctas">
-      <button class="btn btn-ghost btn-sm" onclick="scrollTo('birds')">Xem chim</button>
-      <button class="btn btn-primary btn-sm" onclick="scrollTo('consult')">Cần tư vấn</button>
+      <button class="btn btn-ghost btn-sm" onclick="goToSection('birds')">Xem chim</button>
+      <button class="btn btn-primary btn-sm" onclick="goToSection('consult')">Cần tư vấn</button>
     </div>
   </div>
 </header>
@@ -213,8 +216,8 @@
           <li>Tư vấn chọn chim phù hợp kinh nghiệm, mục đích nuôi và ngân sách</li>
         </ul>
         <div class="hero-ctas">
-          <button class="btn btn-primary btn-lg" onclick="scrollTo('birds')">Xem chim đang bán</button>
-          <button class="btn btn-outline btn-lg" onclick="scrollTo('consult')">Nhận tư vấn chọn chim</button>
+          <button class="btn btn-primary btn-lg" onclick="goToSection('birds')">Xem chim đang bán</button>
+          <button class="btn btn-outline btn-lg" onclick="goToSection('consult')">Nhận tư vấn chọn chim</button>
         </div>
       </div>
       <div class="hero-visual">
@@ -416,7 +419,7 @@
       <div>
         <h2>Cần tư vấn nhanh?</h2>
         <p>Gọi điện hoặc nhắn Zalo trực tiếp — chúng tôi tư vấn tận tình để bạn chọn đúng bé chim phù hợp.</p>
-        <button class="btn btn-primary btn-lg" onclick="scrollTo('consult')">Điền form tư vấn</button>
+        <button class="btn btn-primary btn-lg" onclick="goToSection('consult')">Điền form tư vấn</button>
       </div>
       <ul class="contact-list" id="contact-list"></ul>
     </div>
@@ -483,7 +486,7 @@ let allBirds = [];
 let currentFilter = 'all';
 let currentGallery = []; let currentGalleryIdx = 0;
 
-function scrollTo(id){ document.getElementById(id).scrollIntoView({behavior:'smooth', block:'start'}); }
+function goToSection(id){ document.getElementById(id).scrollIntoView({behavior:'smooth', block:'start'}); }
 function fmtPrice(n){ if(n==null) return 'Liên hệ'; return Number(n).toLocaleString('vi-VN')+'đ'; }
 function esc(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
 
@@ -518,7 +521,7 @@ function setFilter(f){
 }
 
 function filterLines(keyword){
-  scrollTo('birds');
+  goToSection('birds');
   const match = allBirds.find(b => (b.bird_line||'').toLowerCase().includes(keyword));
   if(match){ setFilter(match.bird_line); } else { setFilter('all'); }
 }
@@ -554,7 +557,7 @@ function renderBirds(){
 
 function interestIn(code){
   document.getElementById('f-bird').value = code;
-  scrollTo('consult');
+  goToSection('consult');
 }
 
 // ---------- LIGHTBOX ----------
