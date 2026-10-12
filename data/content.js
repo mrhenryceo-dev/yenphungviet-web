@@ -13,7 +13,9 @@ const CONTENT = {
     infoNote: 'Thông tin chưa có sẽ không hiển thị. Bạn có thể hỏi thêm qua Zalo.',
     // Ghi chú minh bạch về ảnh — hiển thị gần danh sách chim và trong chi tiết bé.
     visualNote: 'Ảnh trên website mang tính minh họa. Nhắn mã bé qua Zalo để nhận video thực tế trước khi chốt.',
-    homeLimit: 6
+    homeLimit: 6,
+    demoLabel: 'Dữ liệu minh họa',
+    demoNote: 'Các bé có nhãn "Dữ liệu minh họa" chỉ là dữ liệu mẫu để trình bày website, không phải chim đang bán. Nhắn Zalo để hỏi các bé đang có tại trại.'
   },
 
   // "Các nhóm chim tại trại" (Phase 1L) — nội dung OWNER duyệt. Thay cho lưới chim trên homepage.

@@ -79,6 +79,10 @@ const SITE = {
     'https://bnumqtjzbyrtavsdlleq.supabase.co/storage/v1/object/public/Hago/hago.jpg'
   ],
 
+  // Mã chim DEMO trong Supabase (không phải chim thật đang bán). Website gắn nhãn "Dữ liệu minh họa".
+  // Khi đăng chim thật: xóa mã demo khỏi danh sách này (không cần sửa dữ liệu Supabase).
+  demoBirdCodes: ['YP003', 'YP002', '001'],
+
   statusLabels: {
     available: { label: 'Đang tìm chủ', cls: 'st-available' },
     held:      { label: 'Đã giữ chỗ', cls: 'st-held' },

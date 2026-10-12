@@ -34,6 +34,10 @@ function cleanText(s){
 }
 function hasVal(v){ return v != null && cleanText(v) !== ''; }
 
+function isDemoBird(b){ return (SITE.demoBirdCodes || []).some(c => c.toLowerCase() === cleanText(b.code).toLowerCase()); }
+const demoTag = () => `<span class="demo-tag">${esc(CONTENT.birds.demoLabel)}</span>`;
+const demoNoteHtml = () => `<p class="demo-note" role="note"><strong>${esc(CONTENT.birds.demoLabel)}:</strong> ${esc(CONTENT.birds.demoNote)}</p>`;
+
 function birdStatus(b){ return SITE.statusLabels[b.status] || SITE.statusLabels.available; }
 function birdTitle(b){ return cleanText(b.color_name) || cleanText(b.name) || ('Bé ' + cleanText(b.code)); }
 function birdHref(b){ return '#chim/' + encodeURIComponent(cleanText(b.code)); }
@@ -93,6 +97,7 @@ function birdCard(b){
       ${photo}
     </a>
     <div class="bird-body">
+      ${isDemoBird(b) ? demoTag() : ''}
       <h3 class="bird-title">${esc(birdTitle(b))}</h3>
       ${facts.length ? `<ul class="bird-facts">${facts.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
       <div class="bird-price-row">${price ? `<span class="bird-price">${esc(price)}</span>` : `<span class="bird-price-ask">Hỏi giá qua Zalo</span>`}</div>
@@ -131,6 +136,7 @@ async function renderBirdListPage(el){
   try {
     const list = availableBirds(await loadBirds());
     grid.innerHTML = list.length ? list.map(birdCard).join('') : emptyBirdsHtml();
+    if (list.some(isDemoBird)) grid.insertAdjacentHTML('beforebegin', demoNoteHtml());
   } catch (e) { grid.innerHTML = errorBirdsHtml(); }
 }
 
@@ -210,7 +216,8 @@ async function renderBirdDetailPage(el, rawCode){
     <div class="detail-grid">
       <div>${gallery}<p class="visual-note"><span class="vn-icon" aria-hidden="true">ⓘ</span>${esc(CONTENT.birds.visualNote)}</p>${video}</div>
       <div class="detail-info">
-        <div class="detail-tags"><span class="detail-code">${esc(realCode)}</span><span class="detail-status ${st.cls}">${st.label}</span></div>
+        <div class="detail-tags"><span class="detail-code">${esc(realCode)}</span><span class="detail-status ${st.cls}">${st.label}</span>${isDemoBird(b) ? demoTag() : ''}</div>
+        ${isDemoBird(b) ? demoNoteHtml() : ''}
         <h1>${esc(birdTitle(b))}</h1>
         ${price ? `<div class="detail-price">${esc(price)}</div>` : `<p class="bird-price-ask">Hỏi giá qua Zalo</p>`}
         ${rows.length ? `<dl>${rows.map(r => `<dt>${esc(r[0])}</dt><dd>${esc(cleanText(r[1]))}</dd>`).join('')}</dl>` : ''}
