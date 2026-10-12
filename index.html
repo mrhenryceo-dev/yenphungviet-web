@@ -78,16 +78,16 @@
     </div>
   </section>
 
-  <!-- 2. CHIM ĐANG TÌM CHỦ -->
+  <!-- 2. CÁC NHÓM CHIM TẠI TRẠI (Phase 1L) — 3 thẻ nhóm, nội dung ở data/content.js (groups).
+       Danh sách từng bé (Supabase) vẫn giữ nguyên tại #chim. -->
   <section id="chim-dang-tim-chu" class="wrap">
     <div class="section-head">
-      <span class="eyebrow">Các bé hiện có</span>
-      <h2>Chim đang tìm chủ</h2>
-      <p>Bấm "Nhắn Zalo về bé này" để nhận video thực tế của bé, hoặc "Xem chi tiết" để xem thêm thông tin.</p>
+      <span class="eyebrow" id="groups-eyebrow"></span>
+      <h2 id="groups-title"></h2>
+      <p id="groups-lead"></p>
     </div>
-    <p class="visual-note" id="home-visual-note"></p>
-    <div class="birds-grid" id="home-birds-grid"><div class="loading">Đang tải danh sách chim…</div></div>
-    <div class="section-foot"><a class="link-arrow" href="#chim">Xem tất cả các bé →</a></div>
+    <div class="group-grid" id="group-grid"></div>
+    <p class="visual-note group-note"><span class="vn-icon" aria-hidden="true">ⓘ</span><span id="groups-note"></span></p>
   </section>
 
   <!-- 3. CÁCH NHẬN CHIM -->

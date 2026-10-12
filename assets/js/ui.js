@@ -43,6 +43,13 @@ document.addEventListener('click', e => {
     });
     return;
   }
+  // <a data-zalo-msg="..."> (thẻ nhóm chim): copy câu hỏi soạn sẵn, link Zalo vẫn mở như thường.
+  const m = e.target.closest('[data-zalo-msg]');
+  if (m) {
+    const msg = m.getAttribute('data-zalo-msg');
+    copyText(msg).then(ok => showToast(ok ? 'Đã copy câu hỏi — dán vào Zalo để được tư vấn nhé.' : 'Nhắn Zalo: "' + msg + '"'));
+    return;
+  }
   const c = e.target.closest('[data-copy-code]');
   if (c) {
     const code = c.getAttribute('data-copy-code');

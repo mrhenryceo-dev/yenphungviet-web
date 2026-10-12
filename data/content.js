@@ -16,6 +16,60 @@ const CONTENT = {
     homeLimit: 6
   },
 
+  // "Các nhóm chim tại trại" (Phase 1L) — nội dung OWNER duyệt. Thay cho lưới chim trên homepage.
+  // Giá: chỉ nhóm Đút bột có khoảng giá do OWNER cung cấp. Chim tơ / sinh sản KHÔNG ghi số tiền.
+  // Ảnh: ảnh minh họa (AI), không phải ảnh chim thật tại trại, không đại diện cho bé cụ thể.
+  // tone: màu nhấn của thẻ (orange | blue | green). zaloMsg: câu được copy trước khi mở Zalo.
+  groups: {
+    eyebrow: 'Chim tại trại',
+    title: 'Chim đang bán tại trại',
+    lead: 'Trại cung cấp 3 nhóm chim với độ tuổi và mục đích nuôi khác nhau. Chọn nhóm phù hợp với bạn rồi nhắn Zalo để được tư vấn và xem các bé đang có.',
+    note: 'Ảnh trong 3 thẻ là ảnh minh họa, không phải ảnh chim thật tại trại và không đại diện cho một bé cụ thể. Nhắn Zalo để nhận video thực tế của các bé đang có.',
+    items: [
+      {
+        id: 'dut-bot', tone: 'orange', name: 'Chim đút bột',
+        image: 'assets/groups/group-dut-bot.webp', width: 402, height: 226,
+        alt: 'Ảnh minh họa hai chim Yến Phụng non trong ổ',
+        meta: 'Khoảng 15–20 ngày tuổi (tham khảo, còn phụ thuộc chim bố mẹ)',
+        priceLabel: 'Giá tham khảo tại trại', price: '500.000–800.000đ/con', priceTag: 'tùy cá thể',
+        points: [
+          'Cần chăm sóc đặc biệt, dành cho người đã có kinh nghiệm chăm chim non.',
+          'Có thể gắn bó với người chăm sóc khi được nuôi và tương tác phù hợp, nhưng không bảo đảm sẽ quấn chủ.'
+        ],
+        warning: 'Chim chưa tự ăn. Đút bột sai kỹ thuật có thể gây nguy hiểm đến tính mạng của chim. Không khuyến khích người mới mua chim chưa cai sữa.',
+        cta: 'Tư vấn chim non qua Zalo',
+        zaloMsg: 'Mình muốn được tư vấn về chim non (chim đút bột).'
+      },
+      {
+        id: 'chim-to', tone: 'blue', name: 'Chim tơ',
+        image: 'assets/groups/group-chim-to.webp', width: 448, height: 238,
+        alt: 'Ảnh minh họa bốn chim Yến Phụng tơ đậu trên cành',
+        meta: 'Đã tách mẹ, tự ăn uống ổn định và biết bay',
+        priceLabel: 'Giá', price: 'Theo từng cá thể', priceTag: 'màu sắc & Level Catalogue',
+        points: [
+          'Phù hợp nuôi cảnh hoặc nuôi trong aviary được bố trí an toàn.',
+          'Dễ chăm sóc hơn chim chưa cai sữa, phù hợp hơn với người mới.'
+        ],
+        cta: 'Xem chim tơ đang có',
+        zaloMsg: 'Mình muốn xem các bé chim tơ đang có.'
+      },
+      {
+        id: 'sinh-san', tone: 'green', name: 'Chim sinh sản',
+        image: 'assets/groups/group-sinh-san.webp', width: 464, height: 238,
+        alt: 'Ảnh minh họa một cặp chim Yến Phụng trưởng thành',
+        meta: 'Trống mái đã trưởng thành hoặc gần tuổi sinh sản, tùy cá thể',
+        priceLabel: 'Giá', price: 'Theo từng cặp', priceTag: 'màu sắc, Level & dữ liệu thực tế',
+        points: [
+          'Trại có thể tư vấn lựa chọn chim và cặp ghép phù hợp.',
+          'Khả năng sinh sản phụ thuộc độ tuổi, sức khỏe, tương thích cặp, dinh dưỡng và môi trường.'
+        ],
+        caution: 'Không cam kết mua về sẽ đẻ ngay.',
+        cta: 'Tư vấn cặp sinh sản',
+        zaloMsg: 'Mình muốn được tư vấn chọn cặp chim sinh sản.'
+      }
+    ]
+  },
+
   // "Cách nhận chim" — website để xem & chọn; video thực tế của đúng bé được gửi qua Zalo trước khi chốt.
   // Không thêm đặt cọc, phí ship, thời gian giao, bảo hành, đổi trả… cho tới khi OWNER có chính sách.
   steps: [

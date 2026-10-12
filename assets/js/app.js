@@ -45,8 +45,30 @@ function renderHero(){
   }
 }
 
-function renderVisualNote(){
-  document.getElementById('home-visual-note').innerHTML = `<span class="vn-icon" aria-hidden="true">ⓘ</span>${esc(CONTENT.birds.visualNote)}`;
+// Các nhóm chim tại trại (Phase 1L). CTA mở Zalo và copy sẵn câu hỏi của nhóm (data-zalo-msg, ui.js).
+function renderBirdGroups(){
+  const G = CONTENT.groups;
+  document.getElementById('groups-eyebrow').textContent = G.eyebrow;
+  document.getElementById('groups-title').textContent = G.title;
+  document.getElementById('groups-lead').textContent = G.lead;
+  document.getElementById('groups-note').textContent = G.note;
+  document.getElementById('group-grid').innerHTML = G.items.map((g, n) => `
+    <article class="group-card tone-${attr(g.tone)}" id="nhom-${attr(g.id)}">
+      <div class="group-photo">
+        <img src="${attr(g.image)}" alt="${attr(g.alt)}" width="${g.width}" height="${g.height}" loading="lazy" decoding="async">
+        <span class="group-num" aria-hidden="true">0${n + 1}</span>
+        ${AI_BADGE}
+      </div>
+      <div class="group-body">
+        <h3>${esc(g.name)}</h3>
+        <p class="group-meta">${esc(g.meta)}</p>
+        <p class="group-price"><span class="gp-label">${esc(g.priceLabel)}</span><strong>${esc(g.price)}</strong><span class="gp-tag">${esc(g.priceTag)}</span></p>
+        <ul class="group-points">${g.points.map(t => `<li>${esc(t)}</li>`).join('')}</ul>
+        ${g.warning ? `<p class="group-warning" role="note"><strong>Lưu ý quan trọng:</strong> ${esc(g.warning)}</p>` : ''}
+        ${g.caution ? `<p class="group-caution">${esc(g.caution)}</p>` : ''}
+        <a class="btn btn-lg btn-block group-cta" href="${attr(SITE.zaloUrl)}" target="_blank" rel="noopener" data-zalo-msg="${attr(g.zaloMsg)}">${esc(g.cta)}</a>
+      </div>
+    </article>`).join('');
 }
 
 function renderSteps(){
@@ -256,7 +278,7 @@ function route(){
 // ---------- INIT ----------
 renderBrand();
 renderHero();
-renderVisualNote();
+renderBirdGroups();
 renderSteps();
 renderFit();
 renderFarm();
@@ -271,6 +293,5 @@ if ('ResizeObserver' in window) new ResizeObserver(syncHeaderHeight).observe(doc
 window.addEventListener('resize', syncHeaderHeight);
 window.addEventListener('load', syncHeaderHeight);
 document.querySelectorAll('[data-feature="catalogue"]').forEach(el => { el.hidden = !catalogueEnabled(); });
-renderHomeBirds();
 window.addEventListener('hashchange', () => { setMenu(false); closePosterViewer(); route(); });
 route();
