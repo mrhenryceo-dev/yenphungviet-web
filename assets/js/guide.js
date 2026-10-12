@@ -69,7 +69,7 @@ function renderGuideArticlePage(el, id){
   const foot = isHealth
     ? `<a class="btn btn-outline" href="#cam-nang">← Các bài cẩm nang khác</a>`
     : `<a class="btn btn-outline" href="#cam-nang">← Các bài cẩm nang khác</a>
-       <a class="btn btn-primary" href="#chim">Xem các bé đang tìm chủ</a>`;
+       <a class="btn btn-primary" href="#chim-dang-tim-chu">Xem 3 nhóm chim tại trại</a>`;
   el.innerHTML = `
     <a class="back-link" href="#cam-nang">← Tất cả bài cẩm nang</a>
     <article class="guide-article">

@@ -191,7 +191,7 @@ function renderCataloguePage(el, arg){
     ${CATALOGUE_LEVELS.map((l, idx) => levelSectionHtml(l, idx === 0)).join('')}
     <div class="cat-bridge">
       <p>${esc(C.inventoryBridge)}</p>
-      <a class="btn btn-primary" href="#chim">Xem các bé đang tìm chủ</a>
+      <a class="btn btn-primary" href="#chim-dang-tim-chu">Xem 3 nhóm chim tại trại</a>
     </div>`;
 
   el.querySelectorAll('.poster-thumb').forEach(b => b.addEventListener('click', () => {
