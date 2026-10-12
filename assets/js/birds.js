@@ -1,4 +1,5 @@
-// Inventory — các bé đang tìm chủ (dữ liệu từ Supabase bảng `birds`).
+// Inventory — từng bé đăng riêng (dữ liệu từ Supabase bảng `birds`). Trang chủ bán theo 3 nhóm chim;
+// danh sách #chim không còn hiển thị, chỉ trang chi tiết của bé THẬT (không thuộc SITE.demoBirdCodes) mở được.
 // Ảnh trên website là ẢNH MINH HỌA màu/dòng (có thể dùng lại cho nhiều bé); video thực tế
 // của đúng bé được gửi qua Zalo trước khi chốt. Ảnh không bao giờ dùng để chứng minh giới tính,
 // tuổi, sức khỏe… — các thông tin đó chỉ lấy từ dữ liệu của bé.
@@ -34,7 +35,8 @@ function cleanText(s){
 }
 function hasVal(v){ return v != null && cleanText(v) !== ''; }
 
-function isDemoBird(b){ return (SITE.demoBirdCodes || []).some(c => c.toLowerCase() === cleanText(b.code).toLowerCase()); }
+function isDemoCode(code){ return (SITE.demoBirdCodes || []).some(c => c.toLowerCase() === cleanText(code).toLowerCase()); }
+function isDemoBird(b){ return isDemoCode(b.code); }
 const demoTag = () => `<span class="demo-tag">${esc(CONTENT.birds.demoLabel)}</span>`;
 const demoNoteHtml = () => `<p class="demo-note" role="note"><strong>${esc(CONTENT.birds.demoLabel)}:</strong> ${esc(CONTENT.birds.demoNote)}</p>`;
 
@@ -76,7 +78,7 @@ function priceText(b){
 
 function availableBirds(list, excludeCode){
   return list
-    .filter(b => b.status !== 'sold' && cleanText(b.code) !== excludeCode)
+    .filter(b => b.status !== 'sold' && !isDemoBird(b) && cleanText(b.code) !== excludeCode)
     .sort((a, b) => (STATUS_ORDER[a.status] ?? 0) - (STATUS_ORDER[b.status] ?? 0));
 }
 
@@ -110,7 +112,7 @@ function birdCard(b){
 }
 
 function emptyBirdsHtml(){
-  return `<div class="birds-empty">Hiện chưa có bé nào đang tìm chủ. Nhắn Zalo cho ${esc(SITE.contactName)} để được báo khi có bé mới.</div>`;
+  return `<div class="birds-empty">Hiện chưa có bé nào được đăng riêng. Xem <a href="#chim-dang-tim-chu">3 nhóm chim tại trại</a> hoặc nhắn Zalo cho ${esc(SITE.contactName)} để được báo khi có bé mới.</div>`;
 }
 function errorBirdsHtml(){
   return `<div class="birds-empty">Chưa tải được danh sách chim. Vui lòng thử lại sau hoặc nhắn Zalo ${esc(SITE.phone)}.</div>`;
@@ -155,25 +157,25 @@ function contactBoxHtml(code){
 
 async function renderBirdDetailPage(el, rawCode){
   const code = cleanText(rawCode);
-  el.innerHTML = `<a class="back-link" href="#chim">← Tất cả chim đang tìm chủ</a><div class="loading">Đang tải thông tin bé…</div>`;
+  el.innerHTML = `<a class="back-link" href="#chim-dang-tim-chu">← Xem 3 nhóm chim tại trại</a><div class="loading">Đang tải thông tin bé…</div>`;
   let list;
   try { list = await loadBirds(); }
   catch (e) {
-    el.innerHTML = `<a class="back-link" href="#chim">← Tất cả chim đang tìm chủ</a>
+    el.innerHTML = `<a class="back-link" href="#chim-dang-tim-chu">← Xem 3 nhóm chim tại trại</a>
       <div class="notice"><h1>Chưa tải được thông tin</h1><p>Vui lòng thử lại sau, hoặc nhắn Zalo kèm mã bé ${esc(code)}.</p></div>${contactBoxHtml(code)}`;
     return;
   }
   const b = list.find(x => cleanText(x.code).toLowerCase() === code.toLowerCase());
   const others = availableBirds(list, b ? cleanText(b.code) : null).slice(0, 3);
   const othersHtml = others.length
-    ? `<h2 class="more-title">Các bé khác đang tìm chủ</h2><div class="birds-grid">${others.map(birdCard).join('')}</div>`
+    ? `<h2 class="more-title">Các bé khác đang có tại trại</h2><div class="birds-grid">${others.map(birdCard).join('')}</div>`
     : '';
 
   if (!b) {
     document.title = 'Không tìm thấy bé — ' + SITE.brandName;
-    el.innerHTML = `<a class="back-link" href="#chim">← Tất cả chim đang tìm chủ</a>
+    el.innerHTML = `<a class="back-link" href="#chim-dang-tim-chu">← Xem 3 nhóm chim tại trại</a>
       <div class="notice"><h1>Không tìm thấy bé ${esc(code)}</h1>
-      <p>Bé này có thể đã được cập nhật mã hoặc không còn hiển thị. Bạn xem các bé đang tìm chủ bên dưới, hoặc nhắn Zalo để hỏi trực tiếp.</p>
+      <p>Bé này có thể đã được cập nhật mã hoặc không còn hiển thị. Bạn xem 3 nhóm chim tại trại, hoặc nhắn Zalo để hỏi trực tiếp.</p>
       <a class="btn btn-zalo" href="${attr(SITE.zaloUrl)}" target="_blank" rel="noopener">Nhắn Zalo</a></div>
       ${othersHtml || emptyBirdsHtml()}`;
     return;
@@ -184,9 +186,9 @@ async function renderBirdDetailPage(el, rawCode){
   document.title = 'Bé ' + realCode + ' — ' + SITE.brandName;
 
   if (b.status === 'sold') {
-    el.innerHTML = `<a class="back-link" href="#chim">← Tất cả chim đang tìm chủ</a>
+    el.innerHTML = `<a class="back-link" href="#chim-dang-tim-chu">← Xem 3 nhóm chim tại trại</a>
       <div class="notice"><h1>Bé ${esc(realCode)} đã có chủ</h1>
-      <p>Cảm ơn bạn đã quan tâm. Bạn xem các bé khác đang tìm chủ bên dưới, hoặc nhắn Zalo để được báo khi có bé tương tự.</p>
+      <p>Cảm ơn bạn đã quan tâm. Bạn xem các bé khác đang có tại trại bên dưới, hoặc nhắn Zalo để được báo khi có bé tương tự.</p>
       <a class="btn btn-zalo" href="${attr(SITE.zaloUrl)}" target="_blank" rel="noopener">Nhắn Zalo</a></div>
       ${othersHtml || emptyBirdsHtml()}`;
     return;
@@ -212,7 +214,7 @@ async function renderBirdDetailPage(el, rawCode){
     : `<div class="gallery-main" style="cursor:default">${visualPlaceholder(realCode)}</div>`;
 
   el.innerHTML = `
-    <a class="back-link" href="#chim">← Tất cả chim đang tìm chủ</a>
+    <a class="back-link" href="#chim-dang-tim-chu">← Xem 3 nhóm chim tại trại</a>
     <div class="detail-grid">
       <div>${gallery}<p class="visual-note"><span class="vn-icon" aria-hidden="true">ⓘ</span>${esc(CONTENT.birds.visualNote)}</p>${video}</div>
       <div class="detail-info">

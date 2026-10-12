@@ -6,7 +6,7 @@
 const SITE = {
   brandName: 'YẾN PHỤNG PET',
   tagline: 'Thế giới Yến Phụng dành cho người yêu chim',
-  positioning: ['Yến Phụng Hà Lan', 'Chim đang tìm chủ', 'Kiến thức & màu sắc'],
+  positioning: ['Yến Phụng Hà Lan', 'Chim Đang Có Tại Trại', 'Kiến thức & màu sắc'],
 
   contactName: 'Ji',
   phone: '0967653899',

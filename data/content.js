@@ -4,17 +4,18 @@
 
 const CONTENT = {
   hero: {
-    lead: 'Xem các bé Yến Phụng đang tìm chủ, chọn mã bé và nhắn Zalo cho Ji để nhận video thực tế của bé trước khi chốt.'
+    lead: 'Chọn nhóm chim phù hợp với bạn và nhắn Zalo cho Ji để nhận video thực tế của các bé đang có trước khi chốt.'
   },
 
   birds: {
-    title: 'Chim đang tìm chủ',
+    title: 'Chim Đang Có Tại Trại',
     lead: 'Bấm "Nhắn Zalo về bé này" để nhận video thực tế của bé, hoặc "Xem chi tiết" để xem thêm thông tin.',
     infoNote: 'Thông tin chưa có sẽ không hiển thị. Bạn có thể hỏi thêm qua Zalo.',
     // Ghi chú minh bạch về ảnh — hiển thị gần danh sách chim và trong chi tiết bé.
     visualNote: 'Ảnh trên website mang tính minh họa. Nhắn mã bé qua Zalo để nhận video thực tế trước khi chốt.',
     homeLimit: 6,
     demoLabel: 'Dữ liệu minh họa',
+    demoRedirect: 'Hồ sơ mẫu đã ngừng hiển thị — mời bạn xem 3 nhóm chim tại trại.',
     demoNote: 'Các bé có nhãn "Dữ liệu minh họa" chỉ là dữ liệu mẫu để trình bày website, không phải chim đang bán. Nhắn Zalo để hỏi các bé đang có tại trại.'
   },
 
@@ -75,9 +76,9 @@ const CONTENT = {
   // "Cách nhận chim" — website để xem & chọn; video thực tế của đúng bé được gửi qua Zalo trước khi chốt.
   // Không thêm đặt cọc, phí ship, thời gian giao, bảo hành, đổi trả… cho tới khi OWNER có chính sách.
   steps: [
-    { title: 'Chọn bé trên website', text: 'Xem các bé đang tìm chủ và ghi lại mã của bé bạn thích.' },
-    { title: 'Gửi mã bé qua Zalo', text: 'Nhắn mã bé cho Ji qua Zalo (hoặc gọi điện).' },
-    { title: 'Xem video thực tế của bé', text: 'Ji gửi video hiện tại của đúng bé đó để bạn xem trước.' },
+    { title: 'Chọn nhóm chim trên website', text: 'Xem 3 nhóm chim tại trại và chọn nhóm phù hợp với bạn.' },
+    { title: 'Nhắn Zalo cho Ji', text: 'Nhắn nhóm chim bạn quan tâm cho Ji qua Zalo (hoặc gọi điện).' },
+    { title: 'Xem video thực tế của bé', text: 'Ji gửi video hiện tại của các bé đang có để bạn xem và chọn.' },
     { title: 'Xác nhận thông tin và cách nhận', text: 'Hai bên xác nhận thông tin của bé, giá và cách nhận chim.' },
     { title: 'Chốt bé', text: 'Khi bạn đã hài lòng với bé qua video, hai bên chốt bé.' }
   ],

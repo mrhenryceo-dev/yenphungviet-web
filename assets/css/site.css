@@ -646,3 +646,5 @@ a.cd-tag:hover{background:var(--green);color:#fff}
   .site-nav{order:3;width:100%;margin-left:-12px}
   .site-nav a{font-size:13.5px}
 }
+/* Toast: rộng theo nội dung (tối đa 90% màn hình) thay vì bị co còn nửa màn hình do left:50% */
+.toast{width:max-content;max-width:min(90vw,440px)}

@@ -231,7 +231,7 @@ function setNavActive(key){
 
 function route(){
   const raw = decodeURIComponent(location.hash.replace(/^#\/?/, ''));
-  const [head, ...rest] = raw.split('/');
+  let [head, ...rest] = raw.split('/');
   const arg = rest.join('/');
   const home = document.getElementById('home');
   const page = document.getElementById('page');
@@ -243,9 +243,12 @@ function route(){
   };
 
   if (head === 'chim') {
-    if (arg) return showPage('chim', el => renderBirdDetailPage(el, arg));
-    document.title = 'Chim đang tìm chủ — ' + SITE.brandName;
-    return showPage('chim', renderBirdListPage);
+    // Bé THẬT (không thuộc SITE.demoBirdCodes) vẫn có trang chi tiết riêng.
+    if (arg && !isDemoCode(arg)) return showPage('chim', el => renderBirdDetailPage(el, arg));
+    // Danh sách #chim cũ và hồ sơ demo không còn hiển thị → về 3 nhóm chim trên trang chủ.
+    history.replaceState(null, '', location.pathname + location.search + '#chim-dang-tim-chu');
+    if (arg) showToast(CONTENT.birds.demoRedirect);
+    head = 'chim-dang-tim-chu';
   }
   if (head === 'cam-nang') {
     if (arg) return showPage('cam-nang', el => renderGuideArticlePage(el, arg));
