@@ -631,3 +631,18 @@ a.cd-tag:hover{background:var(--green);color:#fff}
 .detail-tags .demo-tag{margin-bottom:0}
 .demo-note{font-size:14px;line-height:1.5;color:#7A2E06;background:#FDEBDD;border:1px solid rgba(184,74,14,0.35);border-left:4px solid #B84A0E;border-radius:var(--radius-sm);padding:10px 14px;margin:0 0 18px;max-width:720px}
 .detail-info .demo-note{margin:12px 0 4px}
+
+/* ===== Phase 1M — link sang trang /chon-nhom-choi (homepage) ===== */
+.nhom-choi-link{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 18px;margin-top:18px;padding:16px 20px;border-radius:var(--radius);background:var(--surface);border:1.5px solid var(--green-dim);box-shadow:var(--shadow);text-decoration:none;color:var(--ink)}
+.nhom-choi-link:hover{border-color:var(--green)}
+.ncl-text{font-size:15px;line-height:1.5;flex:1 1 320px}
+.ncl-text strong{color:var(--green-dark)}
+.ncl-cta{font-weight:700;color:#fff;background:var(--green);padding:10px 18px;border-radius:100px;min-height:44px;display:inline-flex;align-items:center;white-space:nowrap}
+/* Menu 4 mục (Phase 1M): ở 601–920px không đủ chỗ trên một hàng → dùng cùng bố cục với ≤720px
+   (menu xuống hàng riêng dưới logo) thay vì để mục cuối tự rơi xuống dòng. */
+@media (min-width:601px) and (max-width:920px){
+  .header-inner{padding-block:8px;row-gap:0}
+  .header-right{display:contents}
+  .site-nav{order:3;width:100%;margin-left:-12px}
+  .site-nav a{font-size:13.5px}
+}
