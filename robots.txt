@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /quan-tri/
+Disallow: /api/
+
+Sitemap: https://yenphungviet.vercel.app/sitemap.xml

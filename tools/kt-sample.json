@@ -1,0 +1,68 @@
+[
+  {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "slug": "bai-mau-bo-cuc-11-khoi",
+    "topic": "co-ban",
+    "title": "BÀI MẪU — Kiểm tra bố cục 11 khối nội dung",
+    "subtitle": "Dữ liệu thử chỉ dùng trên máy local. Chữ trong bài là câu giữ chỗ, không phải kiến thức chuyên môn.",
+    "excerpt": "Bài mẫu để kiểm tra giao diện tạp chí: ảnh lớn, ảnh + chữ, bộ ảnh, khung kiến thức, cảnh báo, checklist, bảng, FAQ và nút CTA.",
+    "seo_title": "BÀI MẪU — bố cục 11 khối | YẾN PHỤNG PET",
+    "seo_description": "Bài mẫu dùng để kiểm tra bố cục chuyên mục Kiến thức chuyên sâu của YẾN PHỤNG PET trên điện thoại và máy tính.",
+    "cover": { "path": "/assets/nhom-choi/pet-01-1600.webp", "path_sm": "/assets/nhom-choi/pet-01-800.webp", "w": 1600, "h": 1000, "alt": "Ảnh minh họa: Yến Phụng đứng trên bàn tay", "focus": { "x": 62, "y": 40 }, "ai": true },
+    "blocks": [
+      { "type": "text", "md": "Đây là **đoạn mở đầu mẫu**. Nội dung thật sẽ do OWNER soạn trong trang quản trị, có *nguồn tham khảo* đi kèm.\n\n## Tiêu đề phần (H2)\nĐoạn văn mẫu thứ hai, có [liên kết tới Cẩm nang](/#cam-nang) để kiểm tra định dạng link.\n\n### Tiêu đề nhỏ (H3)\n- Ý thứ nhất trong danh sách\n- Ý thứ hai trong danh sách\n- Ý thứ ba trong danh sách" },
+      { "type": "image", "ratio": "16:9", "img": { "path": "/assets/nhom-choi/avi-01-910.webp", "path_sm": "/assets/nhom-choi/avi-01-640.webp", "w": 910, "h": 569, "alt": "Ảnh minh họa: aviary nhiều Yến Phụng", "caption": "Chú thích ảnh lớn (khối 02, tỉ lệ 16:9).", "focus": { "x": 50, "y": 45 }, "ai": true } },
+      { "type": "image_text", "side": "left", "split": 50, "ratio": "4:3", "img": { "path": "/assets/nhom-choi/canh-01-1100.webp", "path_sm": "/assets/nhom-choi/canh-01-640.webp", "w": 1098, "h": 686, "alt": "Ảnh minh họa: lồng nuôi cảnh", "caption": "Khối 03 — ảnh trái, chữ phải.", "focus": { "x": 60, "y": 45 }, "ai": true }, "md": "### Ảnh trái, chữ phải\nĐoạn văn mẫu nằm bên phải ảnh trên máy tính. Trên điện thoại, ảnh nằm trên và chữ nằm dưới." },
+      { "type": "image_text", "side": "right", "split": 40, "ratio": "1:1", "img": { "path": "/assets/nhom-choi/ss-02.webp", "w": 320, "h": 320, "alt": "Ảnh minh họa: một cặp Yến Phụng", "focus": { "x": 50, "y": 50 }, "ai": true }, "md": "### Chữ trái, ảnh phải\nKhối 04 đảo bố cục, ảnh chiếm khoảng 40% chiều ngang." },
+      { "type": "gallery", "ratio": "1:1", "caption": "Khối 05 — bộ 4 ảnh, bấm để phóng to.", "imgs": [
+        { "path": "/assets/nhom-choi/ss-03.webp", "w": 320, "h": 320, "alt": "Ảnh minh họa: hộp tổ", "caption": "Ảnh 1", "ai": true },
+        { "path": "/assets/nhom-choi/ss-04.webp", "w": 320, "h": 320, "alt": "Ảnh minh họa: trứng trong tổ", "caption": "Ảnh 2", "ai": true },
+        { "path": "/assets/nhom-choi/ss-05.webp", "w": 320, "h": 320, "alt": "Ảnh minh họa: chim non trong tổ", "caption": "Ảnh 3", "ai": true },
+        { "path": "/assets/nhom-choi/avi-03.webp", "w": 293, "h": 293, "alt": "Ảnh minh họa: chim trên cành", "caption": "Ảnh 4", "ai": true } ] },
+      { "type": "note", "icon": "💡", "title": "Khung kiến thức (khối 06)", "md": "Dùng cho mẹo hoặc **điều cần nhớ**. Nội dung mẫu." },
+      { "type": "warning", "title": "Khung cảnh báo (khối 07)", "md": "Dùng cho lưu ý an toàn và sức khỏe. Bài có khối này sẽ tự ẩn nút mua chim ở cuối bài." },
+      { "type": "checklist", "title": "Checklist mẫu (khối 08)", "items": ["Bước mẫu thứ nhất", "Bước mẫu thứ hai", "Bước mẫu thứ ba"] },
+      { "type": "table", "caption": "Bảng mẫu (khối 09)", "head": ["Giai đoạn", "Cột B", "Cột C"], "rows": [["Mẫu 1", "Giá trị", "Ghi chú"], ["Mẫu 2", "Giá trị", "Ghi chú dài hơn để kiểm tra xuống dòng trên điện thoại"], ["Mẫu 3", "Giá trị", "Ghi chú"]] },
+      { "type": "faq", "title": "Câu hỏi thường gặp (khối 10)", "items": [ { "q": "Câu hỏi mẫu thứ nhất?", "a_md": "Câu trả lời mẫu." }, { "q": "Câu hỏi mẫu thứ hai?", "a_md": "Câu trả lời mẫu có **chữ đậm**." } ] },
+      { "type": "cta", "kind": "zalo", "label": "Nhắn Zalo 0967653899" },
+      { "type": "cta", "kind": "article", "slug": "bai-mau-dinh-duong", "label": "Đọc bài mẫu khác" },
+      { "type": "cta", "kind": "copy_link", "label": "Sao chép link bài viết" },
+      { "type": "script_thu", "md": "<script>alert(1)</script> khối lạ phải bị bỏ qua" },
+      { "type": "text", "md": "Kiểm tra an toàn: <script>alert('x')</script> <img src=x onerror=alert(1)> [link độc](javascript:alert(1)) [link ngoài](https://example.com)" }
+    ],
+    "sources": ["Nguồn mẫu — sẽ thay bằng tài liệu đã kiểm chứng"],
+    "reviewed_by_owner": true,
+    "status": "published",
+    "published_at": "2026-10-13T02:00:00Z",
+    "updated_at": "2026-10-13T02:00:00Z"
+  },
+  {
+    "id": "00000000-0000-4000-8000-000000000002",
+    "slug": "bai-mau-dinh-duong",
+    "topic": "dinh-duong",
+    "title": "BÀI MẪU — Thẻ chủ đề Dinh dưỡng",
+    "subtitle": "Bài mẫu ngắn để kiểm tra bộ lọc và mục bài liên quan.",
+    "excerpt": "Bài mẫu thứ hai để kiểm tra bộ lọc theo chủ đề và tìm kiếm.",
+    "seo_description": "Bài mẫu thứ hai của chuyên mục Kiến thức chuyên sâu.",
+    "cover": { "path": "/assets/nhom-choi/canh-01-1100.webp", "path_sm": "/assets/nhom-choi/canh-01-640.webp", "w": 1098, "h": 686, "alt": "Ảnh minh họa: lồng nuôi cảnh", "focus": { "x": 50, "y": 50 }, "ai": true },
+    "blocks": [ { "type": "text", "md": "Đoạn văn mẫu ngắn." }, { "type": "cta", "kind": "article", "slug": "bai-mau-bo-cuc-11-khoi", "label": "Quay lại bài mẫu bố cục" } ],
+    "sources": ["Nguồn mẫu"],
+    "reviewed_by_owner": true,
+    "status": "published",
+    "published_at": "2026-10-12T02:00:00Z",
+    "updated_at": "2026-10-12T02:00:00Z"
+  },
+  {
+    "id": "00000000-0000-4000-8000-000000000003",
+    "slug": "bai-mau-ban-nhap",
+    "topic": "sinh-san-genetics",
+    "title": "BÀI MẪU — Bản nháp (không được hiện công khai)",
+    "excerpt": "Nếu thấy thẻ này trên trang công khai là lỗi.",
+    "cover": {},
+    "blocks": [ { "type": "text", "md": "Bản nháp." } ],
+    "sources": [],
+    "reviewed_by_owner": false,
+    "status": "draft",
+    "updated_at": "2026-10-13T03:00:00Z"
+  }
+]

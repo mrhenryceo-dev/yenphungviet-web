@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Quản trị — Kiến thức chuyên sâu — YẾN PHỤNG PET</title>
+<link rel="icon" href="/assets/brand/favicon.ico" sizes="any">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/site.css">
+<link rel="stylesheet" href="/assets/css/quan-tri.css">
+</head>
+<body class="qt">
+<header class="qt-top">
+  <a class="qt-brand" href="/quan-tri/"><img src="/assets/brand/logo-yenphungpet.webp" width="545" height="180" alt="YẾN PHỤNG PET"><span>Quản trị · Kiến thức chuyên sâu</span></a>
+  <div class="qt-top-right"><span id="qt-user" class="qt-user"></span><button type="button" id="qt-logout" class="qt-btn qt-btn-ghost" hidden>Đăng xuất</button></div>
+</header>
+<div id="qt-dev" class="qt-devbar" hidden>CHẾ ĐỘ THỬ LOCAL — dữ liệu chỉ lưu trong trình duyệt này, không ghi Supabase.</div>
+<main id="qt-app" class="qt-app"><p class="qt-loading">Đang tải…</p></main>
+
+<div id="qt-modal" class="qt-modal" hidden><div class="qt-modal-box" role="dialog" aria-modal="true"><div id="qt-modal-body"></div></div></div>
+<div id="qt-preview" class="qt-preview" hidden>
+  <div class="qt-preview-bar"><strong>Xem trước</strong>
+    <div class="qt-seg"><button type="button" data-w="390" class="active">📱 Điện thoại</button><button type="button" data-w="1200">🖥 Máy tính</button></div>
+    <button type="button" class="qt-btn" id="qt-preview-close">Đóng</button></div>
+  <div class="qt-preview-stage"><iframe id="qt-preview-frame" title="Xem trước bài viết"></iframe></div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script type="module" src="/quan-tri/admin.mjs"></script>
+</body>
+</html>

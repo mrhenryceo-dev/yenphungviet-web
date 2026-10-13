@@ -1,0 +1,4 @@
+# Phase 1R — không đưa lên website: SQL, công cụ chạy local, dữ liệu mẫu, tài liệu nội bộ
+supabase/
+tools/
+*.md
