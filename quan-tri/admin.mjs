@@ -1,12 +1,16 @@
 // Phase 1R / R1 — KHUNG trang quản trị "Kiến thức chuyên sâu" (một OWNER duy nhất).
 // - Đăng nhập Supabase Auth (email + mật khẩu). Quyền = app_metadata.kt_role === 'owner' (RLS kiểm tra lại ở database).
 // - Danh sách bài, tìm kiếm/lọc, soạn bài theo khối, xem trước desktop/mobile, lưu nháp, xuất bản, ẩn, xóa có xác nhận.
-// - Tải ảnh từ máy + nén WebP + chọn điểm lấy nét bằng cách bấm vào ảnh: làm ở R4 (hiện nhập đường dẫn ảnh).
-// - Chế độ thử LOCAL: chỉ khi chạy trên 127.0.0.1/localhost với ?dev=1 → lưu trong localStorage, không gọi Supabase.
+// - R4: tải ảnh từ máy (tự nén WebP, bỏ EXIF/GPS), thư viện ảnh, bấm vào ảnh để chọn điểm lấy nét,
+//   ảnh chia sẻ link (OG) tự tạo từ ảnh bìa, tự sao lưu bản nháp trong trình duyệt, tải file sao lưu toàn bộ bài.
+// - Chế độ thử LOCAL: chỉ khi chạy trên 127.0.0.1/localhost với ?dev=1 → bài lưu trong localStorage,
+//   ảnh lưu vào thư mục tạm của tools/dev-server.mjs. Không gọi Supabase.
 import { KT, topicName } from '/assets/kt/config.mjs';
 import { renderPreviewPage, imgSrc, isSlug, esc } from '/assets/kt/render.mjs';
+import { processFile, ogFromUrl, groupLibrary, imagePathsOf, fitSize, variantPath, newId, INPUT_TYPES } from '/quan-tri/media.mjs';
 
 const DEV = ['127.0.0.1', 'localhost'].includes(location.hostname) && new URLSearchParams(location.search).get('dev') === '1';
+if (DEV) KT.supabaseUrl = location.origin + '/__dev-supabase';   // ảnh thử phục vụ bởi dev-server, cùng cấu trúc đường dẫn với Storage thật
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const app = $('#qt-app');
@@ -44,6 +48,11 @@ const store = {
     const { data, error } = await sb.from('kt_articles').select('id,slug,topic,title,status,excerpt,cover,updated_at,published_at').order('updated_at', { ascending: false });
     if (error) throw error; return data;
   },
+  async all() {   // toàn bộ bài, đủ nội dung — cho file sao lưu và kiểm tra ảnh đang được dùng
+    if (DEV) return devStore.all();
+    const { data, error } = await sb.from('kt_articles').select('*').order('created_at', { ascending: true });
+    if (error) throw error; return data;
+  },
   async get(id) {
     if (DEV) return devStore.all().find(a => a.id === id) || null;
     const { data, error } = await sb.from('kt_articles').select('*').eq('id', id).single();
@@ -69,6 +78,43 @@ const store = {
     if (error) throw error;
   }
 };
+// ---------- lớp ảnh (bucket "kien-thuc") ----------
+const DEV_API = '/__dev-supabase';
+const media = {
+  async upload(files) {
+    const done = [];
+    try {
+      for (const f of files) {
+        if (DEV) {
+          const r = await fetch(`${DEV_API}/upload/${f.path}`, { method: 'PUT', body: f.blob, headers: { 'Content-Type': f.blob.type } });
+          if (!r.ok) throw new Error('dev upload ' + r.status);
+        } else {
+          const { error } = await sb.storage.from(KT.bucket).upload(f.path, f.blob, { contentType: f.blob.type, cacheControl: '31536000', upsert: false });
+          if (error) throw error;
+        }
+        done.push(f.path);
+      }
+    } catch (e) { if (done.length) await media.remove(done).catch(() => {}); throw e; }   // lỗi giữa chừng → dọn file đã lên
+  },
+  async list() {
+    if (DEV) { const r = await fetch(`${DEV_API}/list`); return r.ok ? r.json() : []; }
+    const { data, error } = await sb.storage.from(KT.bucket).list('img', { limit: 1000, sortBy: { column: 'created_at', order: 'desc' } });
+    if (error) throw error; return data || [];
+  },
+  async remove(paths) {
+    if (DEV) { for (const p of paths) await fetch(`${DEV_API}/upload/${p}`, { method: 'DELETE' }); return; }
+    const { error } = await sb.storage.from(KT.bucket).remove(paths);
+    if (error) throw error;
+  }
+};
+function mediaError(e) {
+  const m = (e && (e.message || e.error)) || String(e);
+  if (/row-level security|Unauthorized|403/i.test(m)) return 'Không có quyền tải ảnh (cần tài khoản OWNER; nếu đã bật bắt buộc MFA thì phải đăng nhập bằng mã 6 số).';
+  if (/exceeded|too large|413/i.test(m)) return 'Ảnh vượt giới hạn 5 MB của bucket.';
+  if (/Bucket not found/i.test(m)) return 'Chưa có bucket "kien-thuc" trên Supabase.';
+  return m;
+}
+
 // Mô phỏng trigger của database ở chế độ thử (database thật luôn kiểm tra lại).
 function validateServerSide(r) {
   if (r.status !== 'published') return;
@@ -181,7 +227,8 @@ async function renderList() {
   let rows = [];
   try { rows = await store.list(); } catch (e) { app.innerHTML = `<div class="qt-alert">${esc(dbError(e))}</div>`; return; }
   const opts = (arr, cur) => arr.map(([v, t]) => `<option value="${v}"${v === cur ? ' selected' : ''}>${esc(t)}</option>`).join('');
-  app.innerHTML = `<section class="qt-list"><div class="qt-list-head"><h1>Bài viết <span class="qt-muted">(${rows.length})</span></h1><a class="qt-btn qt-btn-primary" href="#moi">+ Bài mới</a></div>
+  app.innerHTML = `<section class="qt-list"><div class="qt-list-head"><h1>Bài viết <span class="qt-muted">(${rows.length})</span></h1>
+      <div class="qt-row-act"><button type="button" class="qt-btn qt-btn-ghost" data-act="lib-manage">🗂 Thư viện ảnh</button><button type="button" class="qt-btn qt-btn-ghost" data-act="export">⬇ Tải bản sao lưu</button><a class="qt-btn qt-btn-primary" href="#moi">+ Bài mới</a></div></div>
     <div class="qt-filters"><input type="search" id="qt-q" placeholder="Tìm theo tiêu đề…" value="${esc(listState.q)}">
       <select id="qt-fs">${opts([['', 'Mọi trạng thái'], ['draft', 'Nháp'], ['published', 'Công khai'], ['hidden', 'Đã ẩn']], listState.status)}</select>
       <select id="qt-ft">${opts([['', 'Mọi chủ đề'], ...KT.topics.map(t => [t.id, t.name])], listState.topic)}</select></div>
@@ -204,7 +251,7 @@ async function renderList() {
 }
 
 // ---------- định nghĩa khối ----------
-const IMG = () => ({ path: '', path_sm: '', w: 1600, h: 1000, alt: '', caption: '', focus: { x: 50, y: 50 }, ai: true });
+const IMG = () => ({ path: '', path_sm: '', w: 1600, h: 1000, w_sm: 0, alt: '', caption: '', focus: { x: 50, y: 50 }, ai: true });
 const TYPES = {
   text:       { name: 'Văn bản', ic: '¶', make: () => ({ type: 'text', md: '' }) },
   image:      { name: 'Ảnh lớn', ic: '🖼', make: () => ({ type: 'image', ratio: '16:9', img: IMG() }) },
@@ -234,22 +281,43 @@ async function renderEditor(id) {
   A = { ...NEW_ARTICLE(), ...clone(A) }; A.cover = { ...IMG(), ...(A.cover || {}) };
   dirty = false; slugTouched = !!A.slug;
   drawEditor();
+  // Có bản đang soạn dở (chưa lưu) trong trình duyệt → hỏi khôi phục
+  let bk = null; try { bk = JSON.parse(localStorage.getItem(asKey(A.id)) || 'null'); } catch { /* bỏ qua */ }
+  if (bk && bk.a && (!A.updated_at || bk.at > A.updated_at) && JSON.stringify(bk.a) !== JSON.stringify(A)) {
+    if (await confirmBox(`Có bản đang soạn dở chưa lưu (lúc ${fmt(bk.at)}). Khôi phục bản đó?`, 'Khôi phục')) {
+      A = { ...NEW_ARTICLE(), ...bk.a, id: A.id, updated_at: A.updated_at }; A.cover = { ...IMG(), ...(A.cover || {}) };
+      slugTouched = !!A.slug; drawEditor(); markDirty();
+    } else clearAutosave(A.id);
+  }
 }
 
-function imgFields(path, img, label) {
-  const src = imgSrc(img.path);
-  return `<fieldset class="qt-img"><legend>${esc(label)}</legend>
-    <div class="qt-img-row"><div class="qt-img-thumb">${src ? `<img src="${esc(src)}" alt="" style="object-position:${Number(img.focus && img.focus.x) || 50}% ${Number(img.focus && img.focus.y) || 50}%">` : '<span>Chưa có ảnh</span>'}</div>
-    <div class="qt-img-fields">
-      <label>Đường dẫn ảnh <input data-k="${path}.path" value="${esc(img.path)}" placeholder="/assets/… hoặc khóa trong bucket"></label>
-      <label>Bản nhỏ (điện thoại) <input data-k="${path}.path_sm" value="${esc(img.path_sm || '')}" placeholder="tùy chọn"></label>
-      <div class="qt-2col"><label>Rộng (px)<input type="number" data-k="${path}.w" data-num value="${esc(img.w)}"></label><label>Cao (px)<input type="number" data-k="${path}.h" data-num value="${esc(img.h)}"></label></div>
-      <div class="qt-2col"><label>Lấy nét ngang %<input type="number" min="0" max="100" data-k="${path}.focus.x" data-num value="${esc(img.focus ? img.focus.x : 50)}"></label><label>Lấy nét dọc %<input type="number" min="0" max="100" data-k="${path}.focus.y" data-num value="${esc(img.focus ? img.focus.y : 50)}"></label></div>
-    </div></div>
-    <label>Alt text (mô tả ảnh) <input data-k="${path}.alt" value="${esc(img.alt || '')}"></label>
-    <label>Chú thích <input data-k="${path}.caption" value="${esc(img.caption || '')}"></label>
-    <label class="qt-check"><input type="checkbox" data-k="${path}.ai" data-bool${img.ai !== false ? ' checked' : ''}> Ảnh minh họa (AI) — hiện nhãn “Ảnh minh họa”</label>
-    <p class="qt-hint">Tải ảnh từ máy, tự nén WebP và bấm vào ảnh để chọn điểm lấy nét: có ở bước R4. Chỉ dùng ảnh của trại hoặc ảnh có quyền sử dụng.</p></fieldset>`;
+const RATIO_CSS = { '16:9': '16 / 9', '4:3': '4 / 3', '1:1': '1 / 1' };
+const getPath = (obj, path) => path.split('.').reduce((o, k) => (o == null ? o : o[/^\d+$/.test(k) ? Number(k) : k]), obj);
+function imgFields(path, img, label, { ratio = '16:9', og = false } = {}) {
+  const pct = v => (Number.isFinite(Number(v)) && v !== '' && v != null ? Math.min(100, Math.max(0, Number(v))) : 50);   // 0% hợp lệ
+  const src = imgSrc(img.path); const fx = pct(img.focus && img.focus.x), fy = pct(img.focus && img.focus.y);
+  const natural = img.w && img.h ? `${img.w} / ${img.h}` : '4 / 3';
+  return `<fieldset class="qt-img" data-img="${path}"><legend>${esc(label)}</legend>
+    ${src ? `<div class="qt-img-row">
+      <div><div class="qt-focus" data-focus="${path}" style="aspect-ratio:${natural}" title="Bấm vào chủ thể chính để đặt điểm lấy nét">
+        <img src="${esc(src)}" alt="" draggable="false"><span class="qt-dot" style="left:${fx}%;top:${fy}%"></span></div>
+        <p class="qt-hint">Bấm vào chủ thể (mắt chim, cere…) để đặt điểm lấy nét · <span data-focus-val="${path}">${fx}% / ${fy}%</span></p></div>
+      <div><div class="qt-crop" style="aspect-ratio:${RATIO_CSS[ratio] || '16 / 9'}"><img src="${esc(src)}" alt="" data-crop="${path}" style="object-position:${fx}% ${fy}%"></div>
+        <p class="qt-hint">Khung hiển thị ${esc(ratio)}${og ? ' · ảnh chia sẻ link 1200×630 tự cắt theo điểm này khi lưu' : ''}</p></div>
+    </div>` : '<div class="qt-img-empty">Chưa có ảnh</div>'}
+    <div class="qt-img-btns">
+      <label class="qt-btn qt-btn-primary qt-file">📤 ${src ? 'Thay ảnh' : 'Tải ảnh từ máy'}<input type="file" accept="${INPUT_TYPES.join(',')}" data-upload="${path}"${og ? ' data-og' : ''}></label>
+      <button type="button" class="qt-btn" data-act="lib" data-path="${path}"${og ? ' data-og' : ''}>🗂 Chọn từ thư viện</button>
+      ${src ? `<button type="button" class="qt-btn qt-btn-ghost" data-act="img-clear" data-path="${path}">Bỏ ảnh</button>` : ''}
+    </div>
+    <label>Alt text — mô tả ảnh cho người khiếm thị và Google <input data-k="${path}.alt" value="${esc(img.alt || '')}" maxlength="200" placeholder="Ví dụ: Yến Phụng trống màu xanh lá, cere xanh dương"></label>
+    <label>Chú thích dưới ảnh <input data-k="${path}.caption" value="${esc(img.caption || '')}" maxlength="240"></label>
+    <label class="qt-check"><input type="checkbox" data-k="${path}.ai" data-bool${img.ai !== false ? ' checked' : ''}> Ảnh minh họa (AI) — hiện nhãn “Ảnh minh họa”. Bỏ tick chỉ khi là ảnh chụp thật tại trại.</label>
+    <details class="qt-adv"><summary>Nâng cao: đường dẫn ảnh thủ công</summary>
+      <label>Đường dẫn ảnh <input data-k="${path}.path" value="${esc(img.path)}" placeholder="/assets/… hoặc img/…-1600.webp"></label>
+      <label>Bản nhỏ (điện thoại) <input data-k="${path}.path_sm" value="${esc(img.path_sm || '')}"></label>
+      <div class="qt-3col"><label>Rộng<input type="number" data-k="${path}.w" data-num value="${esc(img.w)}"></label><label>Cao<input type="number" data-k="${path}.h" data-num value="${esc(img.h)}"></label><label>Rộng bản nhỏ<input type="number" data-k="${path}.w_sm" data-num value="${esc(img.w_sm || 0)}"></label></div>
+    </details></fieldset>`;
 }
 const mdBox = (path, val, rows = 5) => `<div class="qt-md"><div class="qt-md-tools" data-for="${path}">
   <button type="button" data-md="bold" title="Đậm"><b>B</b></button><button type="button" data-md="italic" title="Nghiêng"><i>I</i></button>
@@ -263,13 +331,14 @@ function blockForm(b, i) {
   const p = `blocks.${i}`;
   switch (b.type) {
     case 'text': return mdBox(`${p}.md`, b.md, 7);
-    case 'image': return `<label>Tỉ lệ khung ${sel(`${p}.ratio`, b.ratio, RATIO_OPTS)}</label>` + imgFields(`${p}.img`, b.img, 'Ảnh');
+    case 'image': return `<label>Tỉ lệ khung ${sel(`${p}.ratio`, b.ratio, RATIO_OPTS)}</label>` + imgFields(`${p}.img`, b.img, 'Ảnh', { ratio: b.ratio });
     case 'image_text': return `<div class="qt-3col"><label>Vị trí ảnh ${sel(`${p}.side`, b.side, [['left', 'Ảnh bên trái'], ['right', 'Ảnh bên phải']])}</label>
         <label>Độ rộng ảnh ${sel(`${p}.split`, b.split, [[50, '50%'], [40, '40%']])}</label><label>Tỉ lệ ${sel(`${p}.ratio`, b.ratio, RATIO_OPTS)}</label></div>`
-      + imgFields(`${p}.img`, b.img, 'Ảnh') + '<label class="qt-lbl">Nội dung bên cạnh ảnh</label>' + mdBox(`${p}.md`, b.md, 5);
-    case 'gallery': return `<div class="qt-2col"><label>Tỉ lệ ${sel(`${p}.ratio`, b.ratio, RATIO_OPTS)}</label><label>Chú thích chung<input data-k="${p}.caption" value="${esc(b.caption || '')}"></label></div>`
-      + (b.imgs || []).map((im, j) => imgFields(`${p}.imgs.${j}`, im, `Ảnh ${j + 1}`) + `<button type="button" class="qt-btn qt-btn-ghost qt-sm" data-act="gal-del" data-i="${i}" data-j="${j}"${b.imgs.length <= 2 ? ' disabled' : ''}>Bỏ ảnh ${j + 1}</button>`).join('')
-      + `<button type="button" class="qt-btn qt-sm" data-act="gal-add" data-i="${i}"${(b.imgs || []).length >= 4 ? ' disabled' : ''}>+ Thêm ảnh (tối đa 4)</button>`;
+      + imgFields(`${p}.img`, b.img, 'Ảnh', { ratio: b.ratio }) + '<label class="qt-lbl">Nội dung bên cạnh ảnh</label>' + mdBox(`${p}.md`, b.md, 5);
+    case 'gallery': return `<div class="qt-2col"><label>Tỉ lệ ${sel(`${p}.ratio`, b.ratio, RATIO_OPTS)}</label><label>Chú thích chung<input data-k="${p}.caption" value="${esc(b.caption || '')}"></label></div>
+      <label class="qt-btn qt-file qt-sm">📤 Tải nhiều ảnh một lần (điền vào ô trống, tối đa 4)<input type="file" multiple accept="${INPUT_TYPES.join(',')}" data-upload-gallery="${i}"></label>`
+      + (b.imgs || []).map((im, j) => imgFields(`${p}.imgs.${j}`, im, `Ảnh ${j + 1}`, { ratio: b.ratio }) + `<button type="button" class="qt-btn qt-btn-ghost qt-sm" data-act="gal-del" data-i="${i}" data-j="${j}"${b.imgs.length <= 2 ? ' disabled' : ''}>Bỏ ô ảnh ${j + 1}</button>`).join('')
+      + `<button type="button" class="qt-btn qt-sm" data-act="gal-add" data-i="${i}"${(b.imgs || []).length >= 4 ? ' disabled' : ''}>+ Thêm ô ảnh (tối đa 4)</button>`;
     case 'note': return `<div class="qt-2col"><label>Biểu tượng ${sel(`${p}.icon`, b.icon, [['💡', '💡 Mẹo'], ['📌', '📌 Ghi nhớ'], ['✅', '✅ Nên làm']])}</label><label>Tiêu đề<input data-k="${p}.title" value="${esc(b.title || '')}"></label></div>` + mdBox(`${p}.md`, b.md, 4);
     case 'warning': return `<label>Tiêu đề<input data-k="${p}.title" value="${esc(b.title || '')}"></label>` + mdBox(`${p}.md`, b.md, 4);
     case 'checklist': return `<label>Tiêu đề<input data-k="${p}.title" value="${esc(b.title || '')}"></label><label>Các bước (mỗi dòng một bước)<textarea data-k="${p}.items" data-lines rows="5">${esc((b.items || []).join('\n'))}</textarea></label>`;
@@ -296,7 +365,7 @@ function drawEditor() {
   const a = A; const topicOpts = KT.topics.map(t => [t.id, t.name]);
   app.innerHTML = `<section class="qt-editor">
   <div class="qt-ebar"><a class="qt-btn qt-btn-ghost" href="#" data-act="back">← Danh sách</a>
-    <span class="qt-badge qt-badge--${esc(a.status)}">${esc(STATUS[a.status])}</span><span class="qt-saved" id="qt-saved">${a.updated_at ? 'Lưu lúc ' + esc(fmt(a.updated_at)) : 'Chưa lưu'}</span>
+    <span class="qt-badge qt-badge--${esc(a.status)}">${esc(STATUS[a.status])}</span><span class="qt-saved" id="qt-saved">${dirty ? 'Có thay đổi chưa lưu' : a.updated_at ? 'Lưu lúc ' + esc(fmt(a.updated_at)) : 'Chưa lưu'}</span>
     <div class="qt-ebar-right"><button type="button" class="qt-btn" data-act="preview">👁 Xem trước</button><button type="button" class="qt-btn" data-act="save">💾 Lưu nháp</button>
       ${a.status === 'published' ? '<button type="button" class="qt-btn" data-act="hide">Ẩn bài</button>' : '<button type="button" class="qt-btn qt-btn-primary" data-act="publish">Xuất bản</button>'}
       ${a.id ? '<button type="button" class="qt-btn qt-btn-danger" data-act="delete">Xóa</button>' : ''}</div></div>
@@ -308,7 +377,7 @@ function drawEditor() {
     <label>Đường dẫn (slug) <input data-k="slug" id="qt-slug" value="${esc(a.slug)}" maxlength="80"></label>
     <p class="qt-hint" id="qt-url">${esc(KT.siteUrl + KT.basePath + (a.slug || '…') + '/')}</p>
     <label>Mô tả ngắn (trên thẻ bài)<textarea data-k="excerpt" rows="3" maxlength="300">${esc(a.excerpt)}</textarea></label>
-    ${imgFields('cover', a.cover, 'Ảnh bìa (cũng dùng khi chia sẻ link)')}
+    ${imgFields('cover', a.cover, 'Ảnh bìa (cũng dùng khi chia sẻ link)', { ratio: '16:9', og: true })}
     <h3>SEO và chia sẻ</h3>
     <label>Tiêu đề SEO <span class="qt-count" data-count="seo_title">${(a.seo_title || '').length}/70</span><input data-k="seo_title" value="${esc(a.seo_title)}" maxlength="70" placeholder="Để trống = dùng tiêu đề"></label>
     <label>Mô tả SEO * <span class="qt-count" data-count="seo_description">${(a.seo_description || '').length}/170</span><textarea data-k="seo_description" rows="3" maxlength="170">${esc(a.seo_description)}</textarea></label>
@@ -338,9 +407,19 @@ function readInput(el) {
   if (el.hasAttribute('data-grid')) return el.value.split('\n').filter(l => l.trim()).map(l => l.split('|').map(s => s.trim()));
   return el.value;
 }
+// Tự sao lưu bản đang soạn vào trình duyệt (phòng mất điện / đóng nhầm tab). Xóa khi lưu thành công.
+const asKey = id => 'kt_autosave_' + (id || 'new');
+let asTimer;
+function autosave() {
+  clearTimeout(asTimer);
+  asTimer = setTimeout(() => { try { localStorage.setItem(asKey(A && A.id), JSON.stringify({ at: new Date().toISOString(), a: A })); } catch { /* bộ nhớ trình duyệt đầy / bị chặn */ } }, 800);
+}
+function clearAutosave(id) { clearTimeout(asTimer); try { localStorage.removeItem(asKey(id)); localStorage.removeItem(asKey(null)); } catch { /* bỏ qua */ } }
+function markDirty() { dirty = true; const s = $('#qt-saved'); if (s) s.textContent = 'Có thay đổi chưa lưu'; autosave(); }
+
 app.addEventListener('input', e => {
   const el = e.target; const k = el.dataset && el.dataset.k; if (!k || !A) return;
-  setPath(A, k, readInput(el)); dirty = true; $('#qt-saved').textContent = 'Có thay đổi chưa lưu';
+  setPath(A, k, readInput(el)); markDirty();
   if (k === 'title' && !slugTouched) { A.slug = slugify(A.title); const s = $('#qt-slug'); if (s) s.value = A.slug; }
   if (k === 'slug') { slugTouched = true; }
   if (k === 'title' || k === 'slug') $('#qt-url').textContent = KT.siteUrl + KT.basePath + (A.slug || '…') + '/';
@@ -348,9 +427,104 @@ app.addEventListener('input', e => {
 });
 app.addEventListener('change', e => {
   const el = e.target; const k = el.dataset && el.dataset.k; if (!k || !A) return;
-  setPath(A, k, readInput(el)); dirty = true;
-  if (/\.(kind|side)$|\.path$|focus/.test(k)) drawEditor();          // đổi bố cục / ảnh → vẽ lại phần xem nhanh
+  setPath(A, k, readInput(el)); markDirty();
+  if (/\.(kind|side|ratio)$|\.path$/.test(k)) drawEditor();          // đổi bố cục / ảnh → vẽ lại phần xem nhanh
 });
+
+// ---------- tải ảnh từ máy ----------
+let uploading = false;
+async function uploadInto(path, file, withOg) {
+  const target = getPath(A, path);
+  toast(`Đang nén “${file.name}”…`, 120000);
+  const res = await processFile(file, { focus: target.focus || { x: 50, y: 50 }, withOg });
+  toast(`Đang tải “${file.name}” lên (${(res.files.reduce((s, f) => s + f.blob.size, 0) / 1024).toFixed(0)} KB)…`, 120000);
+  await media.upload(res.files);
+  Object.assign(target, res.img, { og_stale: false });
+  if (!withOg) delete target.og_path;
+  if (!target.focus) target.focus = { x: 50, y: 50 };
+  markDirty();
+}
+app.addEventListener('change', async e => {
+  const el = e.target; if (!el.files || !el.files.length || !A) return;
+  const single = el.dataset.upload, gal = el.dataset.uploadGallery; if (single == null && gal == null) return;
+  const files = [...el.files]; el.value = '';
+  if (uploading) { toast('Đang tải ảnh khác, đợi xong rồi thử lại.'); return; }
+  uploading = true;
+  try {
+    if (single != null) await uploadInto(single, files[0], el.hasAttribute('data-og'));
+    else {
+      const i = Number(gal); const g = A.blocks[i]; let skipped = 0;
+      for (const f of files) {
+        let j = g.imgs.findIndex(im => !im.path);
+        if (j < 0) { if (g.imgs.length >= 4) { skipped++; continue; } g.imgs.push(IMG()); j = g.imgs.length - 1; }
+        await uploadInto(`blocks.${i}.imgs.${j}`, f, false);
+      }
+      if (skipped) toast(`Bộ ảnh tối đa 4 ảnh — ${skipped} ảnh không được thêm.`, 5000);
+    }
+    toast('Đã tải ảnh lên. Nhớ điền Alt text và bấm “Lưu nháp”.', 4500);
+  } catch (err) { toast(mediaError(err), 8000); }
+  finally { uploading = false; drawEditor(); }
+});
+
+// ---------- thư viện ảnh ----------
+function naturalSize(src) {
+  return new Promise((res, rej) => { const im = new Image(); im.onload = () => res({ w: im.naturalWidth, h: im.naturalHeight }); im.onerror = () => rej(new Error('Không tải được ảnh.')); im.src = src; });
+}
+async function openLibrary(pick = null) {
+  modal('<h2>Thư viện ảnh</h2><p class="qt-loading">Đang tải…</p>');
+  let items;
+  try { items = groupLibrary(await media.list()); }
+  catch (e) { modal(`<h2>Thư viện ảnh</h2><div class="qt-alert">${esc(mediaError(e))}</div><div class="qt-modal-act"><button class="qt-btn" data-close>Đóng</button></div>`); return; }
+  modal(`<h2>Thư viện ảnh <span class="qt-muted">(${items.length})</span></h2>
+    <p class="qt-muted">${pick ? 'Bấm “Dùng ảnh này” để chèn vào bài.' : 'Ảnh đã tải lên bucket kien-thuc.'} Ảnh đang được bài nào dùng thì không xóa được.</p>
+    ${items.length ? `<div class="qt-lib">${items.map(g => `<figure><img src="${esc(imgSrc(g.sm || g.lg))}" alt="" loading="lazy"><figcaption>${esc(fmt(g.created))}</figcaption>
+      <div>${pick ? `<button type="button" class="qt-btn qt-btn-primary qt-sm" data-pick="${esc(g.id)}">Dùng ảnh này</button>` : ''}<button type="button" class="qt-btn qt-btn-ghost qt-sm" data-libdel="${esc(g.id)}">Xóa</button></div></figure>`).join('')}</div>`
+      : '<p class="qt-empty">Chưa có ảnh nào. Dùng nút “Tải ảnh từ máy” trong bài.</p>'}
+    <div class="qt-modal-act"><button class="qt-btn" data-close>Đóng</button></div>`);
+  $('#qt-modal-body').onclick = async e => {
+    const p = e.target.closest('[data-pick]'), d = e.target.closest('[data-libdel]');
+    const id = p ? p.dataset.pick : d ? d.dataset.libdel : null;
+    const g = items.find(x => x.id === id); if (!g) return;
+    if (p && pick) {
+      try {
+        const dim = await naturalSize(imgSrc(g.lg)); const im = getPath(A, pick.path);
+        Object.assign(im, { path: g.lg, path_sm: g.sm, w: dim.w, h: dim.h, w_sm: g.sm ? fitSize(dim.w, dim.h, 800).w : 0 });
+        if (pick.og) { im.og_path = g.og || ''; im.og_stale = true; }   // tạo lại ảnh chia sẻ theo điểm lấy nét của bài này khi lưu
+        acceptModal(); markDirty(); drawEditor();
+      } catch (err) { toast(err.message); }
+    }
+    if (d) {
+      let users = [];
+      try { users = [...new Set([...(await store.all()), ...(A ? [A] : [])].filter(a => { const s = imagePathsOf(a); return [g.lg, g.sm, g.og].some(x => x && s.has(x)); }).map(a => a.title || '(bài chưa có tiêu đề)'))]; }
+      catch (err) { toast(dbError(err), 6000); return; }
+      if (users.length) { toast('Ảnh đang được dùng trong: ' + users.join('; ') + '. Gỡ ảnh khỏi bài trước khi xóa.', 8000); return; }
+      if (!(await confirmBox('Xóa vĩnh viễn ảnh này khỏi thư viện?', 'Xóa ảnh'))) return openLibrary(pick);
+      try { await media.remove([g.lg, g.sm, g.og].filter(Boolean)); toast('Đã xóa ảnh.'); } catch (err) { toast(mediaError(err), 6000); }
+      openLibrary(pick);
+    }
+  };
+}
+async function exportBackup() {
+  try {
+    const articles = await store.all();
+    const blob = new Blob([JSON.stringify({ exported_at: new Date().toISOString(), source: KT.supabaseUrl, table: 'kt_articles', count: articles.length, articles }, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `kien-thuc-sao-luu-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    toast(`Đã tải bản sao lưu (${articles.length} bài). Giữ file ở nơi an toàn.`, 5000);
+  } catch (e) { toast(dbError(e), 6000); }
+}
+
+// ---------- bấm vào ảnh để chọn điểm lấy nét ----------
+function setFocus(fz, e) {
+  const r = fz.getBoundingClientRect(); const path = fz.dataset.focus;
+  const x = Math.round(Math.min(100, Math.max(0, (e.clientX - r.left) / r.width * 100)));
+  const y = Math.round(Math.min(100, Math.max(0, (e.clientY - r.top) / r.height * 100)));
+  const im = getPath(A, path); im.focus = { x, y }; if (path === 'cover') im.og_stale = true;
+  $('.qt-dot', fz).style.left = x + '%'; $('.qt-dot', fz).style.top = y + '%';
+  const c = $(`[data-crop="${path}"]`); if (c) c.style.objectPosition = `${x}% ${y}%`;
+  const v = $(`[data-focus-val="${path}"]`); if (v) v.textContent = `${x}% / ${y}%`;
+  markDirty();
+}
 
 // ---------- thao tác ----------
 function mdWrap(tools, kind) {
@@ -364,6 +538,7 @@ function mdWrap(tools, kind) {
   ta.value = out; ta.focus(); ta.setSelectionRange(cur, cur); ta.dispatchEvent(new Event('input', { bubbles: true }));
 }
 app.addEventListener('click', async e => {
+  const fz = e.target.closest('[data-focus]'); if (fz && A) return setFocus(fz, e);
   const t = e.target.closest('[data-act], [data-md]'); if (!t) return;
   if (t.dataset.md) return mdWrap(t.closest('.qt-md-tools'), t.dataset.md);
   const act = t.dataset.act; const i = Number(t.dataset.i);
@@ -380,6 +555,10 @@ app.addEventListener('click', async e => {
     case 'gal-del': if (B[i].imgs.length > 2) B[i].imgs.splice(Number(t.dataset.j), 1); break;
     case 'faq-add': B[i].items.push({ q: '', a_md: '' }); break;
     case 'faq-del': B[i].items.splice(Number(t.dataset.j), 1); break;
+    case 'lib': return openLibrary({ path: t.dataset.path, og: t.hasAttribute('data-og') });
+    case 'lib-manage': return openLibrary(null);
+    case 'export': return exportBackup();
+    case 'img-clear': Object.assign(getPath(A, t.dataset.path), { path: '', path_sm: '', w: 1600, h: 1000, w_sm: 0, og_path: '', og_stale: false }); break;
     case 'preview': return openPreview();
     case 'save': return save();
     case 'publish': return publish();
@@ -387,7 +566,7 @@ app.addEventListener('click', async e => {
     case 'delete': return del();
     default: return;
   }
-  dirty = true; drawEditor();
+  markDirty(); drawEditor();
 });
 
 function problems(a) {
@@ -400,9 +579,18 @@ async function save(extra = {}) {
   const p = problems(A); if (p.length) { toast(p[0], 4500); return false; }
   const btn = $('[data-act="save"]'); if (btn) { btn.disabled = true; btn.textContent = 'Đang lưu…'; }
   try {
-    const row = { ...A, ...extra }; if (!row.id) delete row.id;
+    // Ảnh bìa đổi điểm lấy nét → tạo lại ảnh chia sẻ link 1200×630 cho đúng khung (lỗi thì vẫn lưu bài).
+    if (A.cover && A.cover.og_stale && A.cover.path) {
+      try {
+        const blob = await ogFromUrl(imgSrc(A.cover.path), A.cover.focus || { x: 50, y: 50 });
+        const p = variantPath(newId(), 'og', 'jpg'); await media.upload([{ path: p, blob }]); A.cover.og_path = p;
+      } catch (err) { toast('Chưa tạo lại được ảnh chia sẻ link (' + mediaError(err) + '). Bài vẫn được lưu.', 6000); }
+      A.cover.og_stale = false;
+    }
+    const prevId = A.id;
+    const row = { ...A, ...extra, cover: { ...A.cover } }; if (!row.id) delete row.id; delete row.cover.og_stale;
     const saved = await store.save(row);
-    A = { ...NEW_ARTICLE(), ...saved }; dirty = false;
+    A = { ...NEW_ARTICLE(), ...saved }; dirty = false; clearAutosave(prevId); clearAutosave(A.id);
     if (location.hash !== '#sua/' + A.id) history.replaceState(null, '', '#sua/' + A.id);
     drawEditor(); toast('Đã lưu.'); return true;
   } catch (e) { toast(dbError(e), 6000); if (btn) { btn.disabled = false; btn.textContent = '💾 Lưu nháp'; } return false; }
@@ -421,7 +609,10 @@ async function publish() {
   if (!(A.sources && A.sources.length)) miss.push('Thiếu nguồn tham khảo.');
   if (miss.length) return modal(`<h2>Chưa xuất bản được</h2><ul>${miss.map(m => `<li>${esc(m)}</li>`).join('')}</ul><div class="qt-modal-act"><button class="qt-btn" data-close>Đã hiểu</button></div>`);
   const ok = await new Promise(res => {
+    const imgs = [A.cover, ...A.blocks.flatMap(b => [b.img, ...(b.imgs || [])])].filter(im => im && im.path);
+    const noAlt = imgs.filter(im => !String(im.alt || '').trim()).length;
     modal(`<h2>Xác nhận trước khi xuất bản</h2><p class="qt-muted">Tick đủ 5 mục để bật nút Xuất bản.</p>
+      ${noAlt ? `<div class="qt-alert">${noAlt}/${imgs.length} ảnh chưa có Alt text. Nên điền để Google hiểu ảnh và hỗ trợ người khiếm thị.</div>` : ''}
       ${CHECKS.map((c, k) => `<label class="qt-check"><input type="checkbox" class="qt-pub-ck" data-k2="${k}"> ${esc(c)}</label>`).join('')}
       <div class="qt-modal-act"><button class="qt-btn" data-close>Hủy</button><button class="qt-btn qt-btn-primary" id="qt-pub-go" disabled>Xuất bản</button></div>`, () => res(false));
     $$('.qt-pub-ck').forEach(c => c.onchange = () => { $('#qt-pub-go').disabled = !$$('.qt-pub-ck').every(x => x.checked); });
@@ -431,7 +622,7 @@ async function publish() {
   if (await save({ status: 'published', reviewed_by_owner: true })) {
     const url = KT.siteUrl + KT.basePath + A.slug + '/';
     modal(`<h2>Đã xuất bản 🎉</h2><p>Bài sẽ hiện trên website trong khoảng 1–5 phút.</p><p class="qt-url">${esc(url)}</p>
-      <div class="qt-modal-act"><button class="qt-btn" data-copy="${esc(url)}">Sao chép link để gửi khách</button><a class="qt-btn qt-btn-ghost" href="${esc(url)}" target="_blank" rel="noopener">Mở bài ↗</a><button class="qt-btn qt-btn-primary" data-close>Xong</button></div>`);
+      <div class="qt-modal-act"><button class="qt-btn" data-copy="${esc(url)}">Sao chép link để gửi khách</button><a class="qt-btn qt-btn-ghost" href="${esc(KT.basePath + A.slug + '/')}" target="_blank" rel="noopener">Mở bài ↗</a><button class="qt-btn qt-btn-primary" data-close>Xong</button></div>`);
   }
 }
 async function setStatus(s) {
@@ -446,13 +637,13 @@ async function del() {
     $('#qt-del-go').onclick = () => { acceptModal(); res(true); };
   });
   if (!ok) return;
-  try { await store.remove(A.id); dirty = false; toast('Đã xóa bài.'); location.hash = ''; }
+  try { await store.remove(A.id); dirty = false; clearAutosave(A.id); toast('Đã xóa bài. Ảnh của bài vẫn còn trong Thư viện ảnh.', 4500); location.hash = ''; }
   catch (e) { toast(dbError(e), 6000); }
 }
 
 // ---------- modal + xem trước ----------
 let onModalClose = null;
-function modal(html, onClose) { $('#qt-modal-body').innerHTML = html; $('#qt-modal').hidden = false; onModalClose = onClose || null; }
+function modal(html, onClose) { const b = $('#qt-modal-body'); b.onclick = null; b.innerHTML = html; $('#qt-modal').hidden = false; onModalClose = onClose || null; }
 function closeModal() { $('#qt-modal').hidden = true; const f = onModalClose; onModalClose = null; if (f) f(); }   // = Hủy
 function acceptModal() { onModalClose = null; $('#qt-modal').hidden = true; }                                  // = Đồng ý
 $('#qt-modal').addEventListener('click', e => {

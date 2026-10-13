@@ -83,10 +83,10 @@ export function figure(img, { ratio, cls = '', sizes = '(max-width: 760px) 100vw
   if (!src) return `<div class="kt-img-missing ${cls}">Chưa có ảnh</div>`;
   const sm = imgSrc(img.path_sm);
   const fx = clamp(img.focus && img.focus.x, 0, 100, 50), fy = clamp(img.focus && img.focus.y, 0, 100, 50);
-  const w = clamp(img.w, 1, 8000, 1600), h = clamp(img.h, 1, 8000, 1000);
-  const ar = RATIOS[ratio];
+  const w = clamp(img.w, 1, 8000, 1600), h = clamp(img.h, 1, 8000, 1000);  const ar = RATIOS[ratio];
   const style = `object-position:${fx}% ${fy}%` + (ar ? `;aspect-ratio:${ar}` : '');
-  const srcset = sm ? ` srcset="${esc(sm)} 800w, ${esc(src)} 1600w" sizes="${esc(sizes)}"` : '';
+  const wsm = clamp(img.w_sm, 1, 8000, Math.min(800, w));   // độ rộng thật của bản nhỏ (R4 lưu sẵn)
+  const srcset = sm && wsm < w ? ` srcset="${esc(sm)} ${wsm}w, ${esc(src)} ${w}w" sizes="${esc(sizes)}"` : '';
   const ai = img.ai !== false ? '<span class="ai-badge">Ảnh minh họa</span>' : '';
   const zoomAttr = zoom ? ` data-zoom="${esc(src)}"` : '';
   return `<figure class="kt-fig ${cls}${ar ? ' kt-fig--ratio' : ''}"><div class="kt-fig-media"${zoomAttr}>`

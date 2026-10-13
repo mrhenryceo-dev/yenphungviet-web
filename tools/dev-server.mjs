@@ -2,7 +2,8 @@
 // file tĩnh + rewrite /kien-thuc* và /sitemap.xml → Function trong api/, dùng dữ liệu mẫu (KT_SAMPLE=1).
 // Chạy: node tools/dev-server.mjs [port]   → chỉ lắng nghe 127.0.0.1
 import http from 'node:http';
-import { readFile, stat } from 'node:fs/promises';
+import { readFile, stat, mkdir, readdir, writeFile, unlink } from 'node:fs/promises';
+import os from 'node:os';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -31,8 +32,36 @@ async function tryFile(p) {
   try { const s = await stat(f); if (s.isDirectory()) { f = path.join(f, 'index.html'); await stat(f); } return f; } catch { return null; }
 }
 
+// Mô phỏng Storage cho /quan-tri/?dev=1 (R4): ảnh thử lưu ở thư mục tạm của hệ điều hành, KHÔNG trong repo.
+const MEDIA_DIR = path.join(os.tmpdir(), 'yp-kt-dev-media');
+const KEY_RE = /^img\/[0-9a-f-]{36}-(1600|800|og)\.(webp|jpg)$/;
+async function devStorage(req, res, u) {
+  const send = (code, body, type = 'application/json') => { res.statusCode = code; res.setHeader('Content-Type', type); res.end(body); };
+  await mkdir(path.join(MEDIA_DIR, 'img'), { recursive: true });
+  if (u.pathname === '/__dev-supabase/list' && req.method === 'GET') {
+    const names = await readdir(path.join(MEDIA_DIR, 'img'));
+    const out = await Promise.all(names.map(async n => ({ name: n, created_at: (await stat(path.join(MEDIA_DIR, 'img', n))).mtime.toISOString() })));
+    return send(200, JSON.stringify(out));
+  }
+  const m = u.pathname.match(/^\/__dev-supabase\/(upload|storage\/v1\/object\/public\/kien-thuc)\/(.+)$/);
+  const key = m && decodeURIComponent(m[2]);
+  if (!m || !KEY_RE.test(key)) return send(400, '{"error":"bad key"}');
+  const file = path.join(MEDIA_DIR, key);
+  if (m[1] === 'upload' && req.method === 'PUT') {
+    if (!['image/webp', 'image/jpeg'].includes(req.headers['content-type'])) return send(415, '{"error":"type"}');
+    const chunks = []; let size = 0;
+    for await (const c of req) { size += c.length; if (size > 5242880) return send(413, '{"error":"too large"}'); chunks.push(c); }
+    try { await writeFile(file, Buffer.concat(chunks), { flag: 'wx' }); } catch { return send(409, '{"error":"exists"}'); }   // như upsert:false
+    return send(200, JSON.stringify({ Key: 'kien-thuc/' + key }));
+  }
+  if (m[1] === 'upload' && req.method === 'DELETE') { await unlink(file).catch(() => {}); return send(200, '[]'); }
+  if (req.method === 'GET') { try { res.setHeader('Access-Control-Allow-Origin', '*'); return send(200, await readFile(file), key.endsWith('.jpg') ? 'image/jpeg' : 'image/webp'); } catch { return send(404, '{"error":"not_found"}'); } }
+  return send(405, '{"error":"method"}');
+}
+
 http.createServer(async (req, res) => {
   const u = new URL(req.url, 'http://127.0.0.1');
+  if (u.pathname.startsWith('/__dev-supabase/')) return devStorage(req, res, u).catch(e => { console.error(e); res.statusCode = 500; res.end('dev storage error'); });
   if (BLOCKED.test(u.pathname)) { res.statusCode = 404; return res.end('blocked (.vercelignore)'); }
   const file = await tryFile(u.pathname);
   if (file && !/\/api\//.test(u.pathname)) {
