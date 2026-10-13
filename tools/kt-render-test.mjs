@@ -1,6 +1,7 @@
 // Phase 1R — test bộ render (chạy: node tools/kt-render-test.mjs). Không gọi mạng.
 import assert from 'node:assert/strict';
 import * as R from '../assets/kt/render.mjs';
+import { KT } from '../assets/kt/config.mjs';
 
 let n = 0; const t = (name, fn) => { fn(); n++; console.log('✓', name); };
 
@@ -30,7 +31,7 @@ t('ảnh: chỉ nhận /assets/ hoặc khóa bucket, chặn URL ngoài và ../',
   assert.equal(R.imgSrc('../secret.webp'), null);
   assert.equal(R.imgSrc('a/../b.webp'), null);
   assert.ok(R.imgSrc('/assets/nhom-choi/pet-02.webp'));
-  assert.ok(R.imgSrc('abc/123-1600.webp').startsWith('https://bnumqtjzbyrtavsdlleq.supabase.co/storage/v1/object/public/kien-thuc/'));
+  assert.ok(R.imgSrc('abc/123-1600.webp').startsWith(KT.supabaseUrl + '/storage/v1/object/public/kien-thuc/'));
 });
 t('focus ảnh bị giới hạn 0–100, không chèn CSS', () => {
   const h = R.figure({ path: '/assets/x.webp', focus: { x: '50;background:url(x)', y: 500 } });
@@ -58,7 +59,7 @@ t('trang bài: canonical, OG tuyệt đối, JSON-LD không vỡ </script>', () 
   const a = { slug: 'abc-def', topic: 'co-ban', title: 'X </script><script>alert(1)</script>', seo_description: 'mô tả', cover: { path: 'k/a-1600.webp', og_path: 'k/og.jpg' }, blocks: [], sources: ['s'], published_at: '2026-10-13T00:00:00Z' };
   const h = R.renderArticlePage(a, []);
   assert.ok(h.includes('<link rel="canonical" href="https://yenphungviet.vercel.app/kien-thuc/abc-def/">'));
-  assert.ok(h.includes('property="og:image" content="https://bnumqtjzbyrtavsdlleq.supabase.co/storage/v1/object/public/kien-thuc/k/og.jpg"'));
+  assert.ok(h.includes('property="og:image" content="' + KT.supabaseUrl + '/storage/v1/object/public/kien-thuc/k/og.jpg"'));
   assert.equal((h.match(/<script/g) || []).length, 2, 'chỉ có JSON-LD và kien-thuc.js');
 });
 t('bài có cảnh báo → ẩn nút mua chim cuối bài', () => {

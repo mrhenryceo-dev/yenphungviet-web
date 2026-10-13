@@ -40,8 +40,10 @@ await t('Mọi truy vấn: chỉ anon key, chỉ GET, chỉ status=eq.published'
     assert.ok(c.url.startsWith(KT.supabaseUrl + '/rest/v1/kt_articles?'), c.url);
     assert.ok(c.url.includes('status=eq.published'), 'thiếu lọc published: ' + c.url);
     assert.equal(c.headers.apikey, KT.supabaseAnonKey);
-    const role = JSON.parse(Buffer.from(c.headers.apikey.split('.')[1], 'base64url').toString()).role;
-    assert.equal(role, 'anon', 'không được dùng key khác anon');
+    if (!c.headers.apikey.startsWith('sb_publishable_')) {
+      const role = JSON.parse(Buffer.from(c.headers.apikey.split('.')[1], 'base64url').toString()).role;
+      assert.equal(role, 'anon', 'không được dùng key khác anon');
+    }
   }
 });
 await t('Bài tồn tại → 200, cache 5 phút, canonical + OG tuyệt đối', async () => {

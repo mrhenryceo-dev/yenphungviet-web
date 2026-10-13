@@ -1,7 +1,20 @@
 # HƯỚNG DẪN OWNER — Bật chuyên mục "Kiến thức chuyên sâu" trên Supabase
 
-Làm **theo đúng thứ tự**. Mỗi bước chỉ thao tác trên Supabase Dashboard của dự án `bnumqtjzbyrtavsdlleq`.
+Làm **theo đúng thứ tự**. Mỗi bước chỉ thao tác trên Supabase Dashboard của dự án **`yenphungpet-web`** (dự án RIÊNG cho website, OWNER tạo mới).
 Tên menu trên Dashboard có thể khác đôi chút giữa các phiên bản Supabase. Nếu không thấy, tìm theo từ khóa trong ngoặc.
+
+> ⛔ **KHÔNG làm các bước dưới trên `bird-farm` (`bnumqtjzbyrtavsdlleq`) hay `yenphungpet-v2-staging` (`cynpwmjkflhlrdqxoyhx`).**
+> Đó là App quản lý trại: tắt đăng ký hoặc sửa `auth.users` ở đó có thể làm hỏng App.
+> Trước mỗi bước, kiểm tra thanh địa chỉ có ID của `yenphungpet-web`.
+
+## BƯỚC −1 — Tạo dự án và gửi thông tin CÔNG KHAI
+
+1. **New project** → Name: `yenphungpet-web` → Region: **Southeast Asia (Singapore)** → đặt mật khẩu database mạnh (lưu vào trình quản lý mật khẩu, **không gửi**).
+2. Khi dự án chạy xong: **Project Settings → API** (hoặc *API Keys*). Gửi cho Claude:
+   - **Project ID** (20 chữ cái, cũng nằm trên thanh địa chỉ),
+   - khóa **anon / publishable** (khóa công khai, bắt đầu bằng `eyJ…` loại *anon*, hoặc `sb_publishable_…`).
+   - **Không gửi** khóa `service_role` / `sb_secret_…`. Công cụ của Claude cũng tự từ chối các khóa này.
+3. Claude chạy `tools/kt-set-project.mjs` để trỏ riêng phần Kiến thức chuyên sâu sang dự án mới. Trang chủ, chim, form vẫn dùng dự án cũ.
 
 > Không ai cần biết mật khẩu của OWNER, kể cả Claude. Không gửi mật khẩu, mã OTP hay khóa `service_role` qua chat.
 
