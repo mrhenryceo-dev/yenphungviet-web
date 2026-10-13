@@ -86,10 +86,63 @@ async function boot() {
   const { data } = await sb.auth.getSession();
   if (!data.session) return renderLogin();
   if (!isOwner(data.session.user)) return renderNoAccess(data.session.user);
-  showUser(data.session.user); route();
+  return afterLogin(data.session.user);
+}
+// Nếu tài khoản đã bật MFA → bắt nhập mã OTP (nâng phiên lên aal2) trước khi vào trang quản trị.
+async function afterLogin(user) {
+  const { data: aal, error } = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (!error && aal.nextLevel === 'aal2' && aal.currentLevel !== 'aal2') return renderMfaChallenge(user);
+  showUser(user); route();
+}
+function renderMfaChallenge(user) {
+  app.innerHTML = `<section class="qt-login"><h1>Xác thực 2 lớp</h1><p class="qt-muted">Mở ứng dụng xác thực (Google Authenticator, Microsoft Authenticator…) và nhập mã 6 số cho YẾN PHỤNG PET.</p>
+    <form id="qt-mfa-form" class="qt-card"><label>Mã 6 số<input name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></label>
+    <button class="qt-btn qt-btn-primary" type="submit">Xác nhận</button><p class="qt-err" id="qt-mfa-err"></p></form>
+    <button class="qt-btn qt-btn-ghost" id="qt-mfa-out">Đăng xuất</button></section>`;
+  $('#qt-mfa-out').onclick = async () => { await sb.auth.signOut(); location.href = '/quan-tri/'; };
+  $('#qt-mfa-form').addEventListener('submit', async e => {
+    e.preventDefault(); const code = e.target.code.value.trim();
+    const { data: f } = await sb.auth.mfa.listFactors();
+    const factor = f && f.totp && f.totp.find(x => x.status === 'verified');
+    if (!factor) { $('#qt-mfa-err').textContent = 'Không tìm thấy thiết bị xác thực đã đăng ký.'; return; }
+    const { error } = await sb.auth.mfa.challengeAndVerify({ factorId: factor.id, code });
+    if (error) { $('#qt-mfa-err').textContent = 'Mã không đúng hoặc đã hết hạn. Thử lại với mã mới.'; return; }
+    showUser(user); route();
+  });
 }
 const isOwner = u => !!(u && u.app_metadata && u.app_metadata.kt_role === 'owner');
-function showUser(u) { $('#qt-user').textContent = u.email; const b = $('#qt-logout'); b.hidden = false; b.onclick = async () => { await sb.auth.signOut(); location.href = '/quan-tri/'; }; }
+function showUser(u) {
+  $('#qt-user').innerHTML = `${esc(u.email)} · <a href="#bao-mat">Bảo mật</a>`;
+  const b = $('#qt-logout'); b.hidden = false; b.onclick = async () => { await sb.auth.signOut(); location.href = '/quan-tri/'; };
+}
+// Đăng ký MFA (TOTP): Supabase chỉ cho chính người dùng đăng ký trong ứng dụng, không bật từ Dashboard.
+async function renderSecurity() {
+  if (DEV) { app.innerHTML = '<div class="qt-alert">Xác thực 2 lớp chỉ dùng được khi đăng nhập thật (không có ở chế độ thử local).</div><a class="qt-btn" href="#">← Danh sách</a>'; return; }
+  const { data: f } = await sb.auth.mfa.listFactors();
+  const verified = (f && f.totp || []).filter(x => x.status === 'verified');
+  if (verified.length) {
+    app.innerHTML = `<section class="qt-login"><h1>Bảo mật</h1><div class="qt-card"><p>✅ Xác thực 2 lớp <strong>đang bật</strong> (${verified.length} thiết bị).</p>
+      <p class="qt-muted">Để bắt buộc mã OTP cho mọi thao tác ghi, OWNER chạy BƯỚC 4 trong file migration SQL.</p></div><a class="qt-btn" href="#">← Danh sách</a></section>`;
+    return;
+  }
+  for (const x of (f && f.all) || []) if (x.status === 'unverified') await sb.auth.mfa.unenroll({ factorId: x.id });
+  const { data: en, error } = await sb.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'YENPHUNGPET-' + Date.now() });
+  if (error) { app.innerHTML = `<div class="qt-alert">Không bật được xác thực 2 lớp: ${esc(error.message)}</div><a class="qt-btn" href="#">← Danh sách</a>`; return; }
+  const qr = String(en.totp.qr_code || '');
+  app.innerHTML = `<section class="qt-login"><h1>Bật xác thực 2 lớp</h1><div class="qt-card">
+    <p>1. Mở ứng dụng xác thực trên điện thoại và quét mã QR:</p>
+    ${/^data:image\/svg\+xml/.test(qr) ? `<img class="qt-qr" src="${esc(qr)}" alt="Mã QR xác thực 2 lớp" width="200" height="200">` : ''}
+    <p class="qt-muted">Không quét được? Nhập khóa thủ công: <code>${esc(en.totp.secret)}</code></p>
+    <form id="qt-enroll"><label>2. Nhập mã 6 số đang hiện trong ứng dụng<input name="code" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" required></label>
+    <button class="qt-btn qt-btn-primary" type="submit">Xác nhận và bật</button><p class="qt-err" id="qt-enroll-err"></p></form></div>
+    <a class="qt-btn qt-btn-ghost" href="#">Để sau</a></section>`;
+  $('#qt-enroll').addEventListener('submit', async e => {
+    e.preventDefault();
+    const { error: ve } = await sb.auth.mfa.challengeAndVerify({ factorId: en.id, code: e.target.code.value.trim() });
+    if (ve) { $('#qt-enroll-err').textContent = 'Mã chưa đúng. Đợi mã mới rồi nhập lại.'; return; }
+    toast('Đã bật xác thực 2 lớp.', 4000); renderSecurity();
+  });
+}
 
 function renderLogin(msg = '') {
   app.innerHTML = `<section class="qt-login"><h1>Đăng nhập quản trị</h1><p class="qt-muted">Chỉ dành cho OWNER YẾN PHỤNG PET.</p>
@@ -102,7 +155,7 @@ function renderLogin(msg = '') {
     btn.disabled = false; btn.textContent = 'Đăng nhập';
     if (error) { $('#qt-login-err').textContent = 'Không đăng nhập được: ' + (error.message === 'Invalid login credentials' ? 'sai email hoặc mật khẩu.' : error.message); return; }
     if (!isOwner(data.user)) return renderNoAccess(data.user);
-    showUser(data.user); route();
+    afterLogin(data.user);
   });
 }
 function renderNoAccess(u) {
@@ -115,6 +168,7 @@ function renderNoAccess(u) {
 window.addEventListener('hashchange', route);
 function route() {
   const h = location.hash.replace(/^#/, '');
+  if (h === 'bao-mat') return renderSecurity();
   if (h === 'moi') return renderEditor(null);
   if (h.startsWith('sua/')) return renderEditor(h.slice(4));
   return renderList();

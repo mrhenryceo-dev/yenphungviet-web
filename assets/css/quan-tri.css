@@ -92,3 +92,6 @@
 .qt-preview-stage{flex:1;overflow:auto;display:flex;justify-content:center;padding:14px}
 .qt-preview-stage iframe{width:390px;max-width:100%;height:100%;min-height:600px;border:none;background:#fff;border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,.4)}
 .qt section{padding:0}   /* site.css đặt padding cho mọi <section>; trang quản trị tự quản khoảng cách */
+.qt-qr{display:block;margin:10px auto;background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px}
+.qt-user a{color:var(--green-dark);font-weight:600}
+.qt code{font-family:monospace;background:var(--surface2);padding:2px 6px;border-radius:6px;word-break:break-all}

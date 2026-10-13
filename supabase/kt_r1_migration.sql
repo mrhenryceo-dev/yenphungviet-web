@@ -11,8 +11,11 @@
 begin;
 
 -- ---------------------------------------------------------------------
--- 1. Hàm xác định OWNER: dựa vào app_metadata (chỉ đổi được từ server).
---    Đăng nhập thôi KHÔNG đủ quyền; phải có app_metadata.kt_role = 'owner'.
+-- 1. Hàm xác định OWNER: dựa vào app_metadata (chỉ đổi được từ server / SQL,
+--    người dùng KHÔNG tự sửa được qua API). Đăng nhập thôi KHÔNG đủ quyền.
+--    - app_metadata.kt_role = 'owner'                → là OWNER
+--    - app_metadata.kt_mfa  = 'required' (bật sau khi OWNER đã đăng ký MFA)
+--                                                    → bắt buộc phiên đã xác thực 2 lớp (aal2)
 -- ---------------------------------------------------------------------
 create or replace function public.kt_is_owner()
 returns boolean
@@ -20,11 +23,15 @@ language sql
 stable
 set search_path = ''
 as $$
-  select coalesce((auth.jwt() -> 'app_metadata' ->> 'kt_role') = 'owner', false);
+  select coalesce((auth.jwt() -> 'app_metadata' ->> 'kt_role') = 'owner', false)
+     and (
+       coalesce((auth.jwt() -> 'app_metadata' ->> 'kt_mfa') = 'required', false) = false
+       or coalesce((auth.jwt() ->> 'aal') = 'aal2', false)
+     );
 $$;
 
 comment on function public.kt_is_owner() is
-  'YẾN PHỤNG PET Phase 1R: true khi JWT có app_metadata.kt_role = owner.';
+  'YẾN PHỤNG PET Phase 1R: true khi JWT có app_metadata.kt_role = owner (và aal2 nếu app_metadata.kt_mfa = required).';
 
 -- ---------------------------------------------------------------------
 -- 2. Bảng bài viết
@@ -162,5 +169,11 @@ commit;
 --
 -- BƯỚC 3 — TRONG DASHBOARD (không phải SQL):
 --   Authentication → Sign In / Providers → TẮT "Allow new users to sign up".
---   (Khuyến nghị) bật MFA TOTP cho tài khoản OWNER.
+--
+-- BƯỚC 4 — (Khuyến nghị) SAU KHI OWNER đã đăng ký MFA trong /quan-tri/ và đăng nhập được bằng mã OTP:
+--   update auth.users
+--      set raw_app_meta_data = raw_app_meta_data || '{"kt_mfa":"required"}'::jsonb
+--    where email = '<EMAIL_OWNER>';
+--   → Từ đây mọi thao tác ghi bài/ảnh đều phải có phiên xác thực 2 lớp (aal2).
+--   Gỡ (nếu mất điện thoại):  set raw_app_meta_data = raw_app_meta_data - 'kt_mfa'
 -- =====================================================================
