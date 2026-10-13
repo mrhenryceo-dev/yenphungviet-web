@@ -38,3 +38,12 @@ alter table public.leads enable row level security;
 create policy leads_insert on public.leads for insert to anon with check (true);
 grant insert on public.leads to anon;
 insert into public.leads (contact) values ('khach-mau-1'), ('khach-mau-2');
+
+-- Mô phỏng App quản lý trại dùng CHUNG database (bird-farm): bảng riêng + policy Storage riêng cho bucket của App.
+create table public.flight_cages (id serial primary key, name text);
+alter table public.flight_cages enable row level security;
+create policy farm_cages_staff on public.flight_cages for all to authenticated using (true) with check (true);
+grant select, insert, update, delete on public.flight_cages to authenticated;
+grant usage on sequence public.flight_cages_id_seq to authenticated;
+insert into public.flight_cages (name) values ('Chuồng bay 1');
+create policy farm_halan_read on storage.objects for select to anon, authenticated using (bucket_id = 'Halan');

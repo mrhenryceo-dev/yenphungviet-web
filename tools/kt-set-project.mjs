@@ -5,9 +5,8 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
-// Dự án của App quản lý trại — website KHÔNG được ghi dữ liệu Phase 1R vào đây.
+// Dự án KHÔNG được dùng cho Kiến thức. bird-farm (bnumqtjzbyrtavsdlleq) được OWNER duyệt dùng chung (2026-10-13).
 const BLOCKED = {
-  bnumqtjzbyrtavsdlleq: 'Supabase đang dùng chung với App quản lý trại (website cũ)',
   cynpwmjkflhlrdqxoyhx: 'yenphungpet-v2-staging (App quản lý trại bản nâng cấp)'
 };
 

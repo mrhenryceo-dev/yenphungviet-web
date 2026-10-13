@@ -18,8 +18,9 @@ await db.exec(await sql('tools/kt-sql-stub.sql'));
 const snap = async () => ({
   birds: (await db.query('select count(*)::int n from public.birds')).rows[0].n,
   leads: (await db.query('select count(*)::int n from public.leads')).rows[0].n,
-  policies: (await db.query("select tablename, policyname, cmd, roles::text, qual, with_check from pg_policies where tablename in ('birds','leads') order by 1,2")).rows,
-  grants: (await db.query("select table_name, grantee, privilege_type from information_schema.role_table_grants where table_name in ('birds','leads') order by 1,2,3")).rows,
+  cages: (await db.query('select count(*)::int n from public.flight_cages')).rows[0].n,
+  policies: (await db.query("select tablename, policyname, cmd, roles::text, qual, with_check from pg_policies where policyname not like 'kt\\_%' order by 1,2")).rows,
+  grants: (await db.query("select table_name, grantee, privilege_type from information_schema.role_table_grants where table_name in ('birds','leads','flight_cages') order by 1,2,3")).rows,
   oldBucket: (await db.query("select * from storage.buckets where id='Halan'")).rows
 });
 const before = await snap();
@@ -86,9 +87,33 @@ ok('12c. Người lạ không upload được', /row-level security/i.test(await
 ok('12d. OWNER upload được vào kien-thuc', (await as('owner', `insert into storage.objects (bucket_id,name) values ('kien-thuc','x/a.webp') returning id`)).rows.length === 1);
 ok('12e. OWNER KHÔNG ghi được vào bucket khác (Halan)', /row-level security/i.test(await denied('owner', `insert into storage.objects (bucket_id,name) values ('Halan','hack.jpg')`) || ''));
 ok('12f. Người lạ không xóa được ảnh', (await as('stranger', `delete from storage.objects returning id`)).rows.length === 0);
-// birds / leads KHÔNG đổi
+// DATABASE DÙNG CHUNG VỚI APP TRẠI
+ok('S1. Nhân viên App trại (đăng nhập, không kt_role) vẫn đọc/ghi bảng của App như cũ',
+  (await as('stranger', `insert into public.flight_cages (name) values ('Chuồng mới') returning id`)).rows.length === 1
+  && (await as('stranger', `select count(*)::int n from public.flight_cages`)).rows[0].n === 2);
+await db.exec(`delete from public.flight_cages where name = 'Chuồng mới'`);
+ok('S2. Khách vẫn đọc được bucket Halan của App (policy cũ còn tác dụng)',
+  (await as('anon', `select count(*)::int n from storage.objects where bucket_id = 'Halan'`)).rows.length === 1);
+// Kịch bản xấu nhất: App trại có policy RỘNG cho mọi bucket
+await db.exec(`create policy farm_broad_all on storage.objects for all to anon, authenticated using (true) with check (true);`);
+ok('S3. Có policy rộng: người lạ VẪN không upload được vào kien-thuc (restrictive)',
+  /row-level security/i.test(await denied('stranger', `insert into storage.objects (bucket_id,name) values ('kien-thuc','hack.webp')`) || ''));
+ok('S4. Có policy rộng: khách VẪN không upload được vào kien-thuc',
+  /row-level security/i.test(await denied('anon', `insert into storage.objects (bucket_id,name) values ('kien-thuc','hack.webp')`) || ''));
+ok('S5. Có policy rộng: người lạ không sửa/xóa/liệt kê ảnh kien-thuc (0 dòng)',
+  (await as('stranger', `update storage.objects set name='hack.webp' where bucket_id='kien-thuc' returning id`)).rows.length === 0
+  && (await as('stranger', `delete from storage.objects where bucket_id='kien-thuc' returning id`)).rows.length === 0
+  && (await as('stranger', `select id from storage.objects where bucket_id='kien-thuc'`)).rows.length === 0);
+ok('S6. Có policy rộng: không chuyển được ảnh từ bucket khác sang kien-thuc',
+  (await as('stranger', `insert into storage.objects (bucket_id,name) values ('Halan','tam.jpg') returning id`)).rows.length === 1
+  && /row-level security/i.test(await denied('stranger', `update storage.objects set bucket_id='kien-thuc' where name='tam.jpg'`) || ''));
+ok('S7. App trại vẫn ghi được bucket của mình như trước (không bị chốt kt_ ảnh hưởng)',
+  (await as('stranger', `delete from storage.objects where name='tam.jpg' returning id`)).rows.length === 1);
+ok('S8. OWNER vẫn upload được vào kien-thuc', (await as('owner', `insert into storage.objects (bucket_id,name) values ('kien-thuc','x/b.webp') returning id`)).rows.length === 1);
+await db.exec(`drop policy farm_broad_all on storage.objects;`);
+// birds / leads / App trại KHÔNG đổi
 const after = await snap();
-ok('13. birds/leads/policy/grant/bucket cũ giữ nguyên sau migration', JSON.stringify(before) === JSON.stringify(after));
+ok('13. birds/leads/bảng App trại/policy/grant/bucket cũ giữ nguyên sau migration', JSON.stringify(before) === JSON.stringify(after));
 // ROLLBACK
 await db.exec(await sql('supabase/kt_r1_rollback.sql'));
 const left = (await db.query("select (select count(*) from pg_tables where tablename like 'kt_%')::int t, (select count(*) from pg_proc where proname like 'kt_%')::int f, (select count(*) from pg_policies where policyname like 'kt_%')::int p")).rows[0];
@@ -96,5 +121,25 @@ ok('14. Rollback xóa sạch kt_* (bảng, hàm, policy)', left.t === 0 && left.
 ok('15. Sau rollback birds/leads vẫn nguyên', JSON.stringify(await snap()) === JSON.stringify(before));
 await db.exec(await sql('supabase/kt_r1_migration.sql'));
 ok('16. Chạy lại migration sau rollback không lỗi', (await db.query("select count(*)::int n from pg_tables where tablename='kt_articles'")).rows[0].n === 1);
+ok('16b. Có đủ 10 policy kt_* (2 bảng + 4 Storage OWNER + 4 chốt restrictive)',
+  (await db.query("select count(*)::int n from pg_policies where policyname like 'kt\\_%'")).rows[0].n === 10);
+
+// CHỐT CHẶN: database lạ có sẵn đối tượng trùng tên → migration phải DỪNG và không tạo gì
+async function guardStops(prep) {
+  const g = new PGlite();
+  await g.exec(await sql('tools/kt-sql-stub.sql'));
+  await g.exec(prep);
+  let msg = '';
+  try { await g.exec(await sql('supabase/kt_r1_migration.sql')); } catch (e) { msg = e.message; await g.exec('rollback'); }   // SQL Editor cũng hủy cả giao dịch khi lỗi
+  const created = (await g.query("select to_regclass('public.kt_articles') t")).rows[0].t;
+  await g.close();
+  return /DỪNG/.test(msg) && created === null;
+}
+ok('17a. Đã có hàm public.kt_* của App khác → migration dừng, không tạo gì',
+  await guardStops(`create function public.kt_khac() returns int language sql as 'select 1';`));
+ok('17b. Đã có policy tên kt_* → migration dừng',
+  await guardStops(`create policy kt_cua_app on public.birds for select to anon using (true);`));
+ok('17c. Bucket kien-thuc đã có với cấu hình khác → migration dừng',
+  await guardStops(`insert into storage.buckets (id, name, public) values ('kien-thuc','kien-thuc', false);`));
 
 console.log(`\n${n} kiểm thử SQL đạt (Postgres ${(await db.query('show server_version')).rows[0].server_version}, PGlite).`);

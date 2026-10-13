@@ -3,12 +3,42 @@
 -- Migration: bảng bài viết, bucket ảnh, RLS cho MỘT OWNER duy nhất.
 --
 -- ⚠️ CHƯA CHẠY. OWNER đọc và duyệt trước, rồi chạy trong Supabase → SQL Editor.
+-- Dự án đích: bird-farm (bnumqtjzbyrtavsdlleq) — DÙNG CHUNG với App quản lý trại.
 -- Chỉ TẠO MỚI các đối tượng có tiền tố kt_ và bucket "kien-thuc".
--- KHÔNG sửa birds, leads, notify-lead hay bất kỳ policy hiện có nào.
+-- KHÔNG sửa birds, leads, notify-lead, bảng của App trại hay bất kỳ policy hiện có nào.
+-- KHÔNG đổi cài đặt Auth (không tắt đăng ký — App trại có thể cần).
 -- Hoàn tác: supabase/kt_r1_rollback.sql
 -- =====================================================================
 
 begin;
+
+-- ---------------------------------------------------------------------
+-- 0. CHỐT CHẶN: dừng ngay nếu database đã có đối tượng trùng tên KHÔNG do Phase 1R tạo
+--    (tránh ghi đè hàm/policy/bucket của App quản lý trại). Không sửa gì.
+-- ---------------------------------------------------------------------
+do $$
+begin
+  if to_regclass('public.kt_articles') is null then
+    if exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                where n.nspname = 'public' and p.proname like 'kt\_%') then
+      raise exception 'kt: DỪNG — đã có hàm public.kt_* không thuộc Phase 1R. Không chạy tiếp.';
+    end if;
+    if exists (select 1 from pg_class c join pg_namespace n on n.oid = c.relnamespace
+                where n.nspname = 'public' and c.relname like 'kt\_%') then
+      raise exception 'kt: DỪNG — đã có bảng/đối tượng public.kt_*. Không chạy tiếp.';
+    end if;
+    if exists (select 1 from pg_policies where policyname like 'kt\_%') then
+      raise exception 'kt: DỪNG — đã có policy tên kt_*. Không chạy tiếp.';
+    end if;
+    if exists (select 1 from storage.buckets where id = 'kien-thuc'
+                and (file_size_limit is distinct from 5242880
+                     or allowed_mime_types is distinct from array['image/webp','image/jpeg','image/png'])) then
+      raise exception 'kt: DỪNG — bucket "kien-thuc" đã tồn tại với cấu hình khác. Không chạy tiếp.';
+    end if;
+  elsif coalesce(obj_description('public.kt_articles'::regclass, 'pg_class'), '') not like 'YẾN PHỤNG PET Phase 1R%' then
+    raise exception 'kt: DỪNG — bảng public.kt_articles không phải của Phase 1R.';
+  end if;
+end $$;
 
 -- ---------------------------------------------------------------------
 -- 1. Hàm xác định OWNER: dựa vào app_metadata (chỉ đổi được từ server / SQL,
@@ -96,6 +126,9 @@ begin
 end;
 $$;
 
+comment on function public.kt_articles_before_write() is
+  'YẾN PHỤNG PET Phase 1R: cập nhật updated_at, chặn xuất bản khi thiếu thông tin.';
+
 drop trigger if exists kt_articles_before_write on public.kt_articles;
 create trigger kt_articles_before_write
   before insert or update on public.kt_articles
@@ -150,6 +183,33 @@ create policy kt_storage_owner_delete on storage.objects
   for delete to authenticated
   using (bucket_id = 'kien-thuc' and public.kt_is_owner());
 
+-- ---------------------------------------------------------------------
+-- 6. CHỐT RESTRICTIVE cho bucket "kien-thuc" (database dùng chung với App trại)
+--    Policy permissive được CỘNG DỒN: nếu App trại có policy rộng (vd. authenticated ghi mọi bucket),
+--    người lạ vẫn có thể ghi vào kien-thuc. Policy RESTRICTIVE được AND với mọi policy khác,
+--    nên ở bucket kien-thuc chỉ OWNER qua được. Bucket khác: điều kiện luôn đúng → App trại KHÔNG bị ảnh hưởng.
+-- ---------------------------------------------------------------------
+drop policy if exists kt_storage_guard_select on storage.objects;
+create policy kt_storage_guard_select on storage.objects
+  as restrictive for select to public
+  using (bucket_id <> 'kien-thuc' or public.kt_is_owner());
+
+drop policy if exists kt_storage_guard_insert on storage.objects;
+create policy kt_storage_guard_insert on storage.objects
+  as restrictive for insert to public
+  with check (bucket_id <> 'kien-thuc' or public.kt_is_owner());
+
+drop policy if exists kt_storage_guard_update on storage.objects;
+create policy kt_storage_guard_update on storage.objects
+  as restrictive for update to public
+  using (bucket_id <> 'kien-thuc' or public.kt_is_owner())
+  with check (bucket_id <> 'kien-thuc' or public.kt_is_owner());
+
+drop policy if exists kt_storage_guard_delete on storage.objects;
+create policy kt_storage_guard_delete on storage.objects
+  as restrictive for delete to public
+  using (bucket_id <> 'kien-thuc' or public.kt_is_owner());
+
 commit;
 
 -- =====================================================================
@@ -167,8 +227,8 @@ commit;
 --
 -- Sau khi gán quyền, OWNER đăng xuất rồi đăng nhập lại /quan-tri/ để nhận JWT mới.
 --
--- BƯỚC 3 — TRONG DASHBOARD (không phải SQL):
---   Authentication → Sign In / Providers → TẮT "Allow new users to sign up".
+-- BƯỚC 3 — KHÔNG tắt "Allow new users to sign up" trên bird-farm (App quản lý trại có thể cần).
+--   Quyền OWNER không phụ thuộc cài đặt này: người tự đăng ký KHÔNG tự gán được app_metadata.kt_role.
 --
 -- BƯỚC 4 — (Khuyến nghị) SAU KHI OWNER đã đăng ký MFA trong /quan-tri/ và đăng nhập được bằng mã OTP:
 --   update auth.users

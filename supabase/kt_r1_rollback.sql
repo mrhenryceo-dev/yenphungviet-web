@@ -13,6 +13,10 @@ drop policy if exists kt_storage_owner_select on storage.objects;
 drop policy if exists kt_storage_owner_insert on storage.objects;
 drop policy if exists kt_storage_owner_update on storage.objects;
 drop policy if exists kt_storage_owner_delete on storage.objects;
+drop policy if exists kt_storage_guard_select on storage.objects;
+drop policy if exists kt_storage_guard_insert on storage.objects;
+drop policy if exists kt_storage_guard_update on storage.objects;
+drop policy if exists kt_storage_guard_delete on storage.objects;
 
 drop table if exists public.kt_articles;          -- kéo theo policy, trigger, index của bảng
 drop function if exists public.kt_articles_before_write();
