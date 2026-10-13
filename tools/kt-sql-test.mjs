@@ -26,7 +26,20 @@ const snap = async () => ({
 const before = await snap();
 
 await db.exec(await sql('supabase/kt_r1_migration.sql'));
-await db.exec(await sql('supabase/kt_r1_migration.sql'));   // chạy lại lần 2: phải không lỗi (idempotent)
+
+// "Dấu vân tay" mọi thứ Phase 1R sở hữu: định nghĩa hàm, policy, trigger, bucket, dữ liệu bài, ảnh.
+const ktPrint = async d => JSON.stringify((await d.query(`
+  select 'fn' k, p.proname::text a, pg_get_functiondef(p.oid) b from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname like 'kt\_%'
+  union all select 'pol', schemaname || '.' || tablename || '.' || policyname, permissive || cmd || roles::text || coalesce(qual, '') || coalesce(with_check, '') from pg_policies where policyname like 'kt\_%'
+  union all select 'trg', tgname::text, pg_get_triggerdef(oid) from pg_trigger where tgname like 'kt\_%'
+  union all select 'bucket', id, row(public, file_size_limit, allowed_mime_types)::text from storage.buckets where id = 'kien-thuc'
+  union all select 'obj', name, bucket_id from storage.objects where bucket_id = 'kien-thuc'
+  union all select 'tbl', c.relname::text, coalesce(obj_description(c.oid, 'pg_class'), '') from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relname like 'kt\_%'
+  order by 1, 2`)).rows);
+async function runMigration(d) {
+  try { await d.exec(await sql('supabase/kt_r1_migration.sql')); return ''; }
+  catch (e) { await d.exec('rollback'); return e.message; }   // SQL Editor cũng hủy cả giao dịch khi lỗi
+}
 
 const OWNER = 'aaaaaaaa-0000-4000-8000-000000000001', STRANGER = 'bbbbbbbb-0000-4000-8000-000000000002';
 const claims = {
@@ -114,13 +127,30 @@ await db.exec(`drop policy farm_broad_all on storage.objects;`);
 // birds / leads / App trại KHÔNG đổi
 const after = await snap();
 ok('13. birds/leads/bảng App trại/policy/grant/bucket cũ giữ nguyên sau migration', JSON.stringify(before) === JSON.stringify(after));
+// CHẠY LẠI KHI ĐÃ CÀI: phải DỪNG và KHÔNG thay đổi gì (kể cả khi mọi thứ giống hệt)
+{
+  const fp = await ktPrint(db), rows = (await db.query('select count(*)::int n from public.kt_articles')).rows[0].n;
+  const msg = await runMigration(db);
+  ok('R1. Chạy lại khi đã cài → DỪNG với thông báo "đã được cài"', /DỪNG — Phase 1R đã được cài/.test(msg), msg);
+  ok('R2. Chạy lại không ghi đè: hàm, policy, trigger, bucket, ảnh, bảng y nguyên', fp === await ktPrint(db));
+  ok('R3. Chạy lại không mất bài viết', (await db.query('select count(*)::int n from public.kt_articles')).rows[0].n === rows && rows > 0);
+  ok('R4. Chạy lại không đổi gì của App trại', JSON.stringify(await snap()) === JSON.stringify(before));
+}
 // ROLLBACK
 await db.exec(await sql('supabase/kt_r1_rollback.sql'));
 const left = (await db.query("select (select count(*) from pg_tables where tablename like 'kt_%')::int t, (select count(*) from pg_proc where proname like 'kt_%')::int f, (select count(*) from pg_policies where policyname like 'kt_%')::int p")).rows[0];
 ok('14. Rollback xóa sạch kt_* (bảng, hàm, policy)', left.t === 0 && left.f === 0 && left.p === 0, JSON.stringify(left));
 ok('15. Sau rollback birds/leads vẫn nguyên', JSON.stringify(await snap()) === JSON.stringify(before));
-await db.exec(await sql('supabase/kt_r1_migration.sql'));
-ok('16. Chạy lại migration sau rollback không lỗi', (await db.query("select count(*)::int n from pg_tables where tablename='kt_articles'")).rows[0].n === 1);
+{
+  const fp = await ktPrint(db);
+  ok('16a. Sau rollback, bucket kien-thuc còn → chạy lại DỪNG, không tạo gì',
+    /bucket "kien-thuc" đã tồn tại/.test(await runMigration(db)) && fp === await ktPrint(db));
+}
+// OWNER xóa ảnh + bucket trong Dashboard (mô phỏng), rồi cài lại
+await db.exec(`delete from storage.objects where bucket_id = 'kien-thuc'; delete from storage.buckets where id = 'kien-thuc';`);
+ok('16. Sau rollback + xóa bucket, cài lại thành công', (await runMigration(db)) === '');
+ok('16c. Cài lại: bảng mới, trống', (await db.query("select count(*)::int n from public.kt_articles")).rows[0].n === 0);
+ok('16d. Cài lại: bucket đúng cấu hình', (await db.query("select (public and file_size_limit = 5242880)::bool v from storage.buckets where id='kien-thuc'")).rows[0].v === true);
 ok('16b. Có đủ 10 policy kt_* (2 bảng + 4 Storage OWNER + 4 chốt restrictive)',
   (await db.query("select count(*)::int n from pg_policies where policyname like 'kt\\_%'")).rows[0].n === 10);
 
@@ -169,21 +199,51 @@ ok('16b. Có đủ 10 policy kt_* (2 bảng + 4 Storage OWNER + 4 chốt restric
 }
 
 // CHỐT CHẶN: database lạ có sẵn đối tượng trùng tên → migration phải DỪNG và không tạo gì
-async function guardStops(prep) {
+async function guardStops(prep, expectTable = null) {
   const g = new PGlite();
   await g.exec(await sql('tools/kt-sql-stub.sql'));
   await g.exec(prep);
-  let msg = '';
-  try { await g.exec(await sql('supabase/kt_r1_migration.sql')); } catch (e) { msg = e.message; await g.exec('rollback'); }   // SQL Editor cũng hủy cả giao dịch khi lỗi
-  const created = (await g.query("select to_regclass('public.kt_articles') t")).rows[0].t;
+  const fp = await ktPrint(g), farm = await g.query("select policyname from pg_policies where policyname not like 'kt\_%' order by 1");
+  const msg = await runMigration(g);
+  const same = fp === await ktPrint(g) && JSON.stringify(farm.rows) === JSON.stringify((await g.query("select policyname from pg_policies where policyname not like 'kt\_%' order by 1")).rows);
+  const t = (await g.query("select to_regclass('public.kt_articles')::text t")).rows[0].t;
   await g.close();
-  return /DỪNG/.test(msg) && created === null;
+  return /DỪNG/.test(msg) && same && t === expectTable;
 }
 ok('17a. Đã có hàm public.kt_* của App khác → migration dừng, không tạo gì',
   await guardStops(`create function public.kt_khac() returns int language sql as 'select 1';`));
 ok('17b. Đã có policy tên kt_* → migration dừng',
   await guardStops(`create policy kt_cua_app on public.birds for select to anon using (true);`));
-ok('17c. Bucket kien-thuc đã có với cấu hình khác → migration dừng',
+ok('17c. Bucket kien-thuc đã có, cấu hình GIỐNG HỆT dự kiến → vẫn DỪNG',
+  await guardStops(`insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types) values ('kien-thuc','kien-thuc', true, 5242880, array['image/webp','image/jpeg','image/png']);`));
+ok('17d. Bucket kien-thuc đã có với cấu hình khác → DỪNG',
   await guardStops(`insert into storage.buckets (id, name, public) values ('kien-thuc','kien-thuc', false);`));
+ok('17e. Bucket khác id nhưng name = kien-thuc → DỪNG',
+  await guardStops(`insert into storage.buckets (id, name, public) values ('kt-khac','kien-thuc', true);`));
+ok('17f. Đã có bảng kt_articles của App khác (không phải Phase 1R) → DỪNG, không đụng tới',
+  await guardStops(`create table public.kt_articles (id int); insert into public.kt_articles values (1);`, 'kt_articles'));
+ok('17g. Còn sót hàm kt_is_owner (giống hệt tên) → DỪNG, hàm cũ không bị thay',
+  await guardStops(`create function public.kt_is_owner() returns boolean language sql as 'select true';`));
+ok('17h. Có trigger tên kt_* trên bảng App trại → DỪNG',
+  await guardStops(`create function public.farm_noop() returns trigger language plpgsql as 'begin return new; end'; create trigger kt_cua_app before insert on public.birds for each row execute function public.farm_noop();`));
+ok('17i. Có bảng/chỉ mục public.kt_* khác → DỪNG',
+  await guardStops(`create table public.kt_khac (id int);`));
+
+// LỚP 2: kể cả khi bỏ hẳn chốt mục 0, lệnh CREATE thuần vẫn báo lỗi thay vì ghi đè
+{
+  const noGuard = (await sql('supabase/kt_r1_migration.sql')).replace(/do \$\$[\s\S]*?end \$\$;/, '-- (đã bỏ chốt để thử lớp 2)');
+  ok('L0. Bản thử đã bỏ chốt mục 0', !noGuard.includes("raise exception 'kt: DỪNG"));
+  for (const [name, prep] of [
+    ['hàm kt_is_owner', `create function public.kt_is_owner() returns boolean language sql as 'select true';`],
+    ['bucket kien-thuc', `insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types) values ('kien-thuc','kien-thuc', true, 5242880, array['image/webp','image/jpeg','image/png']);`]
+  ]) {
+    const g = new PGlite(); await g.exec(await sql('tools/kt-sql-stub.sql')); await g.exec(prep);
+    const fp = await ktPrint(g); let err = '';
+    try { await g.exec(noGuard); } catch (e) { err = e.message; await g.exec('rollback'); }
+    ok(`L1. Không chốt, đã có ${name} → Postgres báo lỗi, không ghi đè, không tạo gì`,
+      /already exists|duplicate key/i.test(err) && fp === await ktPrint(g) && (await g.query("select to_regclass('public.kt_articles') t")).rows[0].t === null, err);
+    await g.close();
+  }
+}
 
 console.log(`\n${n} kiểm thử SQL đạt (Postgres ${(await db.query('show server_version')).rows[0].server_version}, PGlite).`);

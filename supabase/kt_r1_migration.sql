@@ -8,35 +8,43 @@
 -- KHÔNG sửa birds, leads, notify-lead, bảng của App trại hay bất kỳ policy hiện có nào.
 -- KHÔNG đổi cài đặt Auth (không tắt đăng ký — App trại có thể cần).
 -- Hoàn tác: supabase/kt_r1_rollback.sql
+--
+-- CƠ CHẾ CHẠY LẠI: migration CHỈ CÀI MỘT LẦN, KHÔNG ghi đè.
+--   - Lần đầu: database phải SẠCH — không có đối tượng kt_* nào, không có bucket "kien-thuc".
+--   - Chạy lại khi đã cài: DỪNG ở mục 0, không thay đổi gì (kể cả khi tên/cấu hình giống hệt).
+--   - Muốn cài lại: chạy kt_r1_rollback.sql → xóa bucket "kien-thuc" (đã trống) trong Dashboard → chạy file này.
+--   - Hai lớp bảo vệ: (1) chốt mục 0; (2) mọi lệnh tạo đều là CREATE thuần (không OR REPLACE /
+--     IF NOT EXISTS / DROP IF EXISTS / ON CONFLICT) → nếu vẫn có đối tượng trùng tên, Postgres báo lỗi
+--     và cả giao dịch bị hủy.
 -- =====================================================================
 
 begin;
 
 -- ---------------------------------------------------------------------
--- 0. CHỐT CHẶN: dừng ngay nếu database đã có đối tượng trùng tên KHÔNG do Phase 1R tạo
---    (tránh ghi đè hàm/policy/bucket của App quản lý trại). Không sửa gì.
+-- 0. CHỐT CHẶN: database phải sạch. Có BẤT KỲ đối tượng kt_* hoặc bucket "kien-thuc" nào → DỪNG.
+--    Không phân biệt "của Phase 1R" hay "của App khác": không ghi đè gì cả. Khối này không sửa gì.
 -- ---------------------------------------------------------------------
 do $$
 begin
-  if to_regclass('public.kt_articles') is null then
-    if exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-                where n.nspname = 'public' and p.proname like 'kt\_%') then
-      raise exception 'kt: DỪNG — đã có hàm public.kt_* không thuộc Phase 1R. Không chạy tiếp.';
-    end if;
-    if exists (select 1 from pg_class c join pg_namespace n on n.oid = c.relnamespace
-                where n.nspname = 'public' and c.relname like 'kt\_%') then
-      raise exception 'kt: DỪNG — đã có bảng/đối tượng public.kt_*. Không chạy tiếp.';
-    end if;
-    if exists (select 1 from pg_policies where policyname like 'kt\_%') then
-      raise exception 'kt: DỪNG — đã có policy tên kt_*. Không chạy tiếp.';
-    end if;
-    if exists (select 1 from storage.buckets where id = 'kien-thuc'
-                and (file_size_limit is distinct from 5242880
-                     or allowed_mime_types is distinct from array['image/webp','image/jpeg','image/png'])) then
-      raise exception 'kt: DỪNG — bucket "kien-thuc" đã tồn tại với cấu hình khác. Không chạy tiếp.';
-    end if;
-  elsif coalesce(obj_description('public.kt_articles'::regclass, 'pg_class'), '') not like 'YẾN PHỤNG PET Phase 1R%' then
-    raise exception 'kt: DỪNG — bảng public.kt_articles không phải của Phase 1R.';
+  if to_regclass('public.kt_articles') is not null then
+    raise exception 'kt: DỪNG — Phase 1R đã được cài (có public.kt_articles). Migration chỉ chạy một lần, không có gì bị thay đổi. Muốn cài lại: chạy kt_r1_rollback.sql trước.';
+  end if;
+  if exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = 'public' and p.proname like 'kt\_%') then
+    raise exception 'kt: DỪNG — đã có hàm public.kt_*. Không chạy tiếp.';
+  end if;
+  if exists (select 1 from pg_class c join pg_namespace n on n.oid = c.relnamespace
+              where n.nspname = 'public' and c.relname like 'kt\_%') then
+    raise exception 'kt: DỪNG — đã có bảng/chỉ mục/đối tượng public.kt_*. Không chạy tiếp.';
+  end if;
+  if exists (select 1 from pg_trigger where tgname like 'kt\_%') then
+    raise exception 'kt: DỪNG — đã có trigger tên kt_*. Không chạy tiếp.';
+  end if;
+  if exists (select 1 from pg_policies where policyname like 'kt\_%') then
+    raise exception 'kt: DỪNG — đã có policy tên kt_*. Không chạy tiếp.';
+  end if;
+  if exists (select 1 from storage.buckets where id = 'kien-thuc' or name = 'kien-thuc') then
+    raise exception 'kt: DỪNG — bucket "kien-thuc" đã tồn tại (bất kể cấu hình). Không chạy tiếp.';
   end if;
 end $$;
 
@@ -47,7 +55,7 @@ end $$;
 --    - app_metadata.kt_mfa  = 'required' (bật sau khi OWNER đã đăng ký MFA)
 --                                                    → bắt buộc phiên đã xác thực 2 lớp (aal2)
 -- ---------------------------------------------------------------------
-create or replace function public.kt_is_owner()
+create function public.kt_is_owner()
 returns boolean
 language sql
 stable
@@ -66,7 +74,7 @@ comment on function public.kt_is_owner() is
 -- ---------------------------------------------------------------------
 -- 2. Bảng bài viết
 -- ---------------------------------------------------------------------
-create table if not exists public.kt_articles (
+create table public.kt_articles (
   id                uuid primary key default gen_random_uuid(),
   slug              text not null unique
                     check (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$' and char_length(slug) between 3 and 80),
@@ -92,13 +100,13 @@ create table if not exists public.kt_articles (
 comment on table public.kt_articles is
   'YẾN PHỤNG PET Phase 1R: bài viết Kiến thức chuyên sâu. Nội dung lưu dạng JSON blocks.';
 
-create index if not exists kt_articles_public_idx
+create index kt_articles_public_idx
   on public.kt_articles (status, topic, published_at desc);
 
 -- ---------------------------------------------------------------------
 -- 3. Trigger: tự cập nhật updated_at, chặn xuất bản khi thiếu thông tin
 -- ---------------------------------------------------------------------
-create or replace function public.kt_articles_before_write()
+create function public.kt_articles_before_write()
 returns trigger
 language plpgsql
 set search_path = ''
@@ -129,7 +137,6 @@ $$;
 comment on function public.kt_articles_before_write() is
   'YẾN PHỤNG PET Phase 1R: cập nhật updated_at, chặn xuất bản khi thiếu thông tin.';
 
-drop trigger if exists kt_articles_before_write on public.kt_articles;
 create trigger kt_articles_before_write
   before insert or update on public.kt_articles
   for each row execute function public.kt_articles_before_write();
@@ -139,12 +146,10 @@ create trigger kt_articles_before_write
 -- ---------------------------------------------------------------------
 alter table public.kt_articles enable row level security;
 
-drop policy if exists kt_articles_public_read on public.kt_articles;
 create policy kt_articles_public_read on public.kt_articles
   for select to anon, authenticated
   using (status = 'published');
 
-drop policy if exists kt_articles_owner_all on public.kt_articles;
 create policy kt_articles_owner_all on public.kt_articles
   for all to authenticated
   using (public.kt_is_owner())
@@ -159,26 +164,21 @@ grant select, insert, update, delete on public.kt_articles to authenticated;
 -- ---------------------------------------------------------------------
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('kien-thuc', 'kien-thuc', true, 5242880,
-        array['image/webp','image/jpeg','image/png'])
-on conflict (id) do nothing;
+        array['image/webp','image/jpeg','image/png']);
 
-drop policy if exists kt_storage_owner_select on storage.objects;
 create policy kt_storage_owner_select on storage.objects
   for select to authenticated
   using (bucket_id = 'kien-thuc' and public.kt_is_owner());
 
-drop policy if exists kt_storage_owner_insert on storage.objects;
 create policy kt_storage_owner_insert on storage.objects
   for insert to authenticated
   with check (bucket_id = 'kien-thuc' and public.kt_is_owner());
 
-drop policy if exists kt_storage_owner_update on storage.objects;
 create policy kt_storage_owner_update on storage.objects
   for update to authenticated
   using (bucket_id = 'kien-thuc' and public.kt_is_owner())
   with check (bucket_id = 'kien-thuc' and public.kt_is_owner());
 
-drop policy if exists kt_storage_owner_delete on storage.objects;
 create policy kt_storage_owner_delete on storage.objects
   for delete to authenticated
   using (bucket_id = 'kien-thuc' and public.kt_is_owner());
@@ -189,23 +189,19 @@ create policy kt_storage_owner_delete on storage.objects
 --    người lạ vẫn có thể ghi vào kien-thuc. Policy RESTRICTIVE được AND với mọi policy khác,
 --    nên ở bucket kien-thuc chỉ OWNER qua được. Bucket khác: điều kiện luôn đúng → App trại KHÔNG bị ảnh hưởng.
 -- ---------------------------------------------------------------------
-drop policy if exists kt_storage_guard_select on storage.objects;
 create policy kt_storage_guard_select on storage.objects
   as restrictive for select to public
   using (bucket_id <> 'kien-thuc' or public.kt_is_owner());
 
-drop policy if exists kt_storage_guard_insert on storage.objects;
 create policy kt_storage_guard_insert on storage.objects
   as restrictive for insert to public
   with check (bucket_id <> 'kien-thuc' or public.kt_is_owner());
 
-drop policy if exists kt_storage_guard_update on storage.objects;
 create policy kt_storage_guard_update on storage.objects
   as restrictive for update to public
   using (bucket_id <> 'kien-thuc' or public.kt_is_owner())
   with check (bucket_id <> 'kien-thuc' or public.kt_is_owner());
 
-drop policy if exists kt_storage_guard_delete on storage.objects;
 create policy kt_storage_guard_delete on storage.objects
   as restrictive for delete to public
   using (bucket_id <> 'kien-thuc' or public.kt_is_owner());
