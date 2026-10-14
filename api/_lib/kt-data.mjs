@@ -20,8 +20,8 @@ async function rest(query) {
 async function sample() {
   const { readFile } = await import('node:fs/promises');
   const { fileURLToPath } = await import('node:url');
-  const file = fileURLToPath(new URL('../../tools/kt-sample.json', import.meta.url));
-  const all = JSON.parse(await readFile(file, 'utf8'));
+  const read = async name => { try { return JSON.parse(await readFile(fileURLToPath(new URL(`../../tools/${name}`, import.meta.url)), 'utf8')); } catch { return []; } };
+  const all = [...(await read('kt-sample.json')), ...(await read('kt-sample-ai.json'))];   // + 3 bài mẫu Phase 1S (tools/build-samples.mjs)
   return all.filter(a => a.status === 'published')
     .sort((x, y) => String(y.published_at).localeCompare(String(x.published_at)));
 }

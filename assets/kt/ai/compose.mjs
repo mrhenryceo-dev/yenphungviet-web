@@ -37,8 +37,7 @@ export function composeArticle(pkg, { existing = [], layout } = {}) {
   if (pkg.intro) push({ type: 'text', md: pkg.intro });
 
   if (L === 'huong-dan') {
-    warnings();                                   // an toàn trước tiên
-    if (pkg.sections.length >= 3) push({ type: 'checklist', title: 'Các bước chính', items: pkg.sections.map(s => s.heading) });
+    warnings();                                   // an toàn trước tiên (mục lục tự động đã liệt kê các bước — không lặp lại)
     pkg.sections.forEach(s => {
       if (s.images) { push({ type: 'text', md: sec(s) }); gallery(s, '1:1'); }
       else if (s.image) push({ type: 'image_text', side: 'left', split: 40, ratio: '1:1', img: IMG(s.image, '1:1'), md: sec(s) });
