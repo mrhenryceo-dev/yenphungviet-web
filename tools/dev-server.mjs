@@ -17,6 +17,21 @@ const MIME = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': '
   '.json': 'application/json', '.webp': 'image/webp', '.png': 'image/png', '.jpg': 'image/jpeg', '.ico': 'image/x-icon', '.svg': 'image/svg+xml', '.txt': 'text/plain; charset=utf-8', '.xml': 'application/xml' };
 const BLOCKED = /^\/(supabase|tools)\//;
 
+// Phase 1S — chạy CHÍNH Edge Function kt-ai (handler.mjs) với MOCK provider cho /quan-tri/?dev=1.
+// Không khóa API, không gọi mạng, không chi phí. Cờ "dev owner" chỉ có hiệu lực vì KT_RUNTIME=dev-server.
+const devUsage = []; let ktAi = null;
+async function devFunction(req, res) {
+  if (!ktAi) ktAi = await import('../supabase/functions/kt-ai/handler.mjs');
+  const chunks = []; for await (const c of req) chunks.push(c);
+  const body = Buffer.concat(chunks);
+  const request = new Request(`http://127.0.0.1:${PORT}/__dev-fn/kt-ai`, { method: req.method, headers: req.headers, body: ['GET', 'HEAD'].includes(req.method) ? undefined : body });
+  const env = { KT_AI_ENABLED: '1', KT_RUNTIME: 'dev-server', KT_DEV_FAKE_OWNER: '1', KT_AI_TEXT_PROVIDER: 'mock', KT_AI_IMAGE_PROVIDER: 'mock',
+    KT_ALLOWED_ORIGINS: `http://127.0.0.1:${PORT},http://localhost:${PORT}` };
+  // Hạn mức ngày / tháng được kiểm thử riêng (tools/kt-ai-test.mjs); ở máy local mock không tính hạn mức.
+  const r = await ktAi.handle(request, env, { usageStore: { async list() { return []; }, async add(row) { devUsage.push(row); } } });
+  res.statusCode = r.status; r.headers.forEach((v, k) => res.setHeader(k, v)); res.end(Buffer.from(await r.arrayBuffer()));
+}
+
 function matchRewrite(p) {
   for (const r of vercel.rewrites) {
     const keys = []; const re = new RegExp('^' + r.source.replace(/:([a-z]+)/g, (m, k) => { keys.push(k); return '([^/]+)'; }) + '$');
@@ -62,12 +77,18 @@ async function devStorage(req, res, u) {
 http.createServer(async (req, res) => {
   const u = new URL(req.url, 'http://127.0.0.1');
   if (u.pathname.startsWith('/__dev-supabase/')) return devStorage(req, res, u).catch(e => { console.error(e); res.statusCode = 500; res.end('dev storage error'); });
+  if (u.pathname === '/__dev-fn/kt-ai') return devFunction(req, res).catch(e => { console.error(e); res.statusCode = 500; res.end('dev function error'); });
   if (BLOCKED.test(u.pathname)) { res.statusCode = 404; return res.end('blocked (.vercelignore)'); }
   const file = await tryFile(u.pathname);
   if (file && !/\/api\//.test(u.pathname)) {
     if (!u.pathname.endsWith('/') && file.endsWith('index.html') && !u.pathname.endsWith('.html')) { res.statusCode = 308; res.setHeader('Location', u.pathname + '/' + u.search); return res.end(); }
     res.setHeader('Content-Type', MIME[path.extname(file)] || 'application/octet-stream');
-    for (const h of vercel.headers || []) if (new RegExp('^' + h.source.replace('(.*)', '.*') + '$').test(u.pathname)) h.headers.forEach(x => res.setHeader(x.key, x.value));
+    // ?__devframe=1 (CHỈ dev-server): bỏ chặn nhúng iframe để kiểm tra giao diện quản trị ở khổ điện thoại
+    const devFrame = u.searchParams.has('__devframe');
+    for (const h of vercel.headers || []) if (new RegExp('^' + h.source.replace('(.*)', '.*') + '$').test(u.pathname)) h.headers.forEach(x => {
+      if (devFrame && x.key === 'X-Frame-Options') return;
+      res.setHeader(x.key, devFrame && x.key === 'Content-Security-Policy' ? x.value.replace("frame-ancestors 'none'", "frame-ancestors 'self'") : x.value);
+    });
     return res.end(await readFile(file));
   }
   const dest = matchRewrite(u.pathname);

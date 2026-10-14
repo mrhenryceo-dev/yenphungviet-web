@@ -233,3 +233,5 @@
   .kt-filter{white-space:normal;text-align:left;line-height:1.25;padding:8px 11px;display:flex;justify-content:space-between;align-items:center;gap:6px}
   .kt-filter:first-child{grid-column:1/-1;justify-content:center}
 }
+.kt-img-pending{flex-direction:column;gap:6px;text-align:center;padding:18px;border:1.5px dashed rgba(38,79,57,.3)}
+.kt-img-pending span{font-weight:700;color:var(--green-dark)}.kt-img-pending small{font-size:12.5px;max-width:420px}

@@ -99,6 +99,8 @@ export function qaArticle(a, { group = '', risk = [] } = {}) {
   if (sexTopic && !(a.blocks || []).some(b => b && b.type === 'warning')) add('warning', 'sex-warning', 'Bài về giới tính nên có khung cảnh báo "không kết luận chắc chắn từ ảnh".');
   const genTopic = risk.includes('genetics') || /gen|mutation|split|di truyen/.test(fold(a.title));
   if (genTopic && !/(khong the|khong nen|chi biet chac)[^.]{0,60}(gen an|split)|(gen an|split)[^.]{0,80}(khong the|phai|chi)/.test(fold(txt))) add('warning', 'split-note', 'Bài genetics nên nói rõ: không thể biết gene ẩn (split) chỉ qua ngoại hình.');
+  // --- bài mô phỏng (mock provider) không bao giờ được duyệt ---
+  if (/\[MÔ PHỎNG/i.test(txt) || /\[MÔ PHỎNG/i.test(JSON.stringify(a.sources || []))) add('error', 'mock', 'Đây là bài MÔ PHỎNG do mock provider tạo để kiểm thử — không được xuất bản.');
   // --- bảo vệ trạng thái ---
   if (a.status && a.status !== 'draft') add('error', 'status', 'Bài AI phải ở trạng thái nháp.');
   if (a.reviewed_by_owner) add('error', 'reviewed', 'Bài AI không được tự đánh dấu "OWNER đã duyệt".');

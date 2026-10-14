@@ -8,12 +8,13 @@
 import { KT, topicName } from '/assets/kt/config.mjs';
 import { renderPreviewPage, imgSrc, isSlug, esc, LAYOUTS, layoutOf } from '/assets/kt/render.mjs';
 import { processFile, ogFromUrl, groupLibrary, imagePathsOf, fitSize, variantPath, newId, INPUT_TYPES } from '/quan-tri/media.mjs';
+import { renderFactory, renderReview, pendingReviewCount } from '/quan-tri/factory.mjs';
 
 const DEV = ['127.0.0.1', 'localhost'].includes(location.hostname) && new URLSearchParams(location.search).get('dev') === '1';
-if (DEV) KT.supabaseUrl = location.origin + '/__dev-supabase';
+if (DEV) KT.supabaseUrl = location.origin + '/__dev-supabase';   // ảnh thử phục vụ bởi dev-server, cùng cấu trúc đường dẫn với Storage thật
 // Đang chạy trên website chính thức? (Preview / local → link và lời nhắn khác, nút duyệt AI bị khóa)
 const ON_PROD = location.origin === KT.siteUrl;
-const pageUrl = slug => (ON_PROD ? KT.siteUrl : location.origin) + KT.basePath + (slug || '…') + '/';   // ảnh thử phục vụ bởi dev-server, cùng cấu trúc đường dẫn với Storage thật
+const pageUrl = slug => (ON_PROD ? KT.siteUrl : location.origin) + KT.basePath + (slug || '…') + '/';
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const app = $('#qt-app');
@@ -216,9 +217,14 @@ function renderNoAccess(u) {
 
 // ---------- điều hướng trong trang ----------
 window.addEventListener('hashchange', route);
+// Ngữ cảnh cho Xưởng nội dung AI (quan-tri/factory.mjs) — dùng chung kho bài, ảnh, hộp thoại của trang quản trị.
+const factoryCtx = () => ({ app, esc, toast, modal, acceptModal, confirmBox, store, media, processFile, imgSrc, DEV, ON_PROD, KT, sb: () => sb });
 function route() {
   const h = location.hash.replace(/^#/, '');
   if (h === 'bao-mat') return renderSecurity();
+  if (h === 'ai') return renderFactory(factoryCtx());
+  if (h.startsWith('duyet/')) return renderReview(factoryCtx(), h.slice(6));
+  if (h.startsWith('duyet-xb/')) return renderEditor(h.slice(9)).then(() => publish());   // Duyệt xuất bản từ Xưởng → hộp xác nhận 5 mục
   if (h === 'moi') return renderEditor(null);
   if (h.startsWith('sua/')) return renderEditor(h.slice(4));
   return renderList();
@@ -232,7 +238,7 @@ async function renderList() {
   try { rows = await store.list(); } catch (e) { app.innerHTML = `<div class="qt-alert">${esc(dbError(e))}</div>`; return; }
   const opts = (arr, cur) => arr.map(([v, t]) => `<option value="${v}"${v === cur ? ' selected' : ''}>${esc(t)}</option>`).join('');
   app.innerHTML = `<section class="qt-list"><div class="qt-list-head"><h1>Bài viết <span class="qt-muted">(${rows.length})</span></h1>
-      <div class="qt-row-act"><button type="button" class="qt-btn qt-btn-ghost" data-act="lib-manage">🗂 Thư viện ảnh</button><button type="button" class="qt-btn qt-btn-ghost" data-act="export">⬇ Tải bản sao lưu</button><a class="qt-btn qt-btn-primary" href="#moi">+ Bài mới</a></div></div>
+      <div class="qt-row-act"><a class="qt-btn" href="#ai">🤖 Xưởng nội dung</a><button type="button" class="qt-btn qt-btn-ghost" data-act="lib-manage">🗂 Thư viện ảnh</button><button type="button" class="qt-btn qt-btn-ghost" data-act="export">⬇ Tải bản sao lưu</button><a class="qt-btn qt-btn-primary" href="#moi">+ Bài mới</a></div></div>
     <div class="qt-filters"><input type="search" id="qt-q" placeholder="Tìm theo tiêu đề…" value="${esc(listState.q)}">
       <select id="qt-fs">${opts([['', 'Mọi trạng thái'], ['draft', 'Nháp'], ['published', 'Công khai'], ['hidden', 'Đã ẩn']], listState.status)}</select>
       <select id="qt-ft">${opts([['', 'Mọi chủ đề'], ...KT.topics.map(t => [t.id, t.name])], listState.topic)}</select></div>
@@ -252,6 +258,12 @@ async function renderList() {
   $('#qt-fs').onchange = e => { listState.status = e.target.value; draw(); };
   $('#qt-ft').onchange = e => { listState.topic = e.target.value; draw(); };
   draw();
+  pendingReviewCount(factoryCtx()).then(n => {
+    if (!n || !$('.qt-list')) return;
+    const a = document.createElement('a'); a.className = 'qt-ai-banner'; a.href = '#ai';
+    a.textContent = `🤖 ${n} bài AI đang chờ bạn duyệt — mở Xưởng nội dung →`;
+    $('.qt-list-head').after(a);
+  });
 }
 
 // ---------- định nghĩa khối ----------

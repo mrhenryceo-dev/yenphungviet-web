@@ -116,3 +116,28 @@
 .qt label.qt-btn-primary{color:#fff}
 .qt label.qt-btn.qt-sm{font-size:13px;margin:0 6px 10px 0}
 .qt-img .qt-hint{word-break:normal;margin:4px 0 0}
+/* Phase 1S — Xưởng nội dung AI + trang duyệt */
+.qt-ai-banner{display:block;margin:0 0 12px;padding:12px 16px;border-radius:14px;background:var(--green-dark);color:#fff;font-weight:700;text-decoration:none}
+.qt-ai-chip{display:inline-block;font-size:12.5px;font-weight:700;padding:5px 10px;border-radius:100px;background:var(--green-dim);color:var(--green-dark)}
+.qt-ai-chip--mock{background:#FFF1D6;color:#7A4A00}.qt-ai-chip--off{background:#FDEBDD;color:#8A3B0E}
+.qt-ai-sec{margin:18px 0}.qt-ai-sec h2{font-size:19px}
+.qt-ai-cards{display:grid;gap:10px}
+.qt-ai-card{display:grid;grid-template-columns:96px 1fr;gap:12px;background:#fff;border:1px solid var(--border);border-radius:14px;padding:10px}
+.qt-ai-thumb{aspect-ratio:3/2;border-radius:10px;overflow:hidden;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:28px}
+.qt-ai-thumb img{width:100%;height:100%;object-fit:cover}
+.qt-ai-title{display:block;font-size:16px;margin:4px 0}.qt-ai-qa{font-size:13px}
+.qt-ai-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.qt-ai-acts .qt-sm{margin:0}
+.qt-ai-groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:2px 12px;margin-bottom:10px}
+.qt-ai-ideas{list-style:none;padding:0;margin:12px 0;display:grid;gap:8px}
+.qt-ai-ideas li{display:flex;justify-content:space-between;gap:10px;align-items:center;border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:#fff}
+.qt-ai-busy{font-weight:600}
+.qt-rv-cols{display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start}
+@media (max-width:980px){.qt-rv-cols{grid-template-columns:1fr}}
+.qt-rv-stage{background:#2A2E1F;border-radius:16px;padding:12px;display:flex;justify-content:center;overflow:auto}
+.qt-rv-stage iframe{max-width:100%;height:78vh;border:none;background:#fff;border-radius:10px}
+.qt-rv-side .qt-card{margin-bottom:12px;padding:14px}.qt-rv-side h3{margin:0 0 8px}
+.qt-rv-list{padding-left:18px;margin:0 0 8px;font-size:13.5px;line-height:1.5}.qt-rv-list li{margin-bottom:6px}
+.qt-rv-err{color:#8A2B0A}.qt-rv-warn{color:#6B4A00}.qt-rv-ok{color:#1F5A35}
+.qt-review .qt-ebar .qt-seg button{padding:7px 10px}
+@media (max-width:560px){.qt-ai-card{grid-template-columns:64px 1fr}.qt-ai-ideas li{flex-direction:column;align-items:flex-start}}
+@media (max-width:520px){.qt-brand span{display:none}.qt-top{padding:6px 12px}.qt-user{font-size:12px}.qt-app{padding:12px}}

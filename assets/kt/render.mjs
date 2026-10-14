@@ -93,7 +93,9 @@ const RATIOS = { '16:9': '16 / 9', '3:2': '3 / 2', '4:3': '4 / 3', '1:1': '1 / 1
 export function figure(img, { ratio, cls = '', sizes = '(max-width: 760px) 100vw, 760px', zoom = false, eager = false } = {}) {
   if (!img) return '';
   const src = imgSrc(img.path);
-  if (!src) return `<div class="kt-img-missing ${cls}">Chưa có ảnh</div>`;
+  if (!src) return img.prompt
+    ? `<figure class="kt-fig ${cls}"><div class="kt-img-missing kt-img-pending"><span>🖼 Ảnh minh họa đang chờ tạo</span>${img.caption ? `<small>${inline(img.caption)}</small>` : ''}</div></figure>`
+    : `<div class="kt-img-missing ${cls}">Chưa có ảnh</div>`;
   const sm = imgSrc(img.path_sm);
   const fx = clamp(img.focus && img.focus.x, 0, 100, 50), fy = clamp(img.focus && img.focus.y, 0, 100, 50);
   const w = clamp(img.w, 1, 8000, 1600), h = clamp(img.h, 1, 8000, 1000);  const ar = RATIOS[ratio];
