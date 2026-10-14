@@ -76,6 +76,11 @@ export async function runJob(deps, jobId, { onProgress = () => {}, maxImages = 8
   const save = async patch => { job = await store.saveJob({ ...job, ...patch, updated_at: now().toISOString() }); return job; };
   await save({ status: 'generating', lock_until: new Date(now().getTime() + LOCK_MS).toISOString(), error: '' });
   try {
+    // Chạy tiếp sau khi đã xong nhưng còn ô ảnh trống (lỗi ảnh lần trước) → quay lại bước ảnh
+    if (job.step === 'done' && job.article_id) {
+      const a = await store.getArticle(job.article_id);
+      if (a && a.status === 'draft' && pendingSlots(a).length) await save({ step: 'images' });
+    }
     if (job.step === 'article') {
       if (job.attempts >= MAX_ATTEMPTS) throw new PipelineError('attempts', `Đã thử tạo bài ${job.attempts} lần — dừng để tránh tốn chi phí. Sửa chủ đề hoặc tạo việc mới.`);
       onProgress('Đang viết bài…');
