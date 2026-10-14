@@ -67,6 +67,22 @@
       lb.hidden = false; $('.kt-lb-close', lb).focus();
     }
   });
+  // ---- thanh tiến độ đọc + đánh dấu mục đang đọc trong mục lục (trang bài) ----
+  const bar = $('.kt-progress span'), body = $('.kt-body');
+  if (bar && body) {
+    const links = $$('.kt-toc a'); const heads = links.map(a => document.getElementById(decodeURIComponent(a.hash.slice(1)))).filter(Boolean);
+    let ticking = false;
+    const update = () => {
+      ticking = false;
+      const r = body.getBoundingClientRect(); const total = r.height - window.innerHeight * 0.6;
+      bar.style.transform = `scaleX(${Math.min(1, Math.max(0, -r.top / (total > 0 ? total : 1)))})`;
+      let cur = -1; heads.forEach((h, i) => { if (h.getBoundingClientRect().top < 120) cur = i; });
+      links.forEach((a, i) => a.classList.toggle('on', i === cur));
+    };
+    window.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
+    update();
+  }
+
   const lb = $('#kt-lightbox');
   if (lb) {
     const close = () => { lb.hidden = true; $('img', lb).src = ''; };

@@ -67,6 +67,33 @@ t('bài có cảnh báo → ẩn nút mua chim cuối bài', () => {
   assert.ok(R.articleBodyHtml(base).includes('kt-end-cta'));
   assert.ok(!R.articleBodyHtml({ ...base, blocks: [{ type: 'warning', md: 'x' }] }).includes('kt-end-cta'));
 });
+t('mục lục: ≥3 tiêu đề H2 → có TOC, id duy nhất, không vỡ HTML', () => {
+  const a = { slug: 'toc-thu', topic: 'co-ban', title: 'T', blocks: [
+    { type: 'text', md: '## Giới thiệu\nA\n## Giới thiệu\nB' }, { type: 'image_text', side: 'left', img: { path: '' }, md: '## Trứng <b>x</b>\nC' },
+    { type: 'faq', title: 'Câu hỏi thường gặp', items: [{ q: 'Q', a_md: 'A' }] }] };
+  const h = R.articleBodyHtml(a);
+  assert.ok(h.includes('class="kt-toc"'));
+  assert.ok(h.includes('id="gioi-thieu"') && h.includes('id="gioi-thieu-2"') && h.includes('id="cau-hoi-thuong-gap"'));
+  assert.ok(!h.includes('<b>x</b>'), 'thẻ HTML trong tiêu đề phải bị escape');
+  assert.ok(!R.articleBodyHtml({ ...a, blocks: [{ type: 'text', md: '## Một\n## Hai' }] }).includes('kt-toc'), '<3 mục thì không có TOC');
+});
+t('bố cục: chỉ nhận 5 giá trị, mặc định "chuan"', () => {
+  for (const l of Object.keys(R.LAYOUTS)) assert.ok(R.articleBodyHtml({ slug: 'abc', topic: 'co-ban', title: 'T', cover: { layout: l }, blocks: [] }).includes(`kt-layout--${l}`));
+  assert.ok(R.articleBodyHtml({ slug: 'abc', topic: 'co-ban', title: 'T', cover: { layout: '"><script>' }, blocks: [] }).includes('kt-layout--chuan'));
+  assert.equal(Object.keys(R.LAYOUTS).length, 5);
+});
+t('ảnh bìa tải ngay (fetchpriority), ảnh trong bài lazy', () => {
+  const h = R.articleBodyHtml({ slug: 'abc', topic: 'co-ban', title: 'T', cover: { path: 'img/a-1600.webp' }, blocks: [{ type: 'image', img: { path: 'img/b-1600.webp' } }] });
+  assert.match(h, /a-1600\.webp"[^>]*fetchpriority="high"/);
+  assert.doesNotMatch(h, /a-1600\.webp"[^>]*loading="lazy"/);
+  assert.match(h, /b-1600\.webp"[^>]*loading="lazy"/);
+});
+t('trang danh sách: JSON-LD ItemList, đúng 1 bài nổi bật khi ≥3 bài', () => {
+  const list = [1, 2, 3].map(i => ({ slug: 'bai-' + i, topic: 'co-ban', title: 'Bài ' + i, published_at: '2026-10-1' + i + 'T00:00:00Z' }));
+  const h = R.renderListPage(list);
+  assert.ok(h.includes('"@type":"ItemList"'));
+  assert.equal((h.match(/kt-card--feature/g) || []).length, 1);
+});
 t('sitemap', () => { const x = R.sitemapXml([{ slug: 'abc', updated_at: '2026-10-13T00:00:00Z' }]); assert.ok(x.includes('<loc>https://yenphungviet.vercel.app/kien-thuc/abc/</loc><lastmod>2026-10-13</lastmod>')); });
 
 console.log(`\n${n} test đạt.`);

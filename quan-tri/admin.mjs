@@ -6,11 +6,14 @@
 // - Chế độ thử LOCAL: chỉ khi chạy trên 127.0.0.1/localhost với ?dev=1 → bài lưu trong localStorage,
 //   ảnh lưu vào thư mục tạm của tools/dev-server.mjs. Không gọi Supabase.
 import { KT, topicName } from '/assets/kt/config.mjs';
-import { renderPreviewPage, imgSrc, isSlug, esc } from '/assets/kt/render.mjs';
+import { renderPreviewPage, imgSrc, isSlug, esc, LAYOUTS, layoutOf } from '/assets/kt/render.mjs';
 import { processFile, ogFromUrl, groupLibrary, imagePathsOf, fitSize, variantPath, newId, INPUT_TYPES } from '/quan-tri/media.mjs';
 
 const DEV = ['127.0.0.1', 'localhost'].includes(location.hostname) && new URLSearchParams(location.search).get('dev') === '1';
-if (DEV) KT.supabaseUrl = location.origin + '/__dev-supabase';   // ảnh thử phục vụ bởi dev-server, cùng cấu trúc đường dẫn với Storage thật
+if (DEV) KT.supabaseUrl = location.origin + '/__dev-supabase';
+// Đang chạy trên website chính thức? (Preview / local → link và lời nhắn khác, nút duyệt AI bị khóa)
+const ON_PROD = location.origin === KT.siteUrl;
+const pageUrl = slug => (ON_PROD ? KT.siteUrl : location.origin) + KT.basePath + (slug || '…') + '/';   // ảnh thử phục vụ bởi dev-server, cùng cấu trúc đường dẫn với Storage thật
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const app = $('#qt-app');
@@ -127,6 +130,7 @@ function validateServerSide(r) {
 // ---------- đăng nhập ----------
 async function boot() {
   if (DEV) { $('#qt-dev').hidden = false; $('#qt-user').textContent = 'OWNER (thử local)'; return route(); }
+  if (!ON_PROD) { const b = $('#qt-dev'); b.hidden = false; b.textContent = `BẢN THỬ (${location.host}) — dữ liệu là THẬT (database bird-farm). Bài “Công khai” chỉ hiện trên website chính thức sau khi Phase 1R lên Production.`; }
   const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm');
   sb = createClient(KT.supabaseUrl, KT.supabaseAnonKey, { auth: { persistSession: true, autoRefreshToken: true } });
   const { data } = await sb.auth.getSession();
@@ -374,8 +378,9 @@ function drawEditor() {
     <label>Tiêu đề *<input data-k="title" value="${esc(a.title)}" maxlength="140"></label>
     <label>Phụ đề<input data-k="subtitle" value="${esc(a.subtitle)}" maxlength="220"></label>
     <label>Chủ đề ${sel('topic', a.topic, topicOpts)}</label>
+    <label>Bố cục bài ${sel('cover.layout', layoutOf(a), Object.entries(LAYOUTS))}</label>
     <label>Đường dẫn (slug) <input data-k="slug" id="qt-slug" value="${esc(a.slug)}" maxlength="80"></label>
-    <p class="qt-hint" id="qt-url">${esc(KT.siteUrl + KT.basePath + (a.slug || '…') + '/')}</p>
+    <p class="qt-hint" id="qt-url">${esc(pageUrl(a.slug))}</p>${ON_PROD ? '' : '<p class="qt-hint">Đây là địa chỉ trên bản thử. Link chính thức có dạng ' + esc(KT.siteUrl + KT.basePath) + '…/ sau khi lên Production.</p>'}
     <label>Mô tả ngắn (trên thẻ bài)<textarea data-k="excerpt" rows="3" maxlength="300">${esc(a.excerpt)}</textarea></label>
     ${imgFields('cover', a.cover, 'Ảnh bìa (cũng dùng khi chia sẻ link)', { ratio: '16:9', og: true })}
     <h3>SEO và chia sẻ</h3>
@@ -422,7 +427,7 @@ app.addEventListener('input', e => {
   setPath(A, k, readInput(el)); markDirty();
   if (k === 'title' && !slugTouched) { A.slug = slugify(A.title); const s = $('#qt-slug'); if (s) s.value = A.slug; }
   if (k === 'slug') { slugTouched = true; }
-  if (k === 'title' || k === 'slug') $('#qt-url').textContent = KT.siteUrl + KT.basePath + (A.slug || '…') + '/';
+  if (k === 'title' || k === 'slug') $('#qt-url').textContent = pageUrl(A.slug);
   const c = $(`[data-count="${k}"]`); if (c) c.textContent = `${el.value.length}/${el.maxLength}`;
 });
 app.addEventListener('change', e => {
@@ -589,6 +594,7 @@ async function save(extra = {}) {
     }
     const prevId = A.id;
     const row = { ...A, ...extra, cover: { ...A.cover } }; if (!row.id) delete row.id; delete row.cover.og_stale;
+    row.blocks = clone(A.blocks).map(b => { if (b && b.img) delete b.img.og_stale; if (b && Array.isArray(b.imgs)) b.imgs.forEach(im => im && delete im.og_stale); return b; });   // cờ tạm, không lưu
     const saved = await store.save(row);
     A = { ...NEW_ARTICLE(), ...saved }; dirty = false; clearAutosave(prevId); clearAutosave(A.id);
     if (location.hash !== '#sua/' + A.id) history.replaceState(null, '', '#sua/' + A.id);
@@ -620,9 +626,15 @@ async function publish() {
   });
   if (!ok) return;
   if (await save({ status: 'published', reviewed_by_owner: true })) {
-    const url = KT.siteUrl + KT.basePath + A.slug + '/';
-    modal(`<h2>Đã xuất bản 🎉</h2><p>Bài sẽ hiện trên website trong khoảng 1–5 phút.</p><p class="qt-url">${esc(url)}</p>
-      <div class="qt-modal-act"><button class="qt-btn" data-copy="${esc(url)}">Sao chép link để gửi khách</button><a class="qt-btn qt-btn-ghost" href="${esc(KT.basePath + A.slug + '/')}" target="_blank" rel="noopener">Mở bài ↗</a><button class="qt-btn qt-btn-primary" data-close>Xong</button></div>`);
+    const path = KT.basePath + A.slug + '/';
+    const here = location.origin + path, official = KT.siteUrl + path;
+    modal(ON_PROD
+      ? `<h2>Đã xuất bản 🎉</h2><p>Bài đã công khai. Trang bài mở được ngay; trang danh sách và sitemap có thể cần tới 5 phút để cập nhật.</p><p class="qt-url">${esc(official)}</p>
+      <div class="qt-modal-act"><button class="qt-btn" data-copy="${esc(official)}">Sao chép link để gửi khách</button><a class="qt-btn qt-btn-ghost" href="${esc(path)}" target="_blank" rel="noopener">Mở bài ↗</a><button class="qt-btn qt-btn-primary" data-close>Xong</button></div>`
+      : `<h2>Đã chuyển sang Công khai</h2><div class="qt-alert">Bạn đang ở <strong>bản thử (${esc(location.host)})</strong>. Bài đã được ghi trạng thái Công khai vào database thật, nhưng website chính thức <strong>chưa hiển thị</strong> vì mục Kiến thức chưa lên Production. Khi Phase 1R lên Production, bài này sẽ hiện ngay.</div>
+      <p>Xem ngay trên bản thử:</p><p class="qt-url">${esc(here)}</p>
+      <p class="qt-muted">Link chính thức sau khi lên Production: ${esc(official)}</p>
+      <div class="qt-modal-act"><button class="qt-btn" data-copy="${esc(here)}">Sao chép link bản thử (chỉ người có quyền Vercel mở được)</button><a class="qt-btn qt-btn-ghost" href="${esc(path)}" target="_blank" rel="noopener">Mở bài ↗</a><button class="qt-btn qt-btn-primary" data-close>Xong</button></div>`);
   }
 }
 async function setStatus(s) {
