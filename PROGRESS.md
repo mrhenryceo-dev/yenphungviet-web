@@ -27,3 +27,4 @@ Bắt đầu: 2026-10-14. OWNER vắng ~5 ngày. File này để tiếp tục n�
 ## Nhật ký
 - 2026-10-14: khởi tạo. Đã xác nhận không có tài liệu Knowledge trên máy.
 - 2026-10-14: GĐ1 xong. Kiểm tra 390/341/314px: không tràn ngang. CSP không chặn admin (thật + dev + xem trước).
+- 2026-10-14: GĐ2 phần lõi: assets/kt/ai/{taxonomy,text,package,compose,qa,prompt,limits,providers,mockimg,mock-data,pipeline}.mjs; Edge Function supabase/functions/kt-ai (handler.mjs + index.ts, bản sao ai/ qua tools/build-edge.mjs); migration kt_r2 (CHƯA CHẠY) + 26 test PGlite. 3 bài mẫu (GĐ3) nằm trong mock-data.mjs, nguồn đã mở đọc được. Còn lại: UI Xưởng + trang duyệt, test lõi, docs.
