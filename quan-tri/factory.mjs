@@ -7,7 +7,7 @@
 // Chế độ thử local (?dev=1): cùng mã máy chạy việc (worker.mjs) chạy trong trình duyệt với mock + dữ liệu localStorage.
 import * as P from '/assets/kt/ai/pipeline.mjs';
 import * as WK from '/assets/kt/ai/worker.mjs';
-import { GROUPS, GUIDES, groupById } from '/assets/kt/ai/taxonomy.mjs';
+import { GROUPS, groupById } from '/assets/kt/ai/taxonomy.mjs';
 import { applyImage, pendingSlots } from '/assets/kt/ai/compose.mjs';
 import { SAMPLES, SAMPLE_COVERS } from '/assets/kt/ai/mock-data.mjs';
 import { createProviders } from '/assets/kt/ai/providers.mjs';
@@ -15,6 +15,7 @@ import { readLimits } from '/assets/kt/ai/limits.mjs';
 import { STATE_LABEL } from '/assets/kt/ai/sources.mjs';
 import { renderPreviewPage } from '/assets/kt/render.mjs';
 import { fitScale } from '/quan-tri/fit.mjs';
+import { imagePathsOf } from '/quan-tri/media.mjs';
 
 let C = null;   // ngữ cảnh từ admin.mjs
 const $ = (s, el = document) => el.querySelector(s);
@@ -38,6 +39,7 @@ function makeStore() {
   if (C.DEV) {
     const W = devWorkerStore();
     return { ...base, listJobs: W.listJobs, getJob: W.getJob, insertJob: W.insertJob, saveJob: async j => W.ownerSave(j),
+      async removeDraft(id) { const a = await art.get(id); if (!a || a.status !== 'draft') throw new Error('Bài không còn là nháp — không xóa.'); await art.remove(id); return true; },
       addVersion: async v => { const vs = await W.listVersions(v.article_id); return W.addVersion({ ...v, version: vs.length + 1 }); },
       listVersions: async id => (await W.listVersions(id)).sort((a, b) => a.version - b.version),
       getSettings: W.getSettings, saveSettings: async s => { lsPut(LS.settings, { ...SETTINGS_DEFAULT, ...s }); return s; },
@@ -51,6 +53,8 @@ function makeStore() {
     getJob: async id => (await q(sb.from('kt_ai_jobs').select('*').eq('id', id).limit(1)))[0] || null,
     insertJob: j => q(sb.from('kt_ai_jobs').insert(strip(j)).select('*').single()),
     saveJob: j => q(sb.from('kt_ai_jobs').update(strip(j)).eq('id', j.id).select('*').single()),
+    // Xóa CHỈ khi còn là nháp (điều kiện ngay trong lệnh xóa) — database còn chặn thêm: không xóa được bài đang công khai (kt_r3)
+    async removeDraft(id) { const rows = await q(sb.from('kt_articles').delete().eq('id', id).eq('status', 'draft').select('id')); if (!rows || !rows.length) throw new Error('Bài không còn là nháp — không xóa.'); return true; },
     async addVersion(v) {
       const last = await q(sb.from('kt_article_versions').select('version').eq('article_id', v.article_id).order('version', { ascending: false }).limit(1));
       return q(sb.from('kt_article_versions').insert({ ...v, version: ((last[0] && last[0].version) || 0) + 1 }).select('*').single());
@@ -150,9 +154,34 @@ const ai = { suggest: async p => ({ json: { ideas: (await callFn('suggest', p)).
 const deps = () => ({ store: makeStore(), ai, now: () => new Date() });
 const poolTitles = async D => {
   const [arts, jobs] = await Promise.all([D.store.listArticles(), D.store.listJobs()]);
-  return [...arts.map(a => ({ title: a.title, kind: 'bài viết' })), ...GUIDES.map(g => ({ title: g.title, kind: 'Cẩm nang' })),
-    ...jobs.filter(j => !['rejected', 'failed'].includes(j.status)).map(j => ({ title: j.title, kind: 'đang trong Xưởng' }))];
+  return WK.topicPool(arts, jobs);                                            // gồm cả chủ đề OWNER đã loại
 };
+
+// OWNER xóa bài AI không phù hợp (chỉ bài NHÁP) / loại chủ đề — luôn hỏi xác nhận, ghi nhớ chủ đề để AI không đề xuất lại.
+async function confirmDiscard(D, job) {
+  if (!job) { C.toast('Không tìm thấy việc.'); return false; }
+  const art = job.article_id ? await D.store.getArticle(job.article_id).catch(() => null) : null;
+  if (art && art.status !== 'draft') { C.toast('Bài này đã công khai / đã ẩn — Xưởng không xóa. Muốn gỡ khỏi website: mở bài → Ẩn bài.', 8000); return false; }
+  let imgs = [];
+  if (art) {                                                                   // ảnh CHỈ bài này dùng (không đụng ảnh bài khác đang dùng)
+    const others = (await C.store.all()).filter(a => a.id !== art.id);
+    const used = new Set(others.flatMap(a => [...imagePathsOf(a)]));
+    imgs = [...imagePathsOf(art)].filter(p => /^img\//.test(p) && !used.has(p));
+  }
+  const res = await new Promise(resolve => {
+    C.modal(`<h2>${art ? '🗑 Xóa bài AI này?' : 'Loại chủ đề này?'}</h2><p class="qt-url">${esc(art ? art.title : job.title)}</p>
+      <p class="qt-muted">${art ? 'Bài <strong>NHÁP</strong> sẽ bị xóa vĩnh viễn (khách chưa từng thấy bài này).' : 'Máy chủ sẽ dừng việc này.'} Chủ đề được ghi nhớ để AI <strong>không đề xuất lại</strong>.</p>
+      <label>Lý do (tùy chọn — giúp AI tránh chủ đề tương tự)<textarea id="qt-dc-reason" rows="2" maxlength="500" placeholder="Ví dụ: chủ đề quá chung chung; không hợp khách của trại…"></textarea></label>
+      ${imgs.length ? `<label class="qt-check"><input type="checkbox" id="qt-dc-img" checked> Xóa luôn ${imgs.length} ảnh chỉ dùng trong bài này</label>` : ''}
+      <div class="qt-modal-act"><button class="qt-btn" data-close>Hủy</button><button class="qt-btn qt-btn-danger" id="qt-dc-go">${art ? '🗑 Xóa bài' : 'Loại chủ đề'}</button></div>`, () => resolve(null));
+    $('#qt-dc-go').onclick = () => { const r = { reason: $('#qt-dc-reason').value, imgs: !!($('#qt-dc-img') && $('#qt-dc-img').checked) }; C.acceptModal(); resolve(r); };
+  });
+  if (!res) return false;
+  const out = await WK.discardJob(D.store, job.id, { reason: res.reason, now: new Date() });
+  if (res.imgs && imgs.length) { try { await C.media.remove(imgs); } catch { C.toast('Đã xóa bài; một số ảnh chưa xóa được (xem Thư viện ảnh).', 6000); return true; } }
+  C.toast(out.deletedArticle ? 'Đã xóa bài nháp. AI sẽ không đề xuất lại chủ đề này.' : 'Đã loại chủ đề. AI sẽ không đề xuất lại.', 6000);
+  return true;
+}
 
 // ---------- tiện ích hiển thị ----------
 const esc = s => C.esc(s);
@@ -220,7 +249,8 @@ export async function renderFactory(ctx) {
     if (j.article_id && a) acts.push(`<a class="qt-btn qt-btn-primary qt-sm" href="#duyet/${esc(j.id)}">Xem &amp; duyệt</a>`);
     if (['proposed', 'failed', 'qa'].includes(j.status)) acts.push(`<button class="qt-btn qt-sm" data-ai="run" data-id="${esc(j.id)}">${j.status === 'proposed' ? '▶ Tạo bài' : '↻ Chạy tiếp'}</button>`);
     if (j.status === 'needs_changes') acts.push(`<button class="qt-btn qt-sm" data-ai="revise" data-id="${esc(j.id)}">✏️ AI sửa theo góp ý</button>`);
-    if (!['published', 'rejected'].includes(j.status)) acts.push(`<button class="qt-btn qt-btn-ghost qt-sm" data-ai="reject" data-id="${esc(j.id)}">Bỏ</button>`);
+    if (!['published', 'rejected'].includes(j.status)) acts.push(`<button class="qt-btn qt-btn-ghost qt-sm" data-ai="discard" data-id="${esc(j.id)}">${a && a.status === 'draft' ? '🗑 Xóa bài' : 'Bỏ chủ đề'}</button>`);
+    if (j.status === 'rejected' && j.reject_reason) acts.push(`<span class="qt-muted">Lý do loại: ${esc(j.reject_reason)}</span>`);
     const prog = progressOf(j);
     return `<article class="qt-ai-card"><div class="qt-ai-thumb">${cov ? `<img src="${esc(cov)}" alt="" loading="lazy">` : '<span>🤖</span>'}</div>
       <div class="qt-ai-main"><div class="qt-ai-meta">${badge(j.status)}${j.origin === 'auto' ? ' <span class="qt-badge qt-badge--draft">Lịch tự động</span>' : ''} <span class="qt-muted">${esc((groupById(j.grp) || {}).name || j.grp)} · ${esc(fmt(j.updated_at))}</span></div>
@@ -297,11 +327,12 @@ async function onFactoryClick(e) {
   try {
     if (act === 'run') { const j = await D.store.getJob(id); await D.store.saveJob(WK.requeue({ ...j, step: j.status === 'proposed' ? 'article' : j.step }, { now: new Date() })); await busy('Đang giao việc…', wake); }
     if (act === 'revise') { const j = await D.store.getJob(id); await D.store.saveJob(WK.requeue(j, { mode: 'revise', now: new Date() })); await busy('Đang giao việc sửa…', wake); }
-    if (act === 'reject') { if (!(await C.confirmBox('Bỏ việc này? Máy chủ sẽ dừng nếu đang chạy. Bài nháp (nếu có) vẫn được giữ trong danh sách bài.', 'Bỏ việc'))) return; await P.rejectJob(D, id); }
+    if (act === 'discard') { if (!(await confirmDiscard(D, await D.store.getJob(id)))) return; }
     if (act === 'suggest') {
       const groups = $$('.qt-ai-g').filter(c => c.checked).map(c => c.value);
       const ideas = await busy('Đang gợi ý chủ đề…', () => P.suggestIdeas(D, { groups, count: 8 }));
-      const label = d => d.level === 'trung' ? `<span class="qt-badge qt-badge--hidden">Trùng: ${esc(d.with.title)}</span>` : d.level === 'gan-trung' ? `<span class="qt-badge qt-badge--draft">Gần trùng: ${esc(d.with.title)}</span>` : '<span class="qt-badge qt-badge--published">Mới</span>';
+      const label = d => d.rejected ? `<span class="qt-badge qt-badge--hidden">Gần giống chủ đề bạn đã loại: ${esc(d.with.title)}</span>`
+        : d.level === 'trung' ? `<span class="qt-badge qt-badge--hidden">Trùng: ${esc(d.with.title)}</span>` : d.level === 'gan-trung' ? `<span class="qt-badge qt-badge--draft">Gần trùng: ${esc(d.with.title)}</span>` : '<span class="qt-badge qt-badge--published">Mới</span>';
       $('#qt-ai-ideas').innerHTML = ideas.length ? `<ul class="qt-ai-ideas">${ideas.map((i, k) => `<li><div><strong>${esc(i.title)}</strong> ${label(i.dup)}<br><span class="qt-muted">${esc((groupById(i.group) || {}).name || i.group)} · ${esc(i.angle)}</span></div>
         <button class="qt-btn qt-sm" data-ai="create" data-k="${k}"${i.dup.level === 'trung' ? ' disabled' : ''}>+ Tạo bài</button></li>`).join('')}</ul>` : '<p class="qt-empty">Không có gợi ý mới.</p>';
       $('#qt-ai-ideas').dataset.ideas = JSON.stringify(ideas); return;
@@ -310,7 +341,13 @@ async function onFactoryClick(e) {
       let idea;
       if (act === 'create') idea = JSON.parse($('#qt-ai-ideas').dataset.ideas)[Number(b.dataset.k)];
       else { const title = $('#qt-ai-title').value.trim(); if (title.length < 10) { C.toast('Chủ đề cần ít nhất 10 ký tự.'); return; } idea = { title, group: $('#qt-ai-group').value, notes: $('#qt-ai-notes').value }; }
-      await D.store.insertJob(WK.enqueueNew(await poolTitles(D), idea, { now: new Date() }));
+      let job;
+      try { job = WK.enqueueNew(await poolTitles(D), idea, { now: new Date() }); }
+      catch (err) {                                                            // chủ đề đã loại: OWNER vẫn có thể chủ động tạo lại (AI thì không)
+        if (!(err.rejected && await C.confirmBox(`${err.message} Bạn vẫn muốn tạo bài với chủ đề này?`, 'Vẫn tạo'))) throw err;
+        job = WK.enqueueNew(await poolTitles(D), idea, { now: new Date(), force: true });
+      }
+      await D.store.insertJob(job);
       await busy('Đang giao việc cho máy chủ…', wake);
     }
     if (act === 'samples') await loadSamples(D);
@@ -370,10 +407,11 @@ export async function renderReview(ctx, jobId) {
   app.innerHTML = `<section class="qt-review">
     <div class="qt-ebar"><a class="qt-btn qt-btn-ghost" href="#ai">← Xưởng</a>${badge(job.status)}
       <div class="qt-seg"><button type="button" data-rw="390" class="active">📱</button><button type="button" data-rw="1200">🖥</button></div><span class="qt-muted" id="qt-rv-scale"></span>
-      <div class="qt-ebar-right">
-        <button class="qt-btn qt-btn-primary" data-rv="approve"${canApprove ? '' : ' disabled'} title="${esc(why)}">✅ Duyệt xuất bản</button>
-        <button class="qt-btn" data-rv="changes"${art.status === 'draft' && !active ? '' : ' disabled'}>✏️ Yêu cầu chỉnh sửa</button>
-        <a class="qt-btn qt-btn-ghost" href="#sua/${esc(art.id)}">Sửa tay</a></div></div>
+      <a class="qt-btn qt-btn-ghost qt-sm" href="#sua/${esc(art.id)}">Sửa tay</a>
+      <div class="qt-ebar-right qt-rv-actions">
+        <button class="qt-btn qt-btn-primary" data-rv="approve"${canApprove ? '' : ' disabled'} title="${esc(why)}">✅ Duyệt &amp; đăng</button>
+        <button class="qt-btn" data-rv="changes"${art.status === 'draft' && !active ? '' : ' disabled'}>✏️ Sửa / Tạo lại</button>
+        <button class="qt-btn qt-btn-danger" data-rv="discard"${art.status === 'draft' && !active ? '' : ' disabled'}>🗑 Xóa bài</button></div></div>
     ${why ? `<p class="qt-hint">${esc(why)}</p>` : ''}
     ${active ? `<p class="qt-alert">⏳ ${esc(progressOf(job))}</p>` : ''}
     <p class="qt-alert qt-ai-busy" id="qt-ai-busy" hidden></p>
@@ -401,16 +439,24 @@ export async function renderReview(ctx, jobId) {
     const b = e.target.closest('[data-rv]'); if (!b || b.disabled) return;
     try {
       if (b.dataset.rv === 'approve') { location.hash = `#duyet-xb/${art.id}`; return; }   // mở trình soạn + hộp xác nhận xuất bản 5 mục (OWNER bấm)
+      if (b.dataset.rv === 'discard') { if (await confirmDiscard(deps(), job)) { location.hash = '#ai'; return; } return; }
       if (b.dataset.rv === 'changes') {
-        const note = await new Promise(res => {
-          C.modal(`<h2>Yêu cầu chỉnh sửa</h2><p class="qt-muted">Ghi rõ cần sửa gì. Bản hiện tại được lưu thành một phiên bản trước khi AI sửa.</p>
-            <textarea id="qt-rv-note" rows="5" maxlength="4000" placeholder="Ví dụ: Mở bài ngắn hơn; thêm phần chim non mùa lạnh; bỏ câu về…"></textarea>
-            <div class="qt-modal-act"><button class="qt-btn" data-close>Hủy</button><button class="qt-btn qt-btn-primary" id="qt-rv-go">Gửi góp ý</button></div>`, () => res(null));
-          $('#qt-rv-go').onclick = () => { const v = $('#qt-rv-note').value; C.acceptModal(); res(v); };
+        const pick = await new Promise(res => {
+          C.modal(`<h2>Sửa hoặc tạo lại bài</h2><p class="qt-muted">Bản hiện tại luôn được lưu thành một phiên bản trước khi AI làm lại — có thể khôi phục.</p>
+            <textarea id="qt-rv-note" rows="4" maxlength="4000" placeholder="Ví dụ: Mở bài ngắn hơn; thêm phần chim non mùa lạnh; bỏ câu về…"></textarea>
+            <div class="qt-modal-act qt-rv-choice"><button class="qt-btn" data-close>Hủy</button>
+              <button class="qt-btn" id="qt-rv-regen" title="Viết bài mới hoàn toàn cùng chủ đề (ghi chú là tùy chọn)">🔄 Tạo lại bài mới</button>
+              <button class="qt-btn qt-btn-primary" id="qt-rv-go">✏️ AI sửa theo góp ý</button></div>`, () => res(null));
+          $('#qt-rv-go').onclick = () => { const v = $('#qt-rv-note').value.trim(); if (v.length < 5) { C.toast('Ghi rõ cần sửa gì (ít nhất vài chữ), hoặc chọn "Tạo lại bài mới".'); return; } C.acceptModal(); res({ mode: 'revise', note: v }); };
+          $('#qt-rv-regen').onclick = () => { const v = $('#qt-rv-note').value.trim(); C.acceptModal(); res({ mode: 'regenerate', note: v }); };
         });
-        if (note == null) return;
-        const j = await P.requestChanges(deps(), job.id, note);
-        if (await C.confirmBox('Đã ghi góp ý. Giao cho AI sửa ngay (chạy phía máy chủ)?', 'AI sửa ngay')) { await deps().store.saveJob(WK.requeue(j, { mode: 'revise', now: new Date() })); await busy('Đang giao việc sửa…', wake); }
+        if (!pick) return;
+        if (pick.mode === 'revise') { const j = await P.requestChanges(deps(), job.id, pick.note); await deps().store.saveJob(WK.requeue(j, { mode: 'revise', now: new Date() })); }
+        else {
+          await deps().store.addVersion({ article_id: art.id, author: 'owner', note: `Trước khi tạo lại${pick.note ? `: ${pick.note.slice(0, 200)}` : ''}`, snapshot: (({ id, created_at, updated_at, ...s }) => s)(art) });
+          await deps().store.saveJob(WK.requeue(await deps().store.getJob(job.id), { mode: 'regenerate', note: pick.note, now: new Date() }));
+        }
+        await busy(pick.mode === 'revise' ? 'Đang giao việc sửa…' : 'Đang giao việc tạo lại…', wake);
       }
       if (b.dataset.rv === 'images') { await deps().store.saveJob(WK.requeue(job, { mode: 'images', now: new Date() })); await busy('Đang giao việc tạo ảnh…', wake); }
       if (b.dataset.rv === 'restore') {

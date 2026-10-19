@@ -112,6 +112,22 @@ ok('27. Thông báo: máy chủ ghi, OWNER đọc, người lạ / khách không
 ok('28. OWNER không sửa / xóa / giả thông báo', !!(await denied('owner', `insert into public.kt_ai_notifications (kind, status) values ('qa', 'sent')`)) && !!(await denied('owner', 'delete from public.kt_ai_notifications')));
 ok('29. Trạng thái thông báo lạ bị chặn', !!(await denied('service', `insert into public.kt_ai_notifications (kind, status) values ('awaiting_owner', 'spam')`)));
 
+// --- chống xóa nhầm bài công khai + chỉ OWNER xóa + lý do loại chủ đề ---
+const pubA = (await as('owner', `insert into public.kt_articles (slug, title, status, seo_description, cover, sources, reviewed_by_owner) values ('bai-cong-khai-x', 'Bài công khai X', 'published', 'mô tả', '{"path":"a.webp"}', '["s"]', true) returning id`)).rows[0].id;
+const drA = (await as('owner', `insert into public.kt_articles (slug, title) values ('bai-nhap-x', 'Bài nháp X') returning id`)).rows[0].id;
+ok('29b. OWNER KHÔNG xóa được bài đang công khai (phải Ẩn trước)', /không xóa được bài đang công khai/.test(await denied('owner', `delete from public.kt_articles where id = '${pubA}'`)));
+ok('29c. Kể cả quản trị database (SQL Editor) cũng không xóa thẳng bài công khai', /không xóa được bài đang công khai/.test(await db.query(`delete from public.kt_articles where id = '${pubA}'`).then(() => '', e => e.message)));
+ok('29d. Người lạ không xóa được bài nháp (0 dòng); khách bị từ chối; máy chủ AI bị chặn',
+  (await as('stranger', `delete from public.kt_articles where id = '${drA}' returning id`)).rows.length === 0
+  && !!(await denied('anon', `delete from public.kt_articles where id = '${drA}'`))
+  && /không được xóa|permission denied/.test(await denied('service', `delete from public.kt_articles where id = '${drA}'`)));
+ok('29e. OWNER xóa được bài NHÁP', (await as('owner', `delete from public.kt_articles where id = '${drA}' returning id`)).rows.length === 1);
+await as('owner', `update public.kt_articles set status = 'hidden' where id = '${pubA}'`);
+ok('29f. Bài đã Ẩn → OWNER mới xóa được', (await as('owner', `delete from public.kt_articles where id = '${pubA}' returning id`)).rows.length === 1);
+ok('29g. Lý do loại chủ đề được lưu (≤ 500 ký tự)',
+  (await as('owner', `update public.kt_ai_jobs set status = 'rejected', reject_reason = 'Chủ đề quá chung' where id = '${q2}' returning reject_reason`)).rows[0].reject_reason === 'Chủ đề quá chung'
+  && !!(await denied('owner', `update public.kt_ai_jobs set reject_reason = repeat('x', 501) where id = '${q2}'`)));
+
 // --- hoàn tác ---
 ok('30. Rollback kt_r3 thành công, bài + việc còn nguyên, kt_r2 về như cũ', (await run('supabase/kt_r3_worker_rollback.sql')) === ''
   && (await db.query("select to_regclass('public.kt_ai_settings') t")).rows[0].t === null

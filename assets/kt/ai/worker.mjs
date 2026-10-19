@@ -142,7 +142,7 @@ async function stepCompose(D, job) {
     reuse(article.cover); article.blocks.forEach(b => { reuse(b.img); (b.imgs || []).forEach(reuse); });
     capImages(article, limits.maxImagesPerArticle);
     saved = await store.updateArticle({ ...article, id: art.id, slug: art.slug, status: 'draft', reviewed_by_owner: false });
-    await addVersion(store, saved.id, 'ai', `AI sửa theo góp ý: ${String(job.owner_note || '').slice(0, 200)}`, saved);
+    await addVersion(store, saved.id, 'ai', job.owner_note ? `AI sửa theo góp ý: ${String(job.owner_note).slice(0, 200)}` : 'AI tạo lại bài (bản mới cùng chủ đề)', saved);
     job.owner_note = '';
   } else {
     const { article } = composeArticle(job.pkg, { existing: arts });
@@ -310,6 +310,23 @@ export async function tick(deps, { workerId = 'w-' + uid().slice(0, 8), maxSteps
   return { claimed: job.id, steps, status: job.status, step: job.step, more: ACTIVE.includes(job.status), nextRunAt: job.next_run_at || null };
 }
 
+// ---------------------------------------------------------------- chủ đề đã có / đã bị OWNER loại
+// Danh sách chống trùng dùng chung (máy chủ + trình duyệt). Chủ đề OWNER đã loại (việc "rejected") được GIỮ trong danh sách
+// với kind 'đã bị OWNER loại' → không được tự động đề xuất lại (kể cả biến thể gần giống).
+export const REJECTED_KIND = 'đã bị OWNER loại';
+export function topicPool(arts = [], jobs = []) {
+  return [...arts.map(a => ({ title: a.title, kind: 'bài viết' })), ...GUIDES.map(g => ({ title: g.title, kind: 'Cẩm nang' })),
+    ...jobs.filter(j => j.status === 'rejected').map(j => ({ title: j.title, kind: REJECTED_KIND, rejected: true, reason: j.reject_reason || '' })),
+    ...jobs.filter(j => !['rejected', 'failed'].includes(j.status)).map(j => ({ title: j.title, kind: 'đang trong Xưởng' }))];
+}
+export const rejectedTitles = jobs => jobs.filter(j => j.status === 'rejected').map(j => j.title);
+// Chủ đề có giống chủ đề đã bị loại không (dùng cho đề xuất TỰ ĐỘNG: chặn cả "gần trùng")
+export function rejectedMatch(title, jobs) {
+  const pool = jobs.filter(j => j.status === 'rejected').map(j => ({ title: j.title, kind: REJECTED_KIND, reason: j.reject_reason || '' }));
+  const d = dupCheck(title, pool);
+  return d.level === 'moi' ? null : d;
+}
+
 // ---------------------------------------------------------------- lịch tạo bài tự động (MẶC ĐỊNH TẮT)
 // Chỉ chạy khi: settings.auto_enabled = true VÀ đã đặt ngân sách tháng VÀ (provider thật) có bảng giá model.
 // Mỗi ngày (giờ Việt Nam) tạo tối đa auto_per_day việc "auto"; AI KHÔNG xuất bản — bài vẫn chờ OWNER duyệt.
@@ -332,14 +349,13 @@ export async function autoPlan(deps) {
   const q = checkQuota(rows, lim, 'article', now());
   if (!q.ok) return { skipped: q.code, msg: q.msg };
   const arts = await store.listArticles();
-  const titles = [...arts.map(a => ({ title: a.title, kind: 'bài viết' })), ...GUIDES.map(g => ({ title: g.title, kind: 'Cẩm nang' })),
-    ...jobs.filter(j => !['rejected', 'failed'].includes(j.status)).map(j => ({ title: j.title, kind: 'đang trong Xưởng' }))];
+  const titles = topicPool(arts, jobs);
   const groups = Array.isArray(s.auto_groups) && s.auto_groups.length ? s.auto_groups : [];
-  const r = await withRetry(signal => prov.text.generateJSON({ system: SYSTEM, user: suggestPrompt({ groups, existingTitles: titles.map(t => t.title), count: 6 }), schema: SUGGEST_SCHEMA, maxOutputTokens: 2000, meta: { task: 'suggest', groups, count: 6 }, signal }), { retries: 0, timeoutMs: 60000 });
+  const r = await withRetry(signal => prov.text.generateJSON({ system: SYSTEM, user: suggestPrompt({ groups, existingTitles: titles.filter(t => !t.rejected).map(t => t.title), rejectedTitles: rejectedTitles(jobs), count: 6 }), schema: SUGGEST_SCHEMA, maxOutputTokens: 2000, meta: { task: 'suggest', groups, count: 6 }, signal }), { retries: 0, timeoutMs: 60000 });
   await store.addUsage({ at: iso(now()), task: 'suggest', kind: 'text', provider: prov.describe.text, model: r.usage.model || '', tokens_in: r.usage.tokensIn || 0, tokens_out: r.usage.tokensOut || 0,
     cost_usd: costOf({ model: r.usage.model, tokensIn: r.usage.tokensIn, tokensOut: r.usage.tokensOut }, prices), ok: true, job_id: null });
   const ideas = (r.json && Array.isArray(r.json.ideas) ? r.json.ideas : []).filter(i => i && i.title);
-  const pick = ideas.find(i => dupCheck(i.title, titles).level !== 'trung');
+  const pick = ideas.find(i => dupCheck(i.title, titles).level !== 'trung' && !rejectedMatch(i.title, jobs));   // không chọn lại chủ đề đã bị loại (kể cả gần giống)
   if (!pick) return { skipped: 'no-new-idea' };
   const seed = IDEAS.find(x => x.title === pick.title);
   const job = await store.insertJob(newJob({ title: pick.title, group: pick.group, angle: pick.angle, risk: seed ? seed.risk : [] }, { origin: 'auto', now: now() }));
@@ -356,13 +372,17 @@ export function newJob(idea, { origin = 'owner', now = new Date() } = {}) {
 }
 export function enqueueNew(titles, idea, { force = false, now = new Date() } = {}) {
   const d = dupCheck(idea.title, titles);
-  if (d.level === 'trung' && !force) throw new WorkerError('duplicate', `Trùng với ${d.with.kind} "${d.with.title}" (độ giống ${Math.round(d.score * 100)}%).`);
+  if (d.level === 'trung' && !force) {
+    const e = new WorkerError('duplicate', d.with.rejected ? `Chủ đề này OWNER đã loại trước đây ("${d.with.title}")${d.with.reason ? ` — lý do: ${d.with.reason}` : ''}.`
+      : `Trùng với ${d.with.kind} "${d.with.title}" (độ giống ${Math.round(d.score * 100)}%).`);
+    e.rejected = !!d.with.rejected; throw e;
+  }
   const job = newJob(idea, { now });
   if (d.level === 'gan-trung') job.history[0].msg += ` (gần trùng "${d.with.title}")`;
   return job;
 }
 // "Chạy tiếp" sau lỗi / tạo ảnh còn thiếu / AI sửa theo góp ý → về hàng đợi, GIỮ tiến độ đã có.
-export function requeue(job, { mode = 'resume', now = new Date() } = {}) {
+export function requeue(job, { mode = 'resume', now = new Date(), note = '' } = {}) {
   if (['published', 'rejected'].includes(job.status)) throw new WorkerError('closed', 'Việc này đã đóng.');
   if (ACTIVE.includes(job.status) && job.lock_until && new Date(job.lock_until) > now) throw new WorkerError('locked', 'Việc đang được máy chủ xử lý.');
   const j = { ...job, status: 'queued', next_run_at: iso(now), step_attempts: 0, error: '', error_code: '', lock_until: null, lock_owner: null };
@@ -370,9 +390,33 @@ export function requeue(job, { mode = 'resume', now = new Date() } = {}) {
     if (job.status !== 'needs_changes' || !job.owner_note) throw new WorkerError('state', 'Chỉ sửa được khi bài đang "Cần sửa" và có góp ý.');
     if ((job.attempts || 0) >= W.maxArticleAttempts + 2) throw new WorkerError('attempts', 'Đã sửa quá nhiều lần — hãy sửa tay trong trình soạn.');
     j.step = 'revise';
+  } else if (mode === 'regenerate') {                                     // TẠO LẠI bài mới cùng chủ đề, ghi đè bản nháp cũ (giữ id + slug)
+    if (!['awaiting_owner', 'qa', 'needs_changes', 'failed'].includes(job.status)) throw new WorkerError('state', 'Chỉ tạo lại được bài đang chờ duyệt / cần sửa / lỗi.');
+    j.step = 'article'; j.owner_note = ''; j.pkg = null; j.ai_handle = null; j.image_errors = [];
+    j.attempts = Math.min(job.attempts || 0, W.maxArticleAttempts - 1);   // cho phép thêm 1 lần viết
+    if (note) j.notes = `${String(job.notes || '').slice(0, 15000)}\n\nYêu cầu tạo lại của OWNER: ${String(note).slice(0, 4000)}`.trim();
   } else if (mode === 'images') { j.step = 'images'; j.image_errors = []; }
   else if (j.step === 'done') j.step = 'qa';
   else if (j.step === 'article' && (job.attempts || 0) >= W.maxArticleAttempts) j.attempts = W.maxArticleAttempts - 1;   // cho thêm 1 lần sau khi OWNER xem lỗi
-  j.history = [...(job.history || []), { at: iso(now), msg: mode === 'revise' ? 'OWNER yêu cầu AI sửa' : mode === 'images' ? 'OWNER yêu cầu tạo ảnh còn thiếu' : 'OWNER cho chạy tiếp' }].slice(-60);
+  j.history = [...(job.history || []), { at: iso(now), msg: mode === 'revise' ? 'OWNER yêu cầu AI sửa' : mode === 'regenerate' ? 'OWNER yêu cầu AI tạo lại bài' : mode === 'images' ? 'OWNER yêu cầu tạo ảnh còn thiếu' : 'OWNER cho chạy tiếp' }].slice(-60);
   return j;
+}
+
+// ---------------------------------------------------------------- OWNER XÓA bài AI không phù hợp
+// Chỉ xóa bài NHÁP. Thứ tự an toàn: kiểm tra → xóa bài (kho chỉ xóa khi status = 'draft') → đánh dấu việc "Đã bỏ" + lý do
+// (chủ đề được ghi nhớ để AI không đề xuất lại). Bài công khai / đã ẩn: TỪ CHỐI, không thay đổi gì.
+// store: { getJob, getArticle, removeDraft(id) → true | ném lỗi, saveJob }
+export async function discardJob(store, jobId, { reason = '', now = new Date() } = {}) {
+  const job = await store.getJob(jobId);
+  if (!job) throw new WorkerError('missing', 'Không tìm thấy việc.');
+  if (job.status === 'published') throw new WorkerError('published', 'Bài đã xuất bản — không xóa từ Xưởng. Nếu cần, hãy Ẩn bài trong trình soạn.');
+  if (ACTIVE.includes(job.status) && job.lock_until && new Date(job.lock_until) > now) throw new WorkerError('locked', 'Máy chủ đang xử lý bài này — đợi 1–3 phút rồi xóa.');
+  const art = job.article_id ? await store.getArticle(job.article_id) : null;
+  if (art && art.status !== 'draft') throw new WorkerError('not-draft', `Bài đang ở trạng thái "${art.status === 'published' ? 'Công khai' : 'Đã ẩn'}" — Xưởng chỉ xóa bài nháp.`);
+  if (art) await store.removeDraft(art.id);
+  const at = iso(now);
+  const saved = await store.saveJob({ ...job, status: 'rejected', article_id: null, lock_until: null, lock_owner: null, next_run_at: null,
+    reject_reason: String(reason || '').trim().slice(0, 500),
+    history: [...(job.history || []), { at, msg: art ? `OWNER xóa bài nháp "${art.slug}"${reason ? ` — ${String(reason).slice(0, 120)}` : ''}` : `OWNER loại chủ đề${reason ? ` — ${String(reason).slice(0, 120)}` : ''}` }].slice(-60) });
+  return { job: saved, deletedArticle: art };
 }

@@ -38,9 +38,10 @@ Góp ý của OWNER: ${String(note).slice(0, 4000)}
 Gói hiện tại:
 ${JSON.stringify(pkg).slice(0, 60000)}`;
 }
-export function suggestPrompt({ groups, existingTitles = [], count = 8 }) {
+export function suggestPrompt({ groups, existingTitles = [], rejectedTitles = [], count = 8 }) {
   return `Đề xuất ${count} chủ đề bài viết chuyên sâu mới cho các nhóm: ${groups.map(id => (GROUPS.find(g => g.id === id) || {}).name || id).join(', ')}.
-Không trùng các bài đã có: ${existingTitles.slice(0, 80).join(' | ')}
+Không trùng các bài đã có: ${existingTitles.slice(0, 80).join(' | ')}${rejectedTitles.length ? `
+OWNER ĐÃ LOẠI các chủ đề sau — KHÔNG đề xuất lại, kể cả diễn đạt khác cùng ý: ${rejectedTitles.slice(0, 60).join(' | ')}` : ''}
 Trả về JSON: {"ideas":[{"title":"…","group":"<id nhóm>","angle":"góc tiếp cận 1 câu","why":"vì sao người nuôi cần bài này"}]}`;
 }
 export const SUGGEST_SCHEMA = { type: 'object', additionalProperties: false, required: ['ideas'], properties: { ideas: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['title', 'group', 'angle', 'why'], properties: { title: { type: 'string' }, group: { type: 'string' }, angle: { type: 'string' }, why: { type: 'string' } } } } } };

@@ -77,7 +77,10 @@ const store = {
     if (error) throw error; return data;
   },
   async remove(id) {
-    if (DEV) { devStore.put(devStore.all().filter(a => a.id !== id)); return; }
+    if (DEV) {                                                     // mô phỏng chốt kt_r3: không xóa bài đang công khai
+      if ((devStore.all().find(a => a.id === id) || {}).status === 'published') throw new Error('kt_r3: không xóa được bài đang công khai — hãy Ẩn bài trước rồi mới xóa.');
+      devStore.put(devStore.all().filter(a => a.id !== id)); return;
+    }
     const { error } = await sb.from('kt_articles').delete().eq('id', id);
     if (error) throw error;
   }
@@ -656,6 +659,8 @@ async function setStatus(s) {
   await save({ status: s });
 }
 async function del() {
+  // Chống xóa nhầm bài đang công khai (database kt_r3 cũng chặn): phải Ẩn bài trước
+  if (A.status === 'published') { modal(`<h2>Bài đang công khai</h2><p>Không xóa trực tiếp bài đang hiện trên website. Bấm <strong>Ẩn bài</strong> trước, kiểm tra lại, rồi mới xóa.</p><div class="qt-modal-act"><button class="qt-btn" data-close>Đã hiểu</button></div>`); return; }
   const ok = await new Promise(res => {
     modal(`<h2>Xóa vĩnh viễn bài viết?</h2><p>Gõ lại chính xác tiêu đề để xác nhận:</p><p class="qt-url">${esc(A.title)}</p>
       <input id="qt-del-in" autocomplete="off"><div class="qt-modal-act"><button class="qt-btn" data-close>Hủy</button><button class="qt-btn qt-btn-danger" id="qt-del-go" disabled>Xóa vĩnh viễn</button></div>`, () => res(false));

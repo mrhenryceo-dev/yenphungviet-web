@@ -53,6 +53,10 @@ function memDb(clock) {
       if (row.status !== 'draft' || row.reviewed_by_owner) throw new Error('kt_r3: máy chủ AI không được xuất bản');
       T.arts.set(row.id, { ...clone(row), created_at: cur.created_at }); return clone(row);
     },
+    async removeDraft(id) {                                       // = DELETE … WHERE status = 'draft' (+ trigger kt_r3 chặn bài công khai)
+      const a = T.arts.get(id); if (!a || a.status !== 'draft') throw new Error('Bài không còn là nháp — không xóa.');
+      T.arts.delete(id); T.vers = T.vers.filter(v => v.article_id !== id); return true;
+    },
     async listVersions(id) { return T.vers.filter(v => v.article_id === id); },
     async addVersion(v) { if (T.vers.some(x => x.article_id === v.article_id && x.version === v.version)) throw new Error('trùng phiên bản'); T.vers.push(clone(v)); return v; },
     async listUsage(since) { return T.usage.filter(u => u.at >= since); },
@@ -443,7 +447,85 @@ await t('Kho máy chủ: chưa cài migration → lỗi "setup" rõ ràng; tải
   assert.ok(up[0].url.endsWith('/storage/v1/object/kien-thuc/img/aaaaaaaa-0000-4000-8000-000000000001-1600.webp')); assert.equal(up[0].headers['x-upsert'], 'false');
 });
 
-// ================= 11. giao diện: khung xem trước không bị cắt =================
+// ================= 11. OWNER xóa bài AI / loại chủ đề / tạo lại =================
+const ownerStore = W => ({ ...W.store, saveJob: async j => W.store.ownerUpdate(j.id, j) });   // đường OWNER: lưu việc = thả khóa
+await t('Xóa bài AI không phù hợp: chỉ bài NHÁP bị xóa, việc → "Đã bỏ" + lý do; phiên bản xóa theo', async () => {
+  const W = world(); const job = await W.enqueue(idea()); await W.runAll();
+  const j0 = await W.store.getJob(job.id); const artId = j0.article_id;
+  const r = await WK.discardJob(ownerStore(W), job.id, { reason: 'Chủ đề không hợp khách của trại', now: W.clock.now() });
+  const j = await W.store.getJob(job.id);
+  assert.equal(r.deletedArticle.id, artId); assert.equal(W.store.T.arts.has(artId), false); assert.equal(W.store.T.vers.length, 0);
+  assert.equal(j.status, 'rejected'); assert.equal(j.article_id, null); assert.equal(j.reject_reason, 'Chủ đề không hợp khách của trại');
+  assert.ok(/OWNER xóa bài nháp/.test(j.history.at(-1).msg));
+});
+await t('Chống xóa nhầm: bài đã CÔNG KHAI / đã ẩn → từ chối, bài và việc giữ nguyên', async () => {
+  const W = world(); const job = await W.enqueue(idea()); await W.runAll();
+  const j0 = await W.store.getJob(job.id); const a = W.store.T.arts.get(j0.article_id);
+  for (const st of ['published', 'hidden']) {
+    a.status = st;
+    await assert.rejects(WK.discardJob(ownerStore(W), job.id, { now: W.clock.now() }), e => e.code === 'not-draft');
+    assert.equal(W.store.T.arts.has(a.id), true); assert.equal((await W.store.getJob(job.id)).status, j0.status);
+  }
+  W.store.ownerUpdate(job.id, { status: 'published' });
+  await assert.rejects(WK.discardJob(ownerStore(W), job.id, { now: W.clock.now() }), e => e.code === 'published');
+  a.status = 'published'; await assert.rejects(ownerStore(W).removeDraft(a.id), /không còn là nháp/);   // kể cả gọi thẳng lệnh xóa
+});
+await t('Không xóa khi máy chủ đang giữ việc (khóa còn hạn); việc chưa có bài → chỉ loại chủ đề', async () => {
+  const W = world(); const job = await W.enqueue(idea());
+  await W.store.claimJob('w-dang-chay', 180);
+  await assert.rejects(WK.discardJob(ownerStore(W), job.id, { now: W.clock.now() }), e => e.code === 'locked');
+  W.clock.advance(181);
+  const r = await WK.discardJob(ownerStore(W), job.id, { reason: '', now: W.clock.now() });
+  assert.equal(r.deletedArticle, null); assert.equal((await W.store.getJob(job.id)).status, 'rejected');
+  assert.equal((await WK.tick(W.deps)).claimed, null, 'máy chủ không chạy lại việc đã loại');
+});
+await t('Chủ đề đã loại KHÔNG được lịch tự động chọn lại — kể cả biến thể gần giống; hết chủ đề mới → không tạo', async () => {
+  const W = world(); Object.assign(W.store.T.settings, { auto_enabled: true, monthly_budget_usd: 5, auto_hour: 0 });
+  const ideas = (await W.deps.prov.text.generateJSON({ meta: { task: 'suggest', groups: [], count: 6 } })).json.ideas;
+  const reject = async title => { const j = await W.store.insertJob(WK.newJob({ title, group: 'nguoi-moi' }, { now: W.clock.now() })); W.store.ownerUpdate(j.id, { status: 'rejected', reject_reason: 'không phù hợp' }); };
+  await reject(ideas[0].title);
+  await reject(ideas[1].title.replace(/\s+\S+$/, '') + ' cho người mới nuôi');                          // biến thể gần giống
+  const r = await WK.autoPlan(W.deps); const picked = (await W.store.getJob(r.created)).title;
+  assert.ok(r.created); assert.notEqual(picked, ideas[0].title); assert.notEqual(picked, ideas[1].title, 'biến thể gần giống cũng bị tránh');
+  W.store.ownerUpdate(r.created, { status: 'rejected' });
+  for (const i of ideas.slice(2)) await reject(i.title);
+  W.store.T.settings.auto_per_day = 5;
+  assert.equal((await WK.autoPlan(W.deps)).skipped, 'no-new-idea');
+});
+await t('Gợi ý chủ đề (nút "Gợi ý"): chủ đề đã loại bị ẩn khỏi danh sách; gần giống → gắn nhãn; AI được báo danh sách đã loại', async () => {
+  const W = world(); let sent = null;
+  const ideas = [{ title: 'Cách cho Yến Phụng tắm đúng cách mùa lạnh', group: 'cham-soc' }, { title: 'Tắm cho Yến Phụng vào mùa lạnh', group: 'cham-soc' }, { title: 'Chọn cầu đậu tự nhiên cho chuồng nuôi', group: 'nguoi-moi' },
+    { title: 'Cách cho Yến Phụng tắm đúng cách mùa lạnh ở vùng cao', group: 'cham-soc' }];
+  const j = await W.store.insertJob(WK.newJob({ title: ideas[0].title }, { now: W.clock.now() })); W.store.ownerUpdate(j.id, { status: 'rejected', reject_reason: 'đã có bài tương tự ngoài thị trường' });
+  const Pm = await import('../assets/kt/ai/pipeline.mjs');
+  const out = await Pm.suggestIdeas({ store: W.store, ai: { suggest: async p => { sent = p; return { json: { ideas } }; } } }, { groups: [], count: 3 });
+  assert.deepEqual(sent.rejectedTitles, [ideas[0].title]); assert.ok(!sent.existingTitles.includes(ideas[0].title));
+  assert.ok(!out.some(i => i.title === ideas[0].title), 'trùng chủ đề đã loại → không hiện');
+  assert.ok(!out.some(i => i.title === ideas[3].title), 'chỉ thêm vài chữ (độ giống ≥ 0,6) → coi là cùng chủ đề, không hiện');
+  assert.equal(out.find(i => i.title === ideas[1].title).dup.rejected, true, 'gần giống → gắn nhãn đã loại');
+  assert.equal(out.find(i => i.title === ideas[2].title).dup.level, 'moi');
+  const { suggestPrompt } = await import('../assets/kt/ai/prompt.mjs');
+  assert.ok(/OWNER ĐÃ LOẠI[\s\S]*Cách cho Yến Phụng tắm/.test(suggestPrompt({ groups: [], rejectedTitles: [ideas[0].title] })));
+});
+await t('OWNER tự nhập lại chủ đề đã loại → cảnh báo rõ (có lý do); chỉ tạo khi OWNER chủ động xác nhận (force)', async () => {
+  const W = world(); const j = await W.store.insertJob(WK.newJob({ title: S0.title }, { now: W.clock.now() })); W.store.ownerUpdate(j.id, { status: 'rejected', reject_reason: 'trùng ý bài cũ' });
+  const pool = WK.topicPool([], await W.store.listJobs());
+  assert.throws(() => WK.enqueueNew(pool, idea()), e => e.code === 'duplicate' && e.rejected && /đã loại.*trùng ý bài cũ/.test(e.message));
+  assert.equal(WK.enqueueNew(pool, idea(), { force: true }).status, 'queued');
+});
+await t('Tạo lại bài mới cùng chủ đề (phía máy chủ): giữ id + slug, viết lại từ đầu, thêm phiên bản "tạo lại"; bài cũ không xuất bản', async () => {
+  const W = world(); const job = await W.enqueue(idea()); await W.runAll();
+  const j0 = await W.store.getJob(job.id); const a0 = await W.store.getArticle(j0.article_id);
+  W.store.ownerUpdate(job.id, WK.requeue(j0, { mode: 'regenerate', note: 'Viết theo góc nhìn người mới nuôi', now: W.clock.now() }));
+  W.clock.advance(61); await W.runAll();
+  const j = await W.store.getJob(job.id); const a = await W.store.getArticle(j.article_id);
+  assert.equal(j.status, 'awaiting_owner', j.error); assert.equal(a.id, a0.id); assert.equal(a.slug, a0.slug); assert.equal(a.status, 'draft');
+  assert.ok(/tạo lại/.test(W.store.T.vers.at(-1).note)); assert.ok(/Viết theo góc nhìn người mới nuôi/.test(j.notes));
+  assert.equal(W.store.T.usage.filter(u => u.task === 'article').length, 2, 'đã gọi AI viết lần 2');
+  assert.throws(() => WK.requeue({ ...j, status: 'published' }, { mode: 'regenerate', now: W.clock.now() }), e => e.code === 'closed');
+});
+
+// ================= 12. giao diện: khung xem trước không bị cắt =================
 await t('Khung xem trước 🖥 1200 px tự thu nhỏ vừa khung (vd. màn hình 1216 px) — không cắt hai bên; 📱 390 px giữ nguyên', async () => {
   assert.deepEqual(fitScale(780, 1200), { scale: 0.65, width: 1200, outerWidth: 780 });
   assert.deepEqual(fitScale(1300, 1200), { scale: 1, width: 1200, outerWidth: 1200 });

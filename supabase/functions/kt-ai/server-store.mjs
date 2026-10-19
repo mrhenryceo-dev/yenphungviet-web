@@ -36,7 +36,7 @@ export function serverStore(env, { fetchImpl = globalThis.fetch } = {}) {
     },
     async insertJob(job) { return one(await rest('kt_ai_jobs', { method: 'POST', body: { id: job.id, ...pick({ ...job, lock_owner: null, lock_until: null }, JOB_COLUMNS) }, prefer: 'return=representation' })); },
     async getJob(id) { return one(await rest(`kt_ai_jobs?id=eq.${chk(id)}&select=*`)); },
-    listJobs: () => rest('kt_ai_jobs?select=id,title,status,origin,created_at&order=created_at.desc&limit=500'),
+    listJobs: () => rest('kt_ai_jobs?select=id,title,status,origin,created_at,reject_reason&order=created_at.desc&limit=500'),
     async nextActiveDue() { const r = one(await rest('kt_ai_jobs?status=in.(queued,generating)&select=next_run_at&order=next_run_at.asc.nullsfirst&limit=1')); return r ? (r.next_run_at || new Date(0).toISOString()) : null; },
     listArticles: () => rest('kt_articles?select=id,slug,title,status&limit=1000'),
     async getArticle(id) { return one(await rest(`kt_articles?id=eq.${chk(id)}&select=*`)); },

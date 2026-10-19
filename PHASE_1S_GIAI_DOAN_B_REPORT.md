@@ -97,6 +97,21 @@ Nguồn: trang giá OpenAI (developers.openai.com/api/docs/pricing) và bảng g
 7. AI thật: tạo khóa OpenAI **có hạn mức chi tiêu tháng**, đặt `KT_AI_TEXT_PROVIDER=openai`, `KT_AI_TEXT_MODEL`, `KT_AI_IMAGE_PROVIDER=openai`, `KT_AI_IMAGE_MODEL=gpt-image-2`, `KT_AI_IMAGE_QUALITY=medium`, `KT_AI_PRICES`.
 8. Merge lên Production (duyệt riêng) — nút "Duyệt xuất bản" chỉ bật trên website chính thức.
 
+## 6b. Bổ sung 2026-10-19 (tối): OWNER DUYỆT & ĐĂNG / SỬA – TẠO LẠI / XÓA BÀI
+| Yêu cầu OWNER | Trạng thái |
+|---|---|
+| AI chọn chủ đề theo 7 nhóm, viết, tạo ảnh, dàn trang, SEO, vào "Chờ duyệt" | Đã có (GĐ2 + GĐ B) |
+| **Duyệt & đăng** — chỉ OWNER, chỉ trên website chính thức, hộp xác nhận 5 mục | Đã có; đổi nhãn nút |
+| **Sửa / Tạo lại** | "AI sửa theo góp ý" đã có; **mới:** "🔄 Tạo lại bài mới" (viết lại từ đầu cùng chủ đề, giữ id + slug, lưu phiên bản cũ trước khi làm lại) |
+| **Xóa bài không phù hợp** | **Mới:** nút 🗑 Xóa bài (trang duyệt + thẻ trong Xưởng) → hộp xác nhận (tiêu đề, lý do tùy chọn, tùy chọn xóa ảnh CHỈ bài đó dùng) → xóa bài NHÁP, việc "Đã bỏ" |
+| Không xóa nhầm bài công khai | **Mới:** 3 lớp — Xưởng chỉ xóa nháp; lệnh xóa có điều kiện `status = 'draft'`; **trigger `kt_articles_delete_guard` (kt_r3)**: KHÔNG AI xóa được bài đang công khai (kể cả OWNER, kể cả SQL Editor) — phải Ẩn trước. Trình soạn bài cũng báo "Ẩn bài trước" |
+| Chủ đề bị loại không đề xuất lại | **Mới:** việc "Đã bỏ" + `reject_reason` được giữ làm danh sách chặn; gửi AI danh sách "OWNER ĐÃ LOẠI"; gợi ý trùng (độ giống ≥ 0,6) bị ẩn, gần giống bị gắn nhãn; lịch tự động bỏ cả trùng lẫn gần giống; OWNER tự nhập lại → cảnh báo kèm lý do, chỉ tạo khi OWNER xác nhận |
+| Chỉ OWNER duyệt / xóa; AI không tự xuất bản | Đã có (RLS owner-only + chốt service_role) + test mới cho xóa |
+| Giao diện điện thoại | **Mới:** ≤ 700 px: 3 nút lớn dính đáy màn hình (Duyệt & đăng · Sửa / Tạo lại · Xóa bài) |
+
+Kiểm thử: worker **44** (+7: xóa nháp, chống xóa công khai / đã ẩn, khóa máy chủ, chủ đề đã loại với lịch tự động + gợi ý + tự nhập, tạo lại), SQL kt_r3 **42** (+6: OWNER / SQL Editor không xóa được bài công khai, người lạ / khách / máy chủ không xóa được nháp, OWNER xóa nháp + bài đã ẩn, lưu lý do). Chrome (chế độ thử): xóa bài [MÔ PHỎNG] → hộp xác nhận đúng → bài xóa, chủ đề vào "Đã bỏ" kèm lý do.
+**kt_r3 đã đổi** (chưa chạy ở đâu): `kt_r3_worker_migration.sql` 185 dòng, SHA-256 `781baf74a4aab26a…`; rollback 24 dòng `7326b9619c8943e1…`. kt_r2 **không đổi** (`de34de286e0bee3f…`).
+
 ## 7. File thay đổi
 - Mới: `assets/kt/ai/worker.mjs`, `sources.mjs`, `notify.mjs`; `supabase/functions/kt-ai/server-store.mjs`; `supabase/kt_r3_worker_migration.sql`, `kt_r3_worker_rollback.sql`, `kt_r3_schedule_enable.sql`, `kt_r3_schedule_disable.sql`; `quan-tri/fit.mjs`; `tools/kt-worker-test.mjs`, `tools/kt-r3-sql-test.mjs`; báo cáo này.
 - Sửa: `assets/kt/ai/providers.mjs` (submit/poll bất đồng bộ, ảnh WebP), `pipeline.mjs` (trạng thái "Đang chờ máy chủ"); `supabase/functions/kt-ai/handler.mjs` (tick, kick, status), `index.ts` (waitUntil); `quan-tri/factory.mjs` (hàng đợi, lịch, thông báo, link nguồn, khung xem trước), `admin.mjs` (ảnh chia sẻ cho ảnh bìa AI), `assets/css/quan-tri.css`; `tools/dev-server.mjs` (ảnh PNG mock, kiểm tra link local), `tools/kt-sql-stub.sql` (role service_role), `tools/run-all-tests.mjs`; bản sao `supabase/functions/kt-ai/ai/*` (build-edge).

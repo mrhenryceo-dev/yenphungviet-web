@@ -25,3 +25,5 @@ Mỗi mục cần OWNER trả lời "Duyệt" / "Không" (hoặc tự thao tác)
 | 19 | **GĐ B:** (tùy chọn) bật nhịp pg_cron (`kt_r3_schedule_enable.sql`) | ~8.600 lần gọi function / tháng (trong gói Free) | OWNER | Lịch tạo bài tự động vẫn TẮT |
 | 20 | **GĐ B:** (tùy chọn) bật lịch tạo bài tự động + ngân sách tháng | **Chi phí** ~0,35 USD / bài | OWNER (trong `/quan-tri/#ai`) | Bắt buộc có ngân sách; AI không tự xuất bản |
 | 21 | **GĐ B:** (tùy chọn) Telegram bot + `KT_NOTIFY_MODE=send` | Nhận tin khi có bài chờ duyệt | OWNER | Mặc định chỉ ghi lại (dry-run) |
+| 22 | **Xóa bài AI:** chấp nhận quy tắc mới "không xóa được bài đang công khai — phải Ẩn trước" (trigger trong kt_r3, áp dụng cả trình soạn bài cũ) | Thay đổi thao tác xóa bài công khai: 2 bước (Ẩn → Xóa) | OWNER | 42 test SQL; kt_r3 đổi hash `781baf74…` |
+| 23 | Push commit "Xóa bài AI / chủ đề đã loại / tạo lại" lên `feature/phase1s-ai-factory` | GitHub (PUBLIC) + Preview | Claude sau khi duyệt | Đã quét khóa bí mật |

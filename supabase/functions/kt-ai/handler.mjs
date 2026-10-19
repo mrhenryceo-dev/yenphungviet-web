@@ -181,7 +181,7 @@ export async function handle(req, env = {}, opts = {}) {
     }
 
     let system = SYSTEM, user, schema = JSON_SCHEMA, meta;
-    if (action === 'suggest') { user = suggestPrompt({ groups: (body.groups || []).slice(0, 7), existingTitles: (body.existingTitles || []).slice(0, 120), count: Math.min(12, Number(body.count) || 8) }); schema = SUGGEST_SCHEMA; meta = { task: 'suggest', groups: body.groups || [], count: body.count || 8 }; }
+    if (action === 'suggest') { user = suggestPrompt({ groups: (body.groups || []).slice(0, 7), existingTitles: (body.existingTitles || []).slice(0, 120), rejectedTitles: (body.rejectedTitles || []).slice(0, 60).map(s => String(s).slice(0, 200)), count: Math.min(12, Number(body.count) || 8) }); schema = SUGGEST_SCHEMA; meta = { task: 'suggest', groups: body.groups || [], count: body.count || 8 }; }
     if (action === 'article') { user = articlePrompt({ title: String(body.title || '').slice(0, 200), group: body.group, angle: String(body.angle || '').slice(0, 500), notes: String(body.notes || '').slice(0, 20000), existingTitles: (body.existingTitles || []).slice(0, 120), risk: body.risk || [] }); meta = { task: 'article', title: body.title, group: body.group }; }
     if (action === 'revise') { if (!body.pkg || !body.note) return json(400, { error: 'Thiếu bài hoặc góp ý.' }, cors); user = revisePrompt({ pkg: body.pkg, note: String(body.note).slice(0, 4000) }); meta = { task: 'revise', pkg: body.pkg, note: body.note }; }
     if (user.length > limits.maxInputChars) return json(413, { error: 'Tư liệu quá dài.' }, cors);

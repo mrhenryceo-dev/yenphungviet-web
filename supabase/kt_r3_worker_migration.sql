@@ -3,6 +3,7 @@
 -- - Hàng đợi việc: trạng thái "queued", bước chi tiết, khóa thuê (lease), hẹn giờ chạy lại, đếm lần thử.
 -- - Hàm nhận việc nguyên tử kt_ai_claim_job (FOR UPDATE SKIP LOCKED) — CHỈ service_role gọi được.
 -- - CHỐT AN TOÀN: service_role (máy chủ AI) KHÔNG được xuất bản, KHÔNG sửa bài đã công khai / đã ẩn, KHÔNG xóa bài.
+-- - CHỐNG XÓA NHẦM: không ai xóa được bài đang công khai (phải Ẩn trước). Lý do OWNER loại chủ đề được ghi lại (reject_reason).
 -- - Cài đặt lịch tự động kt_ai_settings: MẶC ĐỊNH TẮT; chỉ bật được khi đã đặt ngân sách tháng.
 -- - Hàng đợi thông báo kt_ai_notifications (chỉ OWNER đọc).
 --
@@ -45,7 +46,9 @@ alter table public.kt_ai_jobs
   add column ai_handle     jsonb check (ai_handle is null or pg_column_size(ai_handle) < 2000),
   add column source_check  jsonb check (source_check is null or pg_column_size(source_check) < 60000),
   add column error_code    text not null default '' check (char_length(error_code) <= 40),
-  add column cost_usd      numeric(10,4) not null default 0 check (cost_usd >= 0);
+  add column cost_usd      numeric(10,4) not null default 0 check (cost_usd >= 0),
+  -- OWNER loại chủ đề / xóa bài: lý do được giữ lại để AI không đề xuất lại chủ đề này
+  add column reject_reason text not null default '' check (char_length(reject_reason) <= 500);
 create index kt_ai_jobs_queue_idx on public.kt_ai_jobs (status, next_run_at) where status in ('queued','generating');
 
 -- Người dùng (OWNER qua trình duyệt) KHÔNG giữ khóa: mọi thay đổi của OWNER thả khóa → máy chủ đang chạy việc đó sẽ dừng,
@@ -116,6 +119,19 @@ end; $$;
 comment on function public.kt_articles_ai_guard() is 'YẾN PHỤNG PET Phase 1S/kt_r3: service_role chỉ ghi bài nháp, không xuất bản / xóa.';
 create trigger kt_articles_ai_guard before insert or update or delete on public.kt_articles
   for each row execute function public.kt_articles_ai_guard();
+
+-- 3b. CHỐNG XÓA NHẦM BÀI ĐANG CÔNG KHAI (áp dụng cho MỌI người, kể cả OWNER): phải "Ẩn bài" trước rồi mới xóa được.
+create function public.kt_articles_delete_guard()
+returns trigger language plpgsql set search_path = '' as $$
+begin
+  if old.status = 'published' then
+    raise exception 'kt_r3: không xóa được bài đang công khai — hãy Ẩn bài trước rồi mới xóa.';
+  end if;
+  return old;
+end; $$;
+comment on function public.kt_articles_delete_guard() is 'YẾN PHỤNG PET Phase 1S/kt_r3: chặn xóa bài đang công khai (phải ẩn trước).';
+create trigger kt_articles_delete_guard before delete on public.kt_articles
+  for each row execute function public.kt_articles_delete_guard();
 
 -- 4. Cài đặt lịch tạo bài tự động (một dòng duy nhất). MẶC ĐỊNH TẮT.
 create table public.kt_ai_settings (

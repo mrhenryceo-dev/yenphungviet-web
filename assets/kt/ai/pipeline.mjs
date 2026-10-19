@@ -9,7 +9,8 @@ import { validatePackage } from './package.mjs';
 import { composeArticle, applyImage, pendingSlots } from './compose.mjs';
 import { qaArticle } from './qa.mjs';
 import { dupCheck } from './text.mjs';
-import { GUIDES, IDEAS } from './taxonomy.mjs';
+import { IDEAS } from './taxonomy.mjs';
+import { topicPool, rejectedTitles, rejectedMatch } from './worker.mjs';
 
 // Giai đoạn B: việc chạy PHÍA MÁY CHỦ (worker.mjs). runJob / reviseJob dưới đây là bản chạy trong trình duyệt cũ — giữ lại cho test hồi quy.
 export const STATUS = { proposed: 'Đề xuất', queued: 'Đang chờ máy chủ', generating: 'Đang tạo',qa: 'Chờ kiểm tra', awaiting_owner: 'Chờ OWNER duyệt', needs_changes: 'Cần sửa', published: 'Đã xuất bản', failed: 'Lỗi', rejected: 'Đã bỏ' };
@@ -23,24 +24,23 @@ export class PipelineError extends Error { constructor(code, msg) { super(msg); 
 
 async function pool(store) {
   const [arts, jobs] = await Promise.all([store.listArticles(), store.listJobs()]);
-  return {
-    arts, jobs,
-    titles: [...arts.map(a => ({ title: a.title, slug: a.slug, kind: 'bài viết' })), ...GUIDES.map(g => ({ title: g.title, kind: 'Cẩm nang' })),
-      ...jobs.filter(j => !['rejected', 'failed'].includes(j.status)).map(j => ({ title: j.title, kind: 'đang trong Xưởng' }))]
-  };
+  return { arts, jobs, titles: topicPool(arts, jobs) };            // gồm cả chủ đề OWNER đã loại (không đề xuất lại)
 }
 const log = (job, msg, at) => { job.history = [...(job.history || []), { at, msg }].slice(-60); };
 
 // ---------- đề xuất chủ đề ----------
 export async function suggestIdeas(deps, { groups = [], count = 8 } = {}) {
-  const { titles } = await pool(deps.store);
-  const res = await deps.ai.suggest({ groups, count, existingTitles: titles.map(t => t.title) });
+  const { titles, jobs } = await pool(deps.store);
+  const res = await deps.ai.suggest({ groups, count, existingTitles: titles.filter(t => !t.rejected).map(t => t.title), rejectedTitles: rejectedTitles(jobs) });
   const ideas = (res && res.json && Array.isArray(res.json.ideas) ? res.json.ideas : []).slice(0, 20);
   return ideas.map(i => {
     const d = dupCheck(i.title, titles);
+    const rej = rejectedMatch(i.title, jobs);                     // giống chủ đề đã loại → không hiện lại (trùng) / cảnh báo (gần giống)
     const seed = IDEAS.find(x => x.title === i.title);
-    return { title: String(i.title || '').slice(0, 200), group: i.group, angle: String(i.angle || '').slice(0, 500), why: String(i.why || '').slice(0, 300), risk: seed ? seed.risk : [], dup: d };
-  }).filter(i => i.title);
+    // giống chủ đề đã loại → LUÔN gắn nhãn "đã loại" (ưu tiên hơn trùng bài khác); mức độ lấy mức cao hơn
+    const dup = rej ? { ...rej, rejected: true, level: rej.score >= d.score ? rej.level : d.level } : d;
+    return { title: String(i.title || '').slice(0, 200), group: i.group, angle: String(i.angle || '').slice(0, 500), why: String(i.why || '').slice(0, 300), risk: seed ? seed.risk : [], dup, rejectedLevel: rej ? rej.level : null };
+  }).filter(i => i.title && i.rejectedLevel !== 'trung');
 }
 
 // ---------- tạo việc (chống trùng) ----------
