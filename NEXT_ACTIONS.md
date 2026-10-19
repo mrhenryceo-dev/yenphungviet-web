@@ -6,7 +6,7 @@
 
 ## Duyệt (trả lời trong chat)
 3. Push commit Giai đoạn B lên `feature/phase1s-ai-factory` (`OWNER_APPROVAL_REQUIRED.md` #16) → có Preview mới.
-4. Chạy migration kt_r2 rồi kt_r3, triển khai `kt-ai`, đặt Secrets ở chế độ **mock** (#4, #5, #17, #18) → thử "tạo bài rồi đóng trình duyệt" trên Preview, 0đ.
+4. Làm theo `supabase/HUONG_DAN_OWNER_TRIEN_KHAI_MOCK.md`: chạy migration kt_r2 rồi kt_r3, triển khai `kt-ai`, đặt Secrets ở chế độ **mock** (#4, #5, #17, #18) → thử "tạo bài rồi đóng trình duyệt" trên Preview, 0đ.
 5. Quyết định bài công khai đang có (#9), tắt GitHub Pages (#8), merge lên Production (#11).
 
 ## Khi muốn AI thật viết bài

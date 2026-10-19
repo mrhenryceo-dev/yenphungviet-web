@@ -43,7 +43,9 @@ await db.exec(await sql('tools/kt-sql-stub.sql'));
 await db.exec(await sql('supabase/kt_r1_migration.sql'));
 await db.exec(await sql('supabase/kt_r2_ai_migration.sql'));
 const { as, denied, run } = client(db);
-const oldJob = (await as('owner', `insert into public.kt_ai_jobs (title) values ('Việc cũ trước kt_r3') returning id`)).rows[0].id;
+const FP0 = JSON.stringify((await db.query(`select 'pol' k, tablename::text a, policyname::text b from pg_policies where tablename in ('birds','leads','flight_cages','objects')
+  union all select 'rows', 'birds', count(*)::text from public.birds union all select 'rows', 'leads', count(*)::text from public.leads order by 1,2,3`)).rows);
+const oldJob =(await as('owner', `insert into public.kt_ai_jobs (title) values ('Việc cũ trước kt_r3') returning id`)).rows[0].id;
 ok('2. Cài kt_r3 thành công (trên dữ liệu kt_r2 có sẵn)', (await run('supabase/kt_r3_worker_migration.sql')) === '');
 ok('3. Chạy lại → DỪNG "đã được cài"', /đã được cài/.test(await run('supabase/kt_r3_worker_migration.sql')));
 ok('4. Việc cũ vẫn còn, có giá trị mặc định cho cột mới', (await db.query(`select origin, run_count, error_code from public.kt_ai_jobs where id='${oldJob}'`)).rows[0].origin === 'owner');
@@ -116,6 +118,21 @@ ok('30. Rollback kt_r3 thành công, bài + việc còn nguyên, kt_r2 về như
   && (await db.query(`select count(*)::int n from public.kt_articles`)).rows[0].n === 1
   && (await db.query(`select count(*)::int n from public.kt_ai_jobs`)).rows[0].n === 3
   && /chỉ được đánh dấu/.test(await denied('owner', `update public.kt_ai_jobs set status = 'published' where id = '${q2}'`)));
-ok('31. Sau rollback cài lại kt_r3 được',(await run('supabase/kt_r3_worker_migration.sql')) === '');
+ok('31. Sau rollback cài lại kt_r3 được', (await run('supabase/kt_r3_worker_migration.sql')) === '');
+
+// --- hoàn tác SAI THỨ TỰ phải an toàn (không mất gì) ---
+const count = async () => JSON.stringify((await db.query(`select (select count(*) from public.kt_articles) a, (select count(*) from public.kt_ai_jobs) j,
+  (select count(*) from public.kt_ai_settings) s, (select count(*) from public.kt_ai_notifications) n`)).rows);
+const snap = await count();
+ok('32. Chạy rollback kt_r2 khi CÒN kt_r3 → bị từ chối, không thay đổi gì', !!(await run('supabase/kt_r2_ai_rollback.sql')) && (await count()) === snap);
+ok('33. Rollback kt_r1 khi còn kt_r2/kt_r3 → bị từ chối, bài vẫn còn', !!(await run('supabase/kt_r1_rollback.sql')) && (await count()) === snap);
+ok('34. Đúng thứ tự kt_r3 → kt_r2 rollback: gỡ sạch Xưởng, bài viết còn nguyên',
+  (await run('supabase/kt_r3_worker_rollback.sql')) === '' && (await run('supabase/kt_r2_ai_rollback.sql')) === ''
+  && (await db.query("select count(*)::int n from pg_tables where tablename like 'kt\\_ai\\_%' or tablename = 'kt_article_versions'")).rows[0].n === 0
+  && (await db.query(`select count(*)::int n from public.kt_articles`)).rows[0].n === 1
+  && (await db.query("select count(*)::int n from pg_trigger where tgname = 'kt_articles_ai_guard'")).rows[0].n === 0);
+const fp = async () => JSON.stringify((await db.query(`select 'pol' k, tablename::text a, policyname::text b from pg_policies where tablename in ('birds','leads','flight_cages','objects')
+  union all select 'rows', 'birds', count(*)::text from public.birds union all select 'rows', 'leads', count(*)::text from public.leads order by 1,2,3`)).rows);
+ok('35. Toàn bộ cài / gỡ kt_r3: birds, leads, App trại, policy Storage KHÔNG đổi', (await fp()) === FP0);
 
 console.log(`\n${n} kiểm thử SQL kt_r3 đạt (Postgres ${(await db.query('show server_version')).rows[0].server_version}, PGlite).`);
