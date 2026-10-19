@@ -20,6 +20,7 @@ Dự án Supabase: **bird-farm `bnumqtjzbyrtavsdlleq`** (dùng chung App trại)
 ### C1. Database (OWNER, SQL Editor)
 - [ ] Chạy toàn bộ `supabase/kt_r2_ai_migration.sql` (từ `begin;` đến `commit;`). Lỗi `kt_r2: DỪNG` = không có gì thay đổi.
 - [ ] Kiểm tra: số bảng `3`, số policy `4` (câu SQL ở cuối file).
+- [ ] **Giai đoạn B:** chạy `supabase/kt_r3_worker_migration.sql` (hàng đợi + máy chạy việc + chốt service_role + lịch TẮT + thông báo). Kiểm tra: `t | f | 3`. Hoàn tác: `kt_r3_worker_rollback.sql` (không xóa bài / việc).
 
 ### C2. Edge Function (OWNER, máy có Supabase CLI; hoặc Dashboard → Edge Functions)
 - [ ] `node tools/build-edge.mjs --check` → đồng bộ.
@@ -38,10 +39,23 @@ Dự án Supabase: **bird-farm `bnumqtjzbyrtavsdlleq`** (dùng chung App trại)
 | `KT_ALLOWED_ORIGIN_SUFFIX` | `-mrhenryceo-2691s-projects.vercel.app` | như cũ (cho Preview) |
 | `KT_AI_PRICES` | `{}` | `{"<model>":{"in":<USD/1M>,"out":<USD/1M>,"image":<USD/ảnh>}}` theo bảng giá chính thức |
 | `KT_AI_MONTHLY_BUDGET_USD`, `KT_AI_DAILY_ARTICLES`, `KT_AI_DAILY_IMAGES`, `KT_AI_MAX_IMAGES`, `KT_AI_MAX_OUTPUT_TOKENS` | mặc định 15 / 5 / 40 / 8 / 9000 | tùy OWNER (có trần cứng trong code) |
+| `KT_WORKER_SECRET` (GĐ B) | chuỗi ngẫu nhiên ≥ 32 ký tự (vd. tạo bằng trình quản lý mật khẩu) | như cũ — đổi nếu nghi lộ (nhớ đổi cả trong Vault nếu đã bật cron) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase **tự cấp** cho Edge Function — không cần đặt | — |
+| `KT_REVIEW_BASE_URL` | `https://yenphungviet.vercel.app` | như cũ (link trong thông báo) |
+| `KT_AI_IMAGE_QUALITY` | — | `low` / `medium` (khuyến nghị) / `high` |
+| `KT_NOTIFY_MODE` | `dry-run` (chỉ ghi lại, KHÔNG gửi) | `send` khi muốn nhận tin |
+| `KT_NOTIFY_TELEGRAM_TOKEN`, `KT_NOTIFY_TELEGRAM_CHAT` | — | token bot (@BotFather) + chat id của OWNER |
 
 - [ ] **Chưa kiểm chứng:** nếu trình duyệt báo lỗi CORS ở yêu cầu OPTIONS, triển khai lại với `--no-verify-jwt` (handler vẫn tự xác thực OWNER qua `/auth/v1/user`).
 
+### C2b. Nhịp máy chủ + lịch tự động (GĐ B, TÙY CHỌN — không bắt buộc để máy chạy việc hoạt động)
+- [ ] Database → Extensions: bật `pg_cron`, `pg_net`.
+- [ ] Sửa 2 chỗ `<WORKER_SECRET>`, `<ANON_KEY>` rồi chạy `supabase/kt_r3_schedule_enable.sql`. Kiểm tra: `select jobname, active from cron.job`.
+- [ ] Lịch tự động vẫn **TẮT** cho tới khi OWNER đặt ngân sách + bật trong `/quan-tri/#ai` → "Lịch tạo bài tự động".
+- **Tắt:** `kt_r3_schedule_disable.sql`, hoặc nhanh nhất `KT_AI_ENABLED=0`.
+
 ### C3. Kiểm thử trên Preview (mock, 0đ)
+- [ ] (GĐ B) Tạo bài → **đóng trình duyệt** → 1–2 phút sau mở lại `#ai`: việc đã chạy xong phía máy chủ; `kt_ai_notifications` có 1 dòng `dry_run`.
 - [ ] Claude push `feature/phase1s-ai-factory` (sau khi duyệt). OWNER mở `<preview>/quan-tri/#ai`: dải "MÔ PHỎNG (mock)", gợi ý chủ đề, tạo 1 bài → "Chờ kiểm tra" (bài [MÔ PHỎNG] bị chặn xuất bản là ĐÚNG).
 - [ ] Trang duyệt: nút "Duyệt xuất bản" **khóa** trên Preview (đúng thiết kế).
 

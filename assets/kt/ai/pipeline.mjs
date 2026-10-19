@@ -11,7 +11,8 @@ import { qaArticle } from './qa.mjs';
 import { dupCheck } from './text.mjs';
 import { GUIDES, IDEAS } from './taxonomy.mjs';
 
-export const STATUS = { proposed: 'Đề xuất', generating: 'Đang tạo', qa: 'Chờ kiểm tra', awaiting_owner: 'Chờ OWNER duyệt', needs_changes: 'Cần sửa', published: 'Đã xuất bản', failed: 'Lỗi', rejected: 'Đã bỏ' };
+// Giai đoạn B: việc chạy PHÍA MÁY CHỦ (worker.mjs). runJob / reviseJob dưới đây là bản chạy trong trình duyệt cũ — giữ lại cho test hồi quy.
+export const STATUS = { proposed: 'Đề xuất', queued: 'Đang chờ máy chủ', generating: 'Đang tạo',qa: 'Chờ kiểm tra', awaiting_owner: 'Chờ OWNER duyệt', needs_changes: 'Cần sửa', published: 'Đã xuất bản', failed: 'Lỗi', rejected: 'Đã bỏ' };
 export const MAX_ATTEMPTS = 3;
 export const LOCK_MS = 5 * 60 * 1000;
 const STOP_IMAGE = ['quota', 'budget', 'daily', 'daily-images', 'auth', 'config'];

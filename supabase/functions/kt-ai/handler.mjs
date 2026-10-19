@@ -1,15 +1,84 @@
 // Phase 1S — lõi Edge Function "kt-ai" (Supabase, Deno). Chỉ dùng Web API chuẩn → test được bằng Node.
-// Vai trò: nhận yêu cầu của OWNER đã đăng nhập → gọi nhà cung cấp AI → trả kết quả. KHÔNG ghi bài viết.
-// Quyền tối thiểu: không dùng service_role. Ghi nhận chi phí (kt_ai_usage) bằng chính JWT của OWNER, qua RLS.
+// Hai lối vào:
+//  1. OWNER (trình duyệt, JWT + CORS): status, suggest, kick (đánh thức máy chạy việc), và các thao tác đồng bộ cũ article/revise/image.
+//     Đường này KHÔNG dùng service_role — ghi nhận chi phí bằng chính JWT của OWNER, qua RLS.
+//  2. MÁY CHẠY VIỆC (Giai đoạn B, action "tick"): chỉ nhận khi có header x-kt-worker-secret đúng (cron / tự nối tiếp).
+//     Chạy worker.mjs: nhận 1 việc bằng khóa thuê, chạy từng bước, lưu tiến độ, rồi tự hẹn lần chạy kế tiếp.
+//     Đường này dùng service_role (chỉ phía máy chủ) nhưng database chặn: không xuất bản, không sửa bài đã công khai, không xóa.
 // Biến môi trường: xem DEPLOYMENT_CHECKLIST.md. Khóa API chỉ nằm ở Supabase Secrets.
 import { createProviders } from './ai/providers.mjs';
 import { readLimits, readPrices, withRetry, costOf, checkQuota, AIError } from './ai/limits.mjs';
 import { SYSTEM, articlePrompt, revisePrompt, suggestPrompt, SUGGEST_SCHEMA, imagePrompt } from './ai/prompt.mjs';
 import { JSON_SCHEMA, validatePackage } from './ai/package.mjs';
 import { toBase64 } from './ai/mockimg.mjs';
+import { tick, autoPlan } from './ai/worker.mjs';
+import { deliver, notifyConfig } from './ai/notify.mjs';
+import { serverStore, serverMedia } from './server-store.mjs';
 
 const MAX_BODY = 200 * 1024;
-const ACTIONS = ['status', 'suggest', 'article', 'revise', 'image'];
+const ACTIONS = ['status', 'suggest', 'article', 'revise', 'image', 'kick'];
+export const CHAIN = { max: 300, minDelayMs: 2000, maxDelayMs: 60000, wallMs: 140000, horizonMs: 20 * 60e3 };
+
+function safeEqual(a, b) {
+  a = String(a || ''); b = String(b || '');
+  let d = a.length ^ b.length;
+  for (let i = 0; i < Math.max(a.length, b.length); i++) d |= (a.charCodeAt(i % (a.length || 1)) || 0) ^ (b.charCodeAt(i % (b.length || 1)) || 0);
+  return d === 0 && a.length > 0;
+}
+const workerReady = env => String(env.KT_WORKER_SECRET || '').length >= 32 && !!env.SUPABASE_SERVICE_ROLE_KEY;
+
+// Chạy 1 tick của máy chạy việc + (nếu cron) lịch tự động, rồi hẹn lần kế tiếp qua waitUntil (không giữ request).
+export async function runWorker(env, { fetchImpl = globalThis.fetch, now = () => new Date(), workerStore = null, workerMedia = null, urlFetch = null, waitUntil = null, sleep = ms => new Promise(r => setTimeout(r, ms)), clock = () => Date.now() } = {}, { source = 'chain', chain = 0 } = {}) {
+  const t0 = clock();
+  const prov = createProviders(env, { fetchImpl });
+  const limits = readLimits(env), prices = readPrices(env);
+  const store = workerStore || serverStore(env, { fetchImpl });
+  let settings = null; try { settings = await store.getSettings(); } catch { /* chưa có bảng → dùng mặc định */ }
+  if (settings && Number(settings.monthly_budget_usd) > 0) limits.monthlyBudgetUsd = Math.min(limits.monthlyBudgetUsd, Number(settings.monthly_budget_usd));
+  const deps = { store, prov, limits, prices, now, clock, media: workerMedia || serverMedia(env, { fetchImpl }), fetchUrl: urlFetch || fetchImpl,
+    notify: msg => deliver(msg, env, { fetchImpl }), reviewBase: env.KT_REVIEW_BASE_URL || 'https://yenphungviet.vercel.app' };
+  let plan = null;
+  if (source === 'cron') { try { plan = await autoPlan(deps); } catch (e) { plan = { error: String(e.message || e).slice(0, 300) }; } }
+  const r = await tick(deps);
+  // Hẹn lần chạy kế tiếp: còn việc đang chạy → tự gọi lại chính mình (có trễ, có trần số lần). Hết việc → dừng.
+  let next = null;
+  if (r.more || r.claimed) next = r.nextRunAt ? new Date(r.nextRunAt).getTime() - now().getTime() : 0;
+  else if (r.claimed === null && source !== 'cron') {
+    try { const due = await nextActiveDue(store); if (due != null && due - now().getTime() < CHAIN.horizonMs) next = due - now().getTime(); } catch { /* bỏ qua */ }
+  }
+  let chained = false;
+  if (next != null && chain < CHAIN.max && waitUntil && workerReady(env)) {
+    const left = CHAIN.wallMs - (clock() - t0);
+    const delay = Math.max(CHAIN.minDelayMs, Math.min(next, CHAIN.maxDelayMs, left));
+    chained = true;
+    waitUntil((async () => {
+      await sleep(delay);
+      try {
+        await fetchImpl(`${env.SUPABASE_URL}/functions/v1/kt-ai`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-kt-worker-secret': env.KT_WORKER_SECRET,
+          ...(env.SUPABASE_ANON_KEY ? { apikey: env.SUPABASE_ANON_KEY, Authorization: `Bearer ${env.SUPABASE_ANON_KEY}` } : {}) }, body: JSON.stringify({ action: 'tick', source: 'chain', chain: chain + 1 }) });
+      } catch { /* cron / OWNER mở Xưởng sẽ đánh thức lại */ }
+    })());
+  }
+  return { ...r, plan, chained, chain };
+}
+async function nextActiveDue(store) {
+  if (!store.nextActiveDue) return null;
+  const at = await store.nextActiveDue(); return at ? new Date(at).getTime() : null;
+}
+
+async function handleTick(req, env, opts) {
+  const plain = (s, b) => new Response(JSON.stringify(b), { status: s, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } });
+  if (req.method !== 'POST') return plain(405, { error: 'Chỉ nhận POST.' });
+  if (!workerReady(env)) return plain(503, { error: 'Máy chạy việc chưa cấu hình (KT_WORKER_SECRET ≥ 32 ký tự + SUPABASE_SERVICE_ROLE_KEY).' });
+  if (!safeEqual(req.headers.get('x-kt-worker-secret'), env.KT_WORKER_SECRET)) return plain(401, { error: 'Sai khóa máy chạy việc.' });
+  if (env.KT_AI_ENABLED !== '1') return plain(503, { error: 'Xưởng nội dung AI đang tắt (KT_AI_ENABLED).' });
+  const raw = await req.text(); if (raw.length > 4096) return plain(413, { error: 'Yêu cầu quá lớn.' });
+  let body = {}; try { body = raw ? JSON.parse(raw) : {}; } catch { return plain(400, { error: 'JSON không hợp lệ.' }); }
+  const source = ['cron', 'chain', 'kick'].includes(body.source) ? body.source : 'chain';
+  const chain = Math.max(0, Math.min(CHAIN.max, Number(body.chain) || 0));
+  try { return plain(200, await runWorker(env, opts, { source, chain })); }
+  catch (e) { return plain(e && e.code === 'setup' ? 503 : 500, { error: String((e && e.message) || e).slice(0, 500), code: (e && e.code) || 'server' }); }
+}
 
 function corsHeaders(origin, env) {
   const allow = String(env.KT_ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
@@ -54,7 +123,10 @@ function restUsage(env, token, fetchImpl) {
 }
 const STATUS_HTTP = { auth: 502, config: 500, setup: 503, quota: 429, budget: 429, daily: 429, 'daily-images': 429, 'too-fast': 429, rate: 429, timeout: 504, network: 502, server: 502, bad_output: 502, bad_request: 502, policy: 422 };
 
-export async function handle(req, env = {}, { fetchImpl = globalThis.fetch, now = () => new Date(), usageStore = null } = {}) {
+export async function handle(req, env = {}, opts = {}) {
+  const { fetchImpl = globalThis.fetch, now = () => new Date(), usageStore = null, waitUntil = null } = opts;
+  // Máy chạy việc (cron / tự nối tiếp): không có Origin, xác thực bằng khóa riêng — xử lý TRƯỚC CORS.
+  if (req.headers.get('x-kt-worker-secret') != null) return handleTick(req, env, opts);
   const origin = req.headers.get('origin') || '';
   const cors = corsHeaders(origin, env);
   if (req.method === 'OPTIONS') return cors ? new Response(null, { status: 204, headers: cors }) : new Response(null, { status: 403 });
@@ -72,6 +144,14 @@ export async function handle(req, env = {}, { fetchImpl = globalThis.fetch, now 
   const who = await owner(req, env, fetchImpl);
   if (who.err) return json(who.err[0], { error: who.err[1] }, cors);
 
+  // OWNER đánh thức máy chạy việc: trả lời NGAY (202), việc chạy tiếp phía máy chủ kể cả khi OWNER đóng trình duyệt.
+  if (action === 'kick') {
+    if (!workerReady(env)) return json(503, { error: 'Máy chạy việc chưa cấu hình (KT_WORKER_SECRET + SUPABASE_SERVICE_ROLE_KEY).', code: 'setup' }, cors);
+    const run = runWorker(env, opts, { source: 'kick', chain: 0 }).catch(() => null);
+    if (waitUntil) waitUntil(run); else await run;
+    return json(202, { ok: true, message: 'Đã giao việc cho máy chủ. Có thể đóng trình duyệt — bài sẽ được chuẩn bị và báo khi chờ duyệt.' }, cors);
+  }
+
   let prov; try { prov = createProviders(env, { fetchImpl }); } catch (e) { return json(500, { error: e.message, code: 'config' }, cors); }
   const limits = readLimits(env), prices = readPrices(env);
   const usage = usageStore || restUsage(env, who.token, fetchImpl);
@@ -82,7 +162,8 @@ export async function handle(req, env = {}, { fetchImpl = globalThis.fetch, now 
     const rows = await usage.list(monthStart);
     if (action === 'status') {
       const q = checkQuota(rows, limits, 'article', now());
-      return json(200, { provider: prov.describe, limits, month: { calls: rows.length, spent_usd: Math.round((q.spent || rows.reduce((s, r) => s + (Number(r.cost_usd) || 0), 0)) * 100) / 100 } }, cors);
+      const nc = notifyConfig(env);
+      return json(200, { provider: prov.describe, limits, worker: { ready: workerReady(env) }, notify: { mode: nc.mode, channel: nc.channel, ready: nc.ready }, month:{ calls: rows.length, spent_usd: Math.round((q.spent || rows.reduce((s, r) => s + (Number(r.cost_usd) || 0), 0)) * 100) / 100 } }, cors);
     }
     const kind = action === 'image' ? 'image' : action === 'suggest' ? 'text' : 'article';
     const q = checkQuota(rows, limits, kind, now());

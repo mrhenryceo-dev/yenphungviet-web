@@ -4,6 +4,7 @@
 
 create role anon nologin;
 create role authenticated nologin;
+create role service_role nologin bypassrls;   -- như Supabase: khóa service_role bỏ qua RLS (dùng cho máy chạy việc kt_r3)
 
 create schema auth;
 grant usage on schema auth to anon, authenticated;
@@ -27,7 +28,9 @@ alter table storage.objects enable row level security;
 grant select, insert, update, delete on storage.objects to anon, authenticated;
 insert into storage.buckets (id, name, public) values ('Halan', 'Halan', true);   -- bucket cũ có sẵn
 
-grant usage on schema public to anon, authenticated;
+grant usage on schema public to anon, authenticated, service_role;
+grant usage on schema auth to service_role;
+grant execute on function auth.jwt() to service_role;
 create table public.birds (id serial primary key, code text, published boolean);
 alter table public.birds enable row level security;
 create policy birds_public_read on public.birds for select to anon using (published);

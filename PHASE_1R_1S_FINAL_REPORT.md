@@ -1,5 +1,7 @@
 # PHASE 1R + 1S — BÁO CÁO CUỐI (2026-10-14)
 
+> **Cập nhật 2026-10-19 — Giai đoạn B:** quy trình tạo bài đã chuyển sang **chạy phía máy chủ** (hàng đợi, OWNER đóng trình duyệt vẫn chạy, kiểm tra link nguồn, thông báo, lịch tự động mặc định tắt). Xem `PHASE_1S_GIAI_DOAN_B_REPORT.md`. Mã commit đã push: 1R `6a3c64a`, 1S `12e6109` (thay cho `fb7309a` / `7e2ba42` bên dưới).
+
 Người thực hiện: Claude Code. Phạm vi: chỉ máy local + đọc công khai. **Không** push, merge, deploy, ghi Supabase thật, gọi API AI trả phí, hay đụng dự án khác ngoài YenPhungViet.
 
 ## 1. Trạng thái Git

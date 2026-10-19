@@ -49,7 +49,24 @@ async function tryFile(p) {
 
 // Mô phỏng Storage cho /quan-tri/?dev=1 (R4): ảnh thử lưu ở thư mục tạm của hệ điều hành, KHÔNG trong repo.
 const MEDIA_DIR = path.join(os.tmpdir(), 'yp-kt-dev-media');
-const KEY_RE = /^img\/[0-9a-f-]{36}-(1600|800|og)\.(webp|jpg)$/;
+const KEY_RE = /^img\/[0-9a-f-]{36}-(1600|800|og)\.(webp|jpg|png)$/;   // png: ảnh giữ chỗ của mock (bucket thật cũng nhận png)
+const TYPE_OF = { webp: 'image/webp', jpg: 'image/jpeg', png: 'image/png' };
+
+// Giai đoạn B — kiểm tra link nguồn ở chế độ thử local: trình duyệt không tự HEAD trang ngoài được (CORS),
+// nên dev-server gửi giúp. Chỉ https công khai (cùng quy tắc urlProblem), không theo chuyển hướng, chỉ trả mã HTTP.
+async function devUrlCheck(req, res) {
+  const { urlProblem, UA } = await import('../assets/kt/ai/sources.mjs');
+  const chunks = []; for await (const c of req) chunks.push(c);
+  let b = {}; try { b = JSON.parse(Buffer.concat(chunks).toString() || '{}'); } catch { /* */ }
+  res.setHeader('Content-Type', 'application/json');
+  if (urlProblem(b.url) || !['HEAD', 'GET'].includes(b.method)) { res.statusCode = 400; return res.end('{"error":"bad url"}'); }
+  try {
+    const ac = new AbortController(); const t = setTimeout(() => ac.abort(), 8000);
+    const r = await fetch(b.url, { method: b.method, redirect: 'manual', signal: ac.signal, headers: { 'User-Agent': UA, ...(b.method === 'GET' ? { Range: 'bytes=0-2047' } : {}) } }).finally(() => clearTimeout(t));
+    try { await r.body?.cancel(); } catch { /* */ }
+    res.end(JSON.stringify({ status: r.status, location: r.headers.get('location') }));
+  } catch (e) { res.end(JSON.stringify({ error: e.name === 'AbortError' ? 'timeout' : 'network' })); }
+}
 async function devStorage(req, res, u) {
   const send = (code, body, type = 'application/json') => { res.statusCode = code; res.setHeader('Content-Type', type); res.end(body); };
   await mkdir(path.join(MEDIA_DIR, 'img'), { recursive: true });
@@ -63,20 +80,21 @@ async function devStorage(req, res, u) {
   if (!m || !KEY_RE.test(key)) return send(400, '{"error":"bad key"}');
   const file = path.join(MEDIA_DIR, key);
   if (m[1] === 'upload' && req.method === 'PUT') {
-    if (!['image/webp', 'image/jpeg'].includes(req.headers['content-type'])) return send(415, '{"error":"type"}');
+    if (req.headers['content-type'] !== TYPE_OF[key.split('.').pop()]) return send(415, '{"error":"type"}');
     const chunks = []; let size = 0;
     for await (const c of req) { size += c.length; if (size > 5242880) return send(413, '{"error":"too large"}'); chunks.push(c); }
     try { await writeFile(file, Buffer.concat(chunks), { flag: 'wx' }); } catch { return send(409, '{"error":"exists"}'); }   // như upsert:false
     return send(200, JSON.stringify({ Key: 'kien-thuc/' + key }));
   }
   if (m[1] === 'upload' && req.method === 'DELETE') { await unlink(file).catch(() => {}); return send(200, '[]'); }
-  if (req.method === 'GET') { try { res.setHeader('Access-Control-Allow-Origin', '*'); return send(200, await readFile(file), key.endsWith('.jpg') ? 'image/jpeg' : 'image/webp'); } catch { return send(404, '{"error":"not_found"}'); } }
+  if (req.method === 'GET') { try { res.setHeader('Access-Control-Allow-Origin', '*'); return send(200, await readFile(file), TYPE_OF[key.split('.').pop()]); } catch { return send(404, '{"error":"not_found"}'); } }
   return send(405, '{"error":"method"}');
 }
 
 http.createServer(async (req, res) => {
   const u = new URL(req.url, 'http://127.0.0.1');
   if (u.pathname.startsWith('/__dev-supabase/')) return devStorage(req, res, u).catch(e => { console.error(e); res.statusCode = 500; res.end('dev storage error'); });
+  if (u.pathname === '/__dev-urlcheck' && req.method === 'POST') return devUrlCheck(req, res).catch(() => { res.statusCode = 500; res.end('{}'); });
   if (u.pathname === '/__dev-fn/kt-ai') return devFunction(req, res).catch(e => { console.error(e); res.statusCode = 500; res.end('dev function error'); });
   if (BLOCKED.test(u.pathname)) { res.statusCode = 404; return res.end('blocked (.vercelignore)'); }
   const file = await tryFile(u.pathname);

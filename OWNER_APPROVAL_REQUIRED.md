@@ -19,3 +19,9 @@ Mỗi mục cần OWNER trả lời "Duyệt" / "Không" (hoặc tự thao tác)
 | 13 | Vercel Pro (website bán hàng) | 20 USD/tháng | OWNER | Điều khoản Hobby: phi thương mại |
 | 14 | Duyệt thêm tên miền nguồn tin cậy (`TRUSTED_DOMAINS` trong `assets/kt/ai/qa.mjs`) | QA nguồn | OWNER | Hiện: australian.museum, merckvetmanual.com, en.wikipedia.org |
 | 15 | Rà RLS các bảng App trại (bird-farm đang cho tự đăng ký) | Rủi ro có sẵn, không do Phase 1R/1S | OWNER + bên App trại | Xem `SECURITY_AUDIT.md` |
+| 16 | **GĐ B:** push commit Giai đoạn B lên `feature/phase1s-ai-factory` | GitHub (PUBLIC) + Preview | Claude sau khi duyệt | Đã quét khóa bí mật |
+| 17 | **GĐ B:** chạy migration **kt_r3** (sau kt_r2) | Hàng đợi + máy chạy việc; máy chủ dùng service_role nhưng database CHẶN xuất bản / sửa bài công khai / xóa | OWNER (SQL Editor) | 32 test PGlite đạt. Hoàn tác: `kt_r3_worker_rollback.sql` |
+| 18 | **GĐ B:** đặt Secret `KT_WORKER_SECRET` (≥ 32 ký tự) | Bật máy chạy việc phía máy chủ | OWNER | Không gửi khóa qua chat |
+| 19 | **GĐ B:** (tùy chọn) bật nhịp pg_cron (`kt_r3_schedule_enable.sql`) | ~8.600 lần gọi function / tháng (trong gói Free) | OWNER | Lịch tạo bài tự động vẫn TẮT |
+| 20 | **GĐ B:** (tùy chọn) bật lịch tạo bài tự động + ngân sách tháng | **Chi phí** ~0,35 USD / bài | OWNER (trong `/quan-tri/#ai`) | Bắt buộc có ngân sách; AI không tự xuất bản |
+| 21 | **GĐ B:** (tùy chọn) Telegram bot + `KT_NOTIFY_MODE=send` | Nhận tin khi có bài chờ duyệt | OWNER | Mặc định chỉ ghi lại (dry-run) |

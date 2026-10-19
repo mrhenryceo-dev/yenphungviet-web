@@ -295,6 +295,8 @@ async function renderEditor(id) {
   try { A = id ? await store.get(id) : NEW_ARTICLE(); } catch (e) { app.innerHTML = `<div class="qt-alert">${esc(dbError(e))}</div>`; return; }
   if (!A) { app.innerHTML = '<div class="qt-alert">Không tìm thấy bài.</div><a class="qt-btn" href="#">← Danh sách</a>'; return; }
   A = { ...NEW_ARTICLE(), ...clone(A) }; A.cover = { ...IMG(), ...(A.cover || {}) };
+  // Ảnh bìa do máy chủ AI tạo chưa có ảnh chia sẻ link 1200×630 (máy chủ không có canvas) → tạo trong trình duyệt khi lưu / duyệt
+  if (A.cover.path && !A.cover.og_path && A.cover.ai) A.cover.og_stale = true;
   dirty = false; slugTouched = !!A.slug;
   drawEditor();
   // Có bản đang soạn dở (chưa lưu) trong trình duyệt → hỏi khôi phục

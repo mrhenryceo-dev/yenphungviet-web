@@ -28,10 +28,12 @@ run('Bộ render trang công khai', 'tools/kt-render-test.mjs');
 run('Xử lý ảnh (nén, tên file, srcset)', 'tools/kt-media-test.mjs');
 run('Vercel Function ↔ Supabase REST (fetch giả)', 'tools/kt-data-test.mjs');
 run('Xưởng nội dung AI + Edge Function (mock, fetch giả)', 'tools/kt-ai-test.mjs');
+run('Máy chạy việc phía máy chủ (GĐ B: hàng đợi, link nguồn, thông báo, tick/kick)', 'tools/kt-worker-test.mjs');
 run('Edge Function đồng bộ với assets/kt/ai', 'tools/build-edge.mjs', ['--check']);
 if (PG && existsSync(PG)) {
   run('SQL kt_r1 (RLS, Storage, chốt cài một lần)', 'tools/kt-sql-test.mjs', [PG]);
   run('SQL kt_r2 (Xưởng nội dung, owner-only)', 'tools/kt-r2-sql-test.mjs', [PG]);
+  run('SQL kt_r3 (hàng đợi, khóa thuê, chốt service_role)', 'tools/kt-r3-sql-test.mjs', [PG]);
   run('SQL web_02 (dự phòng dự án riêng)', 'tools/web-sql-test.mjs', [PG]);
 } else results.push({ name: 'Test SQL (PGlite)', ok: true, ms: 0, last: 'BỎ QUA — chưa đặt KT_PGLITE' });
 if (live) run('Phân quyền THẬT trên bird-farm (anon)', 'tools/kt-live-anon-test.mjs');
