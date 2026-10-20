@@ -36,6 +36,8 @@ export const W = {
   maxWaitMs: { openai: 30 * 60e3, anthropic: 26 * 3600e3, mock: 60e3 }
 };
 const STOP = ['quota', 'budget', 'daily', 'daily-images', 'too-fast', 'auth', 'config', 'policy', 'bad_request', 'setup'];
+const FREE_STEPS = ['article_wait', 'revise_wait', 'compose', 'sources', 'qa', 'notify'];   // không gọi AI tính phí → được thử lại kể cả khi KT_AI_NO_RETRY=1
+const articleMax = L => (L && L.noRetry ? 1 : W.maxArticleAttempts);
 const uid = () => globalThis.crypto.randomUUID();
 
 export class WorkerError extends Error { constructor(code, msg, { retryable = false } = {}) { super(msg); this.code = code; this.retryable = retryable; } }
@@ -56,7 +58,7 @@ async function submitText(D, job, task) {
   if (!q.ok) throw new AIError(q.code, q.msg);
   let user;
   if (task === 'article') {
-    if ((job.attempts || 0) >= W.maxArticleAttempts) throw new WorkerError('attempts', `Đã thử tạo bài ${job.attempts} lần — dừng để tránh tốn chi phí.`);
+    if ((job.attempts || 0) >= articleMax(limits)) throw new WorkerError('attempts', `Đã thử tạo bài ${job.attempts} lần — dừng để tránh tốn chi phí.${limits.noRetry ? ' (KT_AI_NO_RETRY=1: chỉ 1 lần)' : ''}`);
     const arts = await store.listArticles();
     user = articlePrompt({ title: job.title, group: job.grp, angle: job.angle, notes: job.notes, risk: job.risk || [], existingTitles: [...arts.map(a => a.title), ...GUIDES.map(g => g.title)] });
   } else {
@@ -96,7 +98,7 @@ async function takeText(D, job, task, r) {
   job.ai_handle = null;
   if (!v.ok) {
     log(job, 'Gói bài AI không hợp lệ: ' + v.errors.join(' ').slice(0, 200), iso(now()));
-    if (task === 'article' && (job.attempts || 0) < W.maxArticleAttempts) { job.step = 'article'; job.next_run_at = iso(now()); return { heavy: !prov.describe.mock }; }
+    if (task === 'article' && (job.attempts || 0) < articleMax(D.limits)) { job.step = 'article'; job.next_run_at = iso(now()); return { heavy: !prov.describe.mock }; }
     throw new WorkerError('invalid', 'Gói bài AI không hợp lệ: ' + v.errors.join(' ').slice(0, 300));
   }
   job.pkg = v.value; job.pkg_warnings = v.warnings; job.provider = prov.describe;
@@ -176,7 +178,7 @@ async function stepImages(D, job, elapsedMs) {
   let art = await draftOnly(store, job.article_id);
   const errs = job.image_errors || [];
   const tries = p => errs.filter(e => e.slot === p).length;
-  const pend = pendingSlots(art).filter(s => tries(s.path) < W.maxImageTriesPerSlot && !errs.some(e => e.slot === s.path && e.final));
+  const pend = pendingSlots(art).filter(s => tries(s.path) < (limits.noRetry ? 1 : W.maxImageTriesPerSlot) && !errs.some(e => e.slot === s.path && e.final));
   const toQa = msg => { if (msg) log(job, msg, iso(now())); job.step = 'qa'; job.next_run_at = iso(now()); return { heavy: false }; };
   if (!pend.length) return toQa(errs.length ? `${pendingSlots(art).length} ảnh chưa tạo được` : '');
   if (!prov.image) return toQa('Chưa cấu hình nhà cung cấp ảnh (KT_AI_IMAGE_PROVIDER) — ảnh để ô giữ chỗ');
@@ -206,6 +208,7 @@ async function stepImages(D, job, elapsedMs) {
     const stop = ['quota', 'budget', 'daily', 'daily-images', 'auth', 'config'].includes(code);
     job.image_errors = [...errs, { slot: slot.path, msg: String(e.message || e).slice(0, 300), code, stop, final: code === 'policy' }];
     log(job, `Ảnh lỗi (${code}): ${String(e.message || e).slice(0, 120)}`, iso(now()));
+    if (limits.noRetry) throw new WorkerError('image-failed', `Tạo ảnh lỗi (${code}): ${String(e.message || e).slice(0, 200)} — KT_AI_NO_RETRY=1: dừng, không thử lại. Bài nháp vẫn được giữ.`);
     if (stop) return toQa('');
     if (e.retryable) { job.next_run_at = later(now(), W.backoffSec[0]); return { heavy: true, wait: true }; }   // lỗi tạm thời: chờ rồi mới thử lại
   }
@@ -284,7 +287,8 @@ export async function tick(deps, { workerId = 'w-' + uid().slice(0, 8), maxSteps
       try { r = await runStep(D, job, clock() - t0); job.step_attempts = 0; if (!r.wait) { job.error = ''; job.error_code = ''; } }
       catch (e) {
         const code = (e && e.code) || 'server';
-        const retryable = !!(e && e.retryable) && !STOP.includes(code);
+        // KT_AI_NO_RETRY=1: bước có thể tính phí (viết / sửa / ảnh) KHÔNG tự thử lại; bước miễn phí (hỏi trạng thái, lưu, QA) vẫn thử lại
+        const retryable = !!(e && e.retryable) && !STOP.includes(code) && !(D.limits && D.limits.noRetry && !FREE_STEPS.includes(step));
         job.step_attempts = (job.step_attempts || 0) + 1;
         if (!retryable || job.step_attempts >= W.maxStepAttempts) throw e;
         job.next_run_at = later(now(), W.backoffSec[Math.min(job.step_attempts - 1, W.backoffSec.length - 1)]);
@@ -336,6 +340,7 @@ export async function autoPlan(deps) {
   const { store, prov, limits, prices } = deps; const now = deps.now || (() => new Date());
   const s = await store.getSettings();
   if (!s || !s.auto_enabled) return { skipped: 'off' };
+  if (limits && limits.suggestEnabled === false) return { skipped: 'suggest-off' };
   if (!(Number(s.monthly_budget_usd) > 0)) return { skipped: 'no-budget' };
   if (!prov.describe.mock && !(prices && prices[prov.describe.textModel])) return { skipped: 'no-prices' };
   const vnHour = (now().getUTCHours() + 7) % 24;

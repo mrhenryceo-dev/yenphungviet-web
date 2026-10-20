@@ -165,6 +165,7 @@ export async function handle(req, env = {}, opts = {}) {
       const nc = notifyConfig(env);
       return json(200, { provider: prov.describe, limits, worker: { ready: workerReady(env) }, notify: { mode: nc.mode, channel: nc.channel, ready: nc.ready }, month:{ calls: rows.length, spent_usd: Math.round((q.spent || rows.reduce((s, r) => s + (Number(r.cost_usd) || 0), 0)) * 100) / 100 } }, cors);
     }
+    if (action === 'suggest' && !limits.suggestEnabled) return json(403, { error: 'Gợi ý chủ đề bằng AI đang tắt (KT_AI_SUGGEST_ENABLED=0). Hãy tự nhập chủ đề.', code: 'suggest-off' }, cors);
     const kind = action === 'image' ? 'image' : action === 'suggest' ? 'text' : 'article';
     const q = checkQuota(rows, limits, kind, now());
     if (!q.ok) return json(429, { error: q.msg, code: q.code }, cors);

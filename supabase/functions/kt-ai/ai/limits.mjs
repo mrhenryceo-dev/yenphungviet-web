@@ -13,6 +13,11 @@ export function readLimits(env = {}) {
   for (const [k, name] of Object.entries(ENV)) {
     const v = Number(env[name]); if (Number.isFinite(v) && v > 0) L[k] = Math.min(v, HARD[k]);
   }
+  // KT_AI_NO_RETRY=1: mọi lời gọi AI CÓ THỂ TÍNH PHÍ chỉ thử ĐÚNG 1 LẦN (lỗi → dừng việc, báo OWNER). Hỏi lại trạng thái (miễn phí) vẫn được thử lại.
+  L.noRetry = env.KT_AI_NO_RETRY === '1';
+  if (L.noRetry) L.maxRetries = 0;
+  // KT_AI_SUGGEST_ENABLED=0: tắt gợi ý chủ đề bằng AI (nút "Gợi ý" + lịch tự động) — OWNER tự nhập chủ đề.
+  L.suggestEnabled = env.KT_AI_SUGGEST_ENABLED !== '0';
   return L;
 }
 

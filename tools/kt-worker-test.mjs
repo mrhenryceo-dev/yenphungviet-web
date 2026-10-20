@@ -525,7 +525,58 @@ await t('Tạo lại bài mới cùng chủ đề (phía máy chủ): giữ id +
   assert.throws(() => WK.requeue({ ...j, status: 'published' }, { mode: 'regenerate', now: W.clock.now() }), e => e.code === 'closed');
 });
 
-// ================= 12. giao diện: khung xem trước không bị cắt =================
+// ================= 12. Lần thử AI thật đầu tiên: KHÔNG tự thử lại lời gọi tính phí, TẮT gợi ý chủ đề =================
+const NR = { ...readLimits({ KT_AI_NO_RETRY: '1', KT_AI_SUGGEST_ENABLED: '0', KT_AI_MAX_IMAGES: '1', KT_AI_DAILY_ARTICLES: '1', KT_AI_DAILY_IMAGES: '1' }) };
+await t('Cấu hình thử AI thật: KT_AI_NO_RETRY=1 → maxRetries 0; KT_AI_SUGGEST_ENABLED=0; 1 bài / 1 ảnh', async () => {
+  assert.equal(NR.noRetry, true); assert.equal(NR.maxRetries, 0); assert.equal(NR.suggestEnabled, false);
+  assert.deepEqual([NR.maxImagesPerArticle, NR.dailyArticles, NR.dailyImages], [1, 1, 1]);
+  const d = readLimits({}); assert.equal(d.noRetry, false); assert.equal(d.suggestEnabled, true);
+});
+await t('KT_AI_NO_RETRY=1: AI trả gói hỏng → chỉ 1 lần gọi, dừng "Lỗi" (không tự tạo lại)', async () => {
+  const base = createProviders({}); let calls = 0;
+  const prov = { ...base, text: { ...base.text, async submitJSON() { calls++; return { done: true, json: { title: 'x' }, usage: { model: 'mock' } }; } } };
+  const W = world({ prov, limits: NR }); const job = await W.enqueue(idea()); await W.runAll();
+  const j = await W.store.getJob(job.id); assert.equal(calls, 1); assert.equal(j.status, 'failed'); assert.equal(j.attempts, 1);
+});
+await t('KT_AI_NO_RETRY=1: lỗi mạng / máy chủ khi gửi bài → 1 lần gọi, dừng ngay (không hẹn thử lại)', async () => {
+  const base = createProviders({}); let calls = 0;
+  const prov = { ...base, text: { ...base.text, async submitJSON() { calls++; throw new AIError('server', 'OpenAI: máy chủ lỗi tạm thời (503).', { retryable: true }); } } };
+  const W = world({ prov, limits: NR }); const job = await W.enqueue(idea()); await W.runAll();
+  const j = await W.store.getJob(job.id); assert.equal(calls, 1); assert.equal(j.status, 'failed'); assert.equal(W.store.T.notes.at(-1).kind, 'failed');
+});
+await t('KT_AI_NO_RETRY=1: ảnh lỗi → đúng 1 lần gọi ảnh, việc dừng "Lỗi", bài NHÁP vẫn giữ', async () => {
+  const base = createProviders({}); let calls = 0;
+  const prov = { ...base, image: { ...base.image, async generateImage() { calls++; throw new AIError('server', 'lỗi 500', { retryable: true }); } } };
+  const W = world({ prov, limits: NR }); const job = await W.enqueue(idea()); await W.runAll();
+  const j = await W.store.getJob(job.id); const a = await W.store.getArticle(j.article_id);
+  assert.equal(calls, 1); assert.equal(j.status, 'failed'); assert.equal(j.error_code, 'image-failed'); assert.equal(a.status, 'draft');
+});
+await t('KT_AI_NO_RETRY=1: hỏi lại trạng thái (MIỄN PHÍ) bị lỗi mạng vẫn được thử lại → bài hoàn thành, chỉ 1 lần gửi tính phí', async () => {
+  const base = createProviders({}); let submits = 0, polls = 0;
+  const prov = { ...base, describe: { ...base.describe, mock: false }, text: { ...base.text,
+    async submitJSON() { submits++; return { done: false, handle: { provider: 'openai', id: 'resp_free' } }; },
+    async pollJSON(h) { polls++; if (polls === 1) throw new AIError('network', 'mất mạng', { retryable: true }); return { done: true, json: clone(S0), usage: { model: 'm', tokensIn: 1, tokensOut: 1 } }; } } };
+  const W = world({ prov, limits: NR }); const job = await W.enqueue(idea()); await W.runAll();
+  const j = await W.store.getJob(job.id); const a = await W.store.getArticle(j.article_id);
+  assert.equal(submits, 1); assert.equal(j.status, 'awaiting_owner', j.error); assert.equal(W.store.T.uploads.length, 1, '1 ảnh (bìa)'); assert.equal(pendingSlots(a).length, 0); assert.equal(a.status, 'draft');
+});
+await t('KT_AI_NO_RETRY=1 + 1 bài/ngày: OWNER bấm "Tạo lại" sau khi xong → bị chặn bởi hạn mức ngày, không gọi AI', async () => {
+  const W = world({ limits: NR }); const job = await W.enqueue(idea()); await W.runAll();
+  const j0 = await W.store.getJob(job.id); W.store.ownerUpdate(job.id, WK.requeue(j0, { mode: 'regenerate', now: W.clock.now() }));
+  W.clock.advance(120); await W.runAll();
+  const j = await W.store.getJob(job.id); assert.equal(j.status, 'failed'); assert.equal(j.error_code, 'daily'); assert.equal(W.store.T.usage.filter(u => u.task === 'article').length, 1);
+});
+await t('KT_AI_SUGGEST_ENABLED=0: nút "Gợi ý" bị từ chối (403, không gọi AI); lịch tự động cũng không gọi', async () => {
+  let aiCalled = false;
+  const f = async url => { if (url.endsWith('/auth/v1/user')) return { ok: true, status: 200, json: async () => ({ id: 'u', app_metadata: { kt_role: 'owner' } }) }; aiCalled = true; return { ok: true, status: 200, json: async () => [] }; };
+  const req = new Request('https://fn/kt-ai', { method: 'POST', headers: { origin: 'https://yenphungviet.vercel.app', 'content-type': 'application/json', authorization: `Bearer ${OWNER_JWT}` }, body: JSON.stringify({ action: 'suggest', groups: [] }) });
+  const r = await handle(req, { ...WENV, KT_AI_SUGGEST_ENABLED: '0' }, { fetchImpl: f, usageStore: { async list() { return []; }, async add() {} } });
+  assert.equal(r.status, 403); assert.equal((await r.json()).code, 'suggest-off'); assert.equal(aiCalled, false);
+  const W = world({ limits: NR }); Object.assign(W.store.T.settings, { auto_enabled: true, monthly_budget_usd: 1, auto_hour: 0 });
+  assert.deepEqual(await WK.autoPlan(W.deps), { skipped: 'suggest-off' });
+});
+
+// ================= 13. giao diện: khung xem trước không bị cắt =================
 await t('Khung xem trước 🖥 1200 px tự thu nhỏ vừa khung (vd. màn hình 1216 px) — không cắt hai bên; 📱 390 px giữ nguyên', async () => {
   assert.deepEqual(fitScale(780, 1200), { scale: 0.65, width: 1200, outerWidth: 780 });
   assert.deepEqual(fitScale(1300, 1200), { scale: 1, width: 1200, outerWidth: 1200 });
