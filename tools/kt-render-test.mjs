@@ -25,6 +25,34 @@ t('đậm, nghiêng, H2/H3, danh sách', () => {
   const h = R.mdToHtml('## A\n### B\n**đậm** *nghiêng*\n\n- x\n- y\n\n1. m\n2. n');
   for (const s of ['<h2>A</h2>', '<h3>B</h3>', '<strong>đậm</strong>', '<em>nghiêng</em>', '<ul><li>x</li><li>y</li></ul>', '<ol><li>m</li><li>n</li></ol>']) assert.ok(h.includes(s), s);
 });
+t('bảng Markdown → <table> có thead/tbody, data-label cho mobile', () => {
+  const h = R.mdToHtml('Trước bảng\n\n| Nhóm | Ví dụ | **Cách** dùng |\n|---|:---:|---|\n| Hạt | Bông kê | Thưởng |\n| Rau lá | Cải thìa, kale | [Xem](/kien-thuc/abc/) |\n\nSau bảng');
+  assert.ok(h.includes('<p>Trước bảng</p>') && h.includes('<p>Sau bảng</p>'));
+  assert.ok(h.includes('<div class="kt-table kt-md-table"><table><thead><tr><th scope="col">Nhóm</th><th scope="col">Ví dụ</th><th scope="col"><strong>Cách</strong> dùng</th></tr></thead><tbody>'));
+  assert.ok(h.includes('<td data-label="Nhóm">Hạt</td><td data-label="Ví dụ">Bông kê</td><td data-label="Cách dùng">Thưởng</td>'));
+  assert.ok(h.includes('<a href="/kien-thuc/abc/">Xem</a>'));
+  assert.equal((h.match(/<tr>/g) || []).length, 3); assert.ok(!h.includes('|'));
+});
+t('bảng: ô thiếu/thừa, \\| trong ô, dòng | không có kẻ thì vẫn là chữ', () => {
+  const h = R.mdToHtml('| A | B |\n|---|---|\n| 1 |\n| x \\| y | 2 | thừa |');
+  assert.ok(h.includes('<td data-label="A">1</td><td data-label="B"></td>'));
+  assert.ok(h.includes('<td data-label="A">x | y</td><td data-label="B">2</td></tr>'));
+  assert.ok(!h.includes('thừa'));
+  assert.equal(R.mdToHtml('| chỉ là chữ |'), '<p>| chỉ là chữ |</p>');
+});
+t('bảng: escape HTML, chặn link xấu, nhãn data-label an toàn', () => {
+  const h = R.mdToHtml('| <img src=x onerror=alert(1)> | "a" |\n|---|---|\n| <script>alert(1)</script> | [x](javascript:alert(1)) |');
+  assert.ok(!/<img|<script|href="javascript/i.test(h));
+  assert.ok(h.includes('data-label="&lt;img src=x onerror=alert(1)&gt;"') && h.includes('data-label="&quot;a&quot;"'));
+});
+t('# tiêu đề: trùng tiêu đề bài thì bỏ (trang đã có H1), khác thì thành H2, không bao giờ ra H1', () => {
+  const a = { slug: 'abc', topic: 'co-ban', title: 'Yến Phụng thích ăn gì?', blocks: [{ type: 'text', md: '# Yến Phụng thích ăn gì?\n\nMở bài.\n\n# Phần khác\n\n## Mục 2' }] };
+  const h = R.articleBodyHtml(a);
+  assert.equal((h.match(/<h1/g) || []).length, 1);
+  assert.ok(!h.includes('# Yến') && !h.includes('<h2 id="yen-phung-thich-an-gi">'));
+  assert.ok(h.includes('<h2 id="phan-khac">Phần khác</h2>') && h.includes('<h2 id="muc-2">Mục 2</h2>'));
+  assert.equal(R.mdToHtml('# A'), '<h2>A</h2>');
+});
 t('khối lạ bị bỏ qua', () => { assert.equal(R.renderBlocks([{ type: 'html', html: '<b>x</b>' }, { type: 'script_thu' }]), ''); });
 t('ảnh: chỉ nhận /assets/ hoặc khóa bucket, chặn URL ngoài và ../', () => {
   assert.equal(R.imgSrc('https://evil.com/a.webp'), null);

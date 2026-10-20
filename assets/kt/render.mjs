@@ -3,7 +3,7 @@
 // → Bản xem trước luôn giống hệt bài khi lên web.
 //
 // AN TOÀN: nội dung bài là DỮ LIỆU (JSON blocks), không phải HTML.
-// - Mọi chữ đều được escape. Chỉ hiểu Markdown rút gọn: ## ### - 1. **đậm** *nghiêng* [chữ](link).
+// - Mọi chữ đều được escape. Chỉ hiểu Markdown rút gọn: # ## ### - 1. **đậm** *nghiêng* [chữ](link), bảng | a | b |.
 // - Link chỉ nhận https://, đường dẫn nội bộ "/…", tel:.  Ảnh chỉ nhận đường dẫn trong bucket hoặc /assets/.
 // - Loại khối không có trong danh sách 11 khối sẽ bị bỏ qua.
 
@@ -62,23 +62,44 @@ export function headingId(text, used) {
   let id = base, n = 2; while (used.has(id)) id = `${base}-${n++}`;
   used.add(id); return id;
 }
-// ctx (tùy chọn) = { used:Set, toc:[] } — gom tiêu đề H2 để dựng mục lục.
+// Bảng Markdown: | a | b |, rồi dòng kẻ |---|---|, rồi các hàng. Ô chỉ nhận Markdown inline (đã escape).
+const TABLE_ROW = /^\s*\|.*\|\s*$/;
+const TABLE_SEP = /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/;
+const cells = line => line.trim().replace(/^\|/, '').replace(/\|$/, '').split(/(?<!\\)\|/).map(c => c.trim().replace(/\\\|/g, '|'));
+const plainText = md => String(md || '').replace(/\[([^\]]*)\]\([^)]*\)/g, '$1').replace(/[*_`]/g, '').trim();
+const sameText = (a, b) => plainText(a).replace(/\s+/g, ' ').toLowerCase() === plainText(b).replace(/\s+/g, ' ').toLowerCase();
+function tableHtml(head, rows) {
+  head = head.slice(0, 8); rows = rows.slice(0, 60);
+  return `<div class="kt-table kt-md-table"><table><thead><tr>${head.map(h => `<th scope="col">${inline(h)}</th>`).join('')}</tr></thead><tbody>`
+    + rows.map(r => `<tr>${head.map((h, i) => `<td data-label="${esc(plainText(h))}">${inline(r[i] || '')}</td>`).join('')}</tr>`).join('')
+    + '</tbody></table></div>';
+}
+// ctx (tùy chọn) = { used:Set, toc:[], title? } — gom tiêu đề H2 để dựng mục lục.
 export function mdToHtml(md, ctx = null) {
   const lines = String(md || '').replace(/\r\n?/g, '\n').split('\n');
   const out = []; let para = []; let list = null;
   const flushPara = () => { if (para.length) { out.push(`<p>${para.map(inline).join('<br>')}</p>`); para = []; } };
   const flushList = () => { if (list) { out.push(`<${list.tag}>${list.items.map(i => `<li>${inline(i)}</li>`).join('')}</${list.tag}>`); list = null; } };
-  for (const raw of lines) {
-    const line = raw.trimEnd();
+  const h2 = text => {
+    if (ctx) { const id = headingId(text.replace(/[*[\]()]/g, ''), ctx.used); ctx.toc.push({ id, text }); out.push(`<h2 id="${id}">${inline(text)}</h2>`); }
+    else out.push(`<h2>${inline(text)}</h2>`);
+  };
+  for (let n = 0; n < lines.length; n++) {
+    const line = lines[n].trimEnd();
     let m;
     if (!line.trim()) { flushPara(); flushList(); continue; }
-    if ((m = line.match(/^###\s+(.+)/))) { flushPara(); flushList(); out.push(`<h3>${inline(m[1])}</h3>`); continue; }
-    if ((m = line.match(/^##\s+(.+)/)))  {
+    if (TABLE_ROW.test(line) && TABLE_SEP.test(lines[n + 1] || '')) {
       flushPara(); flushList();
-      if (ctx) { const id = headingId(m[1].replace(/[*[\]()]/g, ''), ctx.used); ctx.toc.push({ id, text: m[1] }); out.push(`<h2 id="${id}">${inline(m[1])}</h2>`); }
-      else out.push(`<h2>${inline(m[1])}</h2>`);
+      const head = cells(line), rows = [];
+      for (n += 2; n < lines.length && TABLE_ROW.test(lines[n]); n++) rows.push(cells(lines[n]));
+      n--;
+      out.push(tableHtml(head, rows));
       continue;
     }
+    if ((m = line.match(/^###\s+(.+)/))) { flushPara(); flushList(); out.push(`<h3>${inline(m[1])}</h3>`); continue; }
+    if ((m = line.match(/^##\s+(.+)/)))  { flushPara(); flushList(); h2(m[1]); continue; }
+    // "# Tiêu đề": trùng tiêu đề bài (trang đã có H1) → bỏ để không lặp; khác → hiện như H2 (mỗi trang chỉ 1 H1).
+    if ((m = line.match(/^#\s+(.+)/)))   { flushPara(); flushList(); if (!(ctx && ctx.title && sameText(m[1], ctx.title))) h2(m[1]); continue; }
     if ((m = line.match(/^\s*[-•]\s+(.+)/))) { flushPara(); if (!list || list.tag !== 'ul') { flushList(); list = { tag: 'ul', items: [] }; } list.items.push(m[1]); continue; }
     if ((m = line.match(/^\s*\d+[.)]\s+(.+)/))) { flushPara(); if (!list || list.tag !== 'ol') { flushList(); list = { tag: 'ol', items: [] }; } list.items.push(m[1]); continue; }
     flushList(); para.push(line.trim());
@@ -282,7 +303,7 @@ export function articleBodyHtml(a, related = [], { preview = false } = {}) {
   const date = fmtDateLong(a.updated_at || a.published_at);
   const sources = (Array.isArray(a.sources) ? a.sources : []).filter(Boolean);
   const rel = related.filter(r => r.slug !== a.slug).slice(0, 3);
-  const ctx = { used: new Set(['noi-dung', 'nguon-tham-khao']), toc: [] };
+  const ctx = { used: new Set(['noi-dung', 'nguon-tham-khao']), toc: [], title: a.title };
   const blocks = renderBlocks(a.blocks, ctx);
   return `<article class="kt-article kt-layout--${layout}">
   ${preview ? '<div class="kt-preview-bar">BẢN XEM TRƯỚC — chưa công khai</div>' : ''}

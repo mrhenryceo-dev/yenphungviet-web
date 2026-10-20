@@ -163,6 +163,10 @@
   .kt-table td{border:none;padding:6px 14px;display:grid;grid-template-columns:40% 1fr;gap:10px}
   .kt-table td::before{content:attr(data-label);font-weight:600;color:var(--ink-soft);font-size:13.5px}
 }
+/* bảng viết bằng Markdown trong khối chữ: bảng rộng thì cuộn trong khung, không làm tràn trang */
+.kt-md-table{margin:8px 0 24px;max-width:100%}
+.kt-md-table td{overflow-wrap:anywhere}
+@media (min-width:641px){.kt-md-table{overflow-x:auto}}
 /* FAQ */
 .kt-faq h2{font-family:var(--kt-serif);font-weight:600;font-size:clamp(24px,5.6vw,30px);margin:40px 0 14px}
 .kt-faq details{background:#fff;border:1px solid var(--border);border-radius:14px;margin-bottom:10px}
