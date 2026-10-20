@@ -638,13 +638,18 @@ a.cd-tag:hover{background:var(--green);color:#fff}
 .ncl-text{font-size:15px;line-height:1.5;flex:1 1 320px}
 .ncl-text strong{color:var(--green-dark)}
 .ncl-cta{font-weight:700;color:#fff;background:var(--green);padding:10px 18px;border-radius:100px;min-height:44px;display:inline-flex;align-items:center;white-space:nowrap}
-/* Menu 4 mục (Phase 1M): ở 601–920px không đủ chỗ trên một hàng → dùng cùng bố cục với ≤720px
+/* Menu 5 mục (Phase 1M + Kiến thức): ở 601–990px không đủ chỗ trên một hàng → dùng cùng bố cục với ≤720px
    (menu xuống hàng riêng dưới logo) thay vì để mục cuối tự rơi xuống dòng. */
-@media (min-width:601px) and (max-width:920px){
+@media (min-width:601px) and (max-width:990px){
   .header-inner{padding-block:8px;row-gap:0}
   .header-right{display:contents}
   .site-nav{order:3;width:100%;margin-left:-12px}
   .site-nav a{font-size:13.5px}
+}
+/* 601–720px: 5 mục vẫn trên một hàng (chữ/khoảng đệm nhỏ hơn); quá chật thì xuống dòng, không tràn ngang */
+@media (min-width:601px) and (max-width:720px){
+  .site-nav{flex-wrap:wrap}
+  .site-nav a{font-size:13px;padding-inline:6px;white-space:nowrap}
 }
 /* Toast: rộng theo nội dung (tối đa 90% màn hình) thay vì bị co còn nửa màn hình do left:50% */
 .toast{width:max-content;max-width:min(90vw,440px)}
