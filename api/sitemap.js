@@ -1,4 +1,4 @@
-// Phase 1R — GET /sitemap.xml  → trang chủ, /chon-nhom-choi, /kien-thuc/ và mọi bài đã xuất bản.
+// Phase 1R — GET /sitemap.xml  → trang chủ, /chon-nhom-choi, /kien-thuc/, /doi-tac/ và mọi bài đã xuất bản.
 module.exports = async (req, res) => {
   const R = await import('../assets/kt/render.mjs');
   const D = await import('./_lib/kt-data.mjs');

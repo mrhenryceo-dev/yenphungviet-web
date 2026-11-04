@@ -213,7 +213,7 @@ export const articleUrl = a => `${KT.basePath}${a.slug}/`;
 // ---------- khung trang ----------
 const NAV = `<header><div class="header-inner kt-header">
   <a class="brand" href="/" aria-label="Trang chủ ${esc(KT.brand)}"><img class="brand-logo" src="/assets/brand/logo-yenphungpet.webp" width="545" height="180" alt="${esc(KT.brand)}"></a>
-  <nav class="kt-nav" aria-label="Điều hướng"><a href="/#chim-dang-tim-chu"><span class="kt-l">Chim Đang Có Tại Trại</span><span class="kt-s">Chim tại trại</span></a><a href="${KT.basePath}" class="active">Kiến thức</a><a href="/chon-nhom-choi"><span class="kt-l">Chọn nhóm chơi</span><span class="kt-s">Nhóm chơi</span></a></nav>
+  <nav class="kt-nav" aria-label="Điều hướng"><a href="/#chim-dang-tim-chu"><span class="kt-l">Chim Đang Có Tại Trại</span><span class="kt-s">Chim tại trại</span></a><a href="${KT.basePath}" class="active">Kiến thức</a><a href="/chon-nhom-choi"><span class="kt-l">Chọn nhóm chơi</span><span class="kt-s">Nhóm chơi</span></a><a href="/doi-tac/">Đối tác</a></nav>
   <a class="btn btn-zalo btn-sm kt-head-zalo" href="${esc(KT.zaloUrl)}" target="_blank" rel="noopener">Nhắn Zalo</a>
 </div></header>`;
 const FOOT = `<footer><div class="wrap"><p><strong>${esc(KT.brand)}</strong> — Thế giới Yến Phụng dành cho người yêu chim</p>
@@ -355,7 +355,7 @@ export function renderNotFound() {
 
 export function sitemapXml(articles) {
   const urls = [
-    { loc: KT.siteUrl + '/' }, { loc: KT.siteUrl + '/chon-nhom-choi' }, { loc: KT.siteUrl + KT.basePath },
+    { loc: KT.siteUrl + '/' }, { loc: KT.siteUrl + '/chon-nhom-choi' }, { loc: KT.siteUrl + KT.basePath }, { loc: KT.siteUrl + '/doi-tac/' },
     ...(articles || []).map(a => ({ loc: absUrl(articleUrl(a)), lastmod: (a.updated_at || a.published_at || '').slice(0, 10) }))
   ];
   return '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'

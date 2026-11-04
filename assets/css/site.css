@@ -651,5 +651,9 @@ a.cd-tag:hover{background:var(--green);color:#fff}
   .site-nav{flex-wrap:wrap}
   .site-nav a{font-size:13px;padding-inline:6px;white-space:nowrap}
 }
+/* Menu 6 mục (thêm Đối tác): ≥991px giữ logo, menu và nút Zalo trên cùng một hàng như trước */
+@media (min-width:991px){
+  .site-nav a{font-size:13.5px;padding-inline:6px}
+}
 /* Toast: rộng theo nội dung (tối đa 90% màn hình) thay vì bị co còn nửa màn hình do left:50% */
 .toast{width:max-content;max-width:min(90vw,440px)}
