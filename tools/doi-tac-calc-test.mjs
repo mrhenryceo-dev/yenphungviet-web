@@ -255,6 +255,86 @@ t('kịch bản nhanh: hệ số áp lên số chim, làm tròn xuống', () => 
   assert.equal(a.opex12, 575000 * 12);
 });
 
+// ---------- V1.1 ----------
+t('V1.1: để trống các ô mới cho kết quả giống hệt V1.0 (không phá công thức)', () => {
+  const a = base(C.run('detail', DETAIL));
+  const b = base(C.run('detail', { ...DETAIL, lossPct: 0, utilitiesMonthly: 0, unsoldCarePerBird: 0 }));
+  assert.deepEqual(a.months, b.months);
+  assert.equal(a.netCash12, -5420000); // số V1.0 đã tính tay
+  assert.equal(a.batchGap, 6);
+  assert.equal(a.batchGapAuto, true);
+});
+t('V1.1: điện nước cộng vào chi phí tháng', () => {
+  const r = base(C.run('detail', { ...DETAIL, utilitiesMonthly: 100000 }));
+  assert.equal(r.months[1].outflow, 500000); // 400k + 100k
+});
+t('V1.1: hao hụt giảm chim đủ điều kiện bán', () => {
+  // 4 × 50% × 3 × (1 − 50%) = 3 chim/đợt; tiêu thụ 100% = 3.
+  const r = base(C.run('detail', { ...DETAIL, lossPct: 50, sellThroughPct: 100 }));
+  assert.equal(r.months[6].sold, 3);
+  assert.equal(r.birdsHealthy, 6);
+  assert.equal(base(C.run('detail', { ...DETAIL, lossPct: 100 })).birdsSold, 0);
+});
+t('V1.1: chim tồn phát sinh chi phí từ tháng sau đợt bán', () => {
+  // T6: 6 chim đủ điều kiện, bán 3, tồn 3. T7–T12 trả 3 × 10k = 30k/tháng (T12 vẫn tính tồn cuối T11).
+  const r = base(C.run('detail', { ...DETAIL, unsoldCarePerBird: 10000 }));
+  assert.equal(r.months[6].outflow, 460000);
+  assert.equal(r.months[6].stock, 3);
+  assert.equal(r.months[7].outflow, 430000);
+  assert.equal(r.months[12].outflow, 400000 + 60000 + 30000); // vận chuyển 3 × 20k + chăm sóc
+  assert.equal(r.months[12].stock, 6);
+  assert.equal(r.careTotal, 6 * 30000);
+  assert.equal(r.netCash12, -5420000 - 180000);
+  assert.ok(has(r, 'UNSOLD_STOCK'));
+});
+t('V1.1: chưa nhập chi phí chăm sóc thì báo rõ là chưa tính, không im lặng', () => {
+  const f = base(C.run('detail', DETAIL)).flags.find(x => x.code === 'UNSOLD_STOCK');
+  assert.match(f.text, /chưa được tính/);
+});
+t('V1.1: khoảng cách đợt bán do khách đặt', () => {
+  const r = base(C.run('detail', { ...DETAIL, startSellMonth: 4, batchGapMonths: 3 }));
+  assert.deepEqual(r.batchMonths, [4, 7]);
+  assert.equal(r.batchGap, 3);
+  assert.equal(r.batchGapAuto, false);
+  assert.deepEqual(r.months.filter(m => m.sold).map(m => m.month), [4, 7]);
+  for (const b of [{ batchGapMonths: 0 }, { batchGapMonths: 13 }, { batchGapMonths: 1.5 }]) assert.equal(C.run('detail', { ...DETAIL, ...b }).state, 'invalid');
+});
+t('V1.1: phân biệt ô trống (chưa tính) với ô đã nhập 0', () => {
+  const { laborMonthly, ...noLabor } = DETAIL;
+  const blank = C.run('detail', noLabor).uncounted;
+  assert.ok(blank.includes('Điện, nước, vệ sinh') && blank.includes('Nhân công hoặc giá trị thời gian chăm sóc'));
+  assert.ok(!blank.includes('Khoảng cách giữa các đợt bán'), 'lịch bán có mặc định công khai');
+  assert.ok(!C.run('detail', { ...DETAIL, laborMonthly: 0 }).uncounted.includes('Nhân công hoặc giá trị thời gian chăm sóc'));
+  const q = C.run('quick', QUICK).uncounted;
+  assert.ok(q.includes('Vốn lưu động/dự phòng ban đầu') && q.includes('Thú y, chăm sóc sức khỏe') && q.includes('Chăm sóc chim chưa bán'));
+});
+t('V1.1: số tiền còn phải bù', () => {
+  assert.equal(base(C.run('quick', { ...QUICK, birdsSold: 10 })).stillToCover, 5000000);
+  assert.equal(base(C.run('quick', QUICK)).stillToCover, 0);
+  assert.equal(base(C.run('detail', DETAIL)).stillToCover, 5420000);
+});
+t('V1.1: sản lượng thấp hơn dự kiến được báo', () => {
+  assert.ok(has(base(C.run('detail', DETAIL)), 'LOW_OUTPUT')); // bán 6 so với 4 × 2 × 3 = 24
+  const [a, b] = C.run('quick', QUICK).scenarios;
+  assert.ok(has(a, 'LOW_OUTPUT') && !has(b, 'LOW_OUTPUT'));
+});
+t('V1.1: vốn dự phòng không tính vào tiền đã chi', () => {
+  const a = base(C.run('detail', DETAIL)), b = base(C.run('detail', { ...DETAIL, reserve: 0 }));
+  assert.equal(a.totalOut, b.totalOut);
+  assert.equal(a.opex12, b.opex12);
+});
+t('V1.1: số rất lớn không sinh Infinity/NaN và được cảnh báo', () => {
+  for (const r of C.run('detail', { ...DETAIL, pairs: 1000, chicksPerCycle: 20, pricePerPair: 1e11, avgPrice: 1e11, opexMonthly: 1e11, participationPct: 100, sellThroughPct: 100, cyclesPerYear: 4 }).scenarios) {
+    for (const m of r.months) for (const k of ['inflow', 'outflow', 'net', 'cum', 'balance']) assert.ok(Number.isFinite(m[k]));
+    assert.doesNotMatch(C.formatVnd(r.netCash12), /NaN|Infinity|e\+/);
+  }
+  assert.ok(has(base(C.run('quick', { ...QUICK, birdsSold: 100000, avgPrice: 1e11 })), 'TOO_LARGE'));
+});
+t('V1.1: ba quy mô minh họa chưa có dữ liệu giá do OWNER xác nhận', () => {
+  assert.deepEqual(C.SCALE_PRESETS.map(p => p.pairs), [2, 5, 10]);
+  assert.ok(C.SCALE_PRESETS.every(p => p.data === null));
+});
+
 // ---------- Nhập liệu ----------
 t('đọc số kiểu Việt Nam', () => {
   for (const s of ['1.000.000', '1,000,000', '1 000 000', '1000000', '1.000.000 đ']) assert.equal(C.parseMoney(s), 1000000, s);

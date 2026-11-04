@@ -17,7 +17,15 @@
   ];
   const DEFAULT_SCENARIO = 'base';
 
+  // Ba quy mô minh họa. data = null: OWNER chưa xác nhận số liệu nên chỉ điền số cặp, không tự có giá.
+  const SCALE_PRESETS = [
+    { pairs: 2, label: 'Trải nghiệm', pack: 'Gói Trải nghiệm (1–2 cặp)', data: null },
+    { pairs: 5, label: 'Khởi đầu', pack: 'Gói Khởi đầu (3–5 cặp)', data: null },
+    { pairs: 10, label: 'Quy mô mở rộng', pack: 'Gói Mở rộng (10 cặp trở lên)', data: null }
+  ];
+
   // kind: money (đồng, số nguyên) · int · decimal · percent. modes: chế độ dùng ô này.
+  // Ô không bắt buộc để trống được ghi là "chưa tính" (trừ noTrack), dù phép tính coi là 0.
   const FIELDS = [
     { id: 'pairs', group: 'invest', modes: ['quick', 'detail'], kind: 'int', required: true, max: 1000, label: 'Số cặp giống', unit: 'cặp' },
     { id: 'pricePerPair', group: 'invest', modes: ['quick', 'detail'], kind: 'money', required: true, label: 'Giá mua mỗi cặp', unit: 'đ/cặp' },
@@ -28,27 +36,31 @@
     { id: 'startSellMonth', group: 'output', modes: ['detail'], kind: 'int', required: true, min: 1, max: 12, label: 'Tháng bắt đầu có chim bán', unit: 'tháng thứ', hint: 'Từ 1 đến 12, tính từ lúc bắt đầu.' },
     { id: 'participationPct', group: 'output', modes: ['detail'], kind: 'percent', required: true, label: 'Tỷ lệ cặp tham gia sinh sản', unit: '%' },
     { id: 'cyclesPerYear', group: 'output', modes: ['detail'], kind: 'int', required: true, max: 4, label: 'Số chu kỳ sinh sản', unit: 'chu kỳ/cặp/năm' },
-    { id: 'chicksPerCycle', group: 'output', modes: ['detail'], kind: 'decimal', required: true, max: 20, label: 'Chim non sống khỏe đến tuổi bán', unit: 'chim/cặp/chu kỳ' },
-    { id: 'sellThroughPct', group: 'output', modes: ['detail'], kind: 'percent', required: true, label: 'Tỷ lệ tiêu thụ', unit: '%', hint: 'Phần chim đến tuổi bán thực sự bán được trong kỳ.' },
+    { id: 'batchGapMonths', group: 'output', modes: ['detail'], kind: 'int', min: 1, max: 12, noTrack: true, label: 'Khoảng cách giữa các đợt bán', unit: 'tháng', hint: 'Giả định của bạn, sửa được. Để trống: lấy 12 ÷ số chu kỳ, làm tròn lên.' },
+    { id: 'chicksPerCycle', group: 'output', modes: ['detail'], kind: 'decimal', required: true, max: 20, label: 'Chim non dự kiến', unit: 'chim/cặp/chu kỳ', hint: 'Số giả định của bạn, không phải sản lượng chắc chắn.' },
+    { id: 'lossPct', group: 'output', modes: ['detail'], kind: 'percent', label: 'Hao hụt, chim không đủ điều kiện bán', unit: '%', hint: 'Phần chim non không sống đến tuổi bán hoặc chưa đủ điều kiện bán.' },
+    { id: 'sellThroughPct', group: 'output', modes: ['detail'], kind: 'percent', required: true, label: 'Tỷ lệ tiêu thụ', unit: '%', hint: 'Phần chim đủ điều kiện thực sự bán được trong kỳ.' },
 
-    { id: 'birdsSold', group: 'output', modes: ['quick'], kind: 'decimal', required: true, max: 100000, label: 'Tổng số chim dự kiến bán được trong 12 tháng', unit: 'chim' },
-    { id: 'avgPrice', group: 'output', modes: ['quick', 'detail'], kind: 'money', required: true, label: 'Giá bán trung bình mỗi chim', unit: 'đ/chim' },
+    { id: 'birdsSold', group: 'output', modes: ['quick'], kind: 'decimal', required: true, max: 100000, label: 'Số chim thực tế dự kiến bán trong 12 tháng', unit: 'chim', hint: 'Do bạn tự ước lượng, không phải kết quả sinh sản chắc chắn.' },
+    { id: 'avgPrice', group: 'output', modes: ['quick', 'detail'], kind: 'money', required: true, label: 'Giá bán bình quân mỗi chim', unit: 'đ/chim' },
 
-    { id: 'opexMonthly', group: 'cost', modes: ['quick', 'detail'], kind: 'money', required: true, label: 'Chi phí vận hành mỗi tháng', unit: 'đ/tháng', hint: 'Thức ăn, vệ sinh, điện nước…' },
-    { id: 'vetMonthly', group: 'cost', modes: ['detail'], kind: 'money', label: 'Chi phí thú y', unit: 'đ/tháng' },
-    { id: 'shippingPerBird', group: 'cost', modes: ['detail'], kind: 'money', label: 'Chi phí vận chuyển', unit: 'đ/chim bán' },
+    { id: 'opexMonthly', group: 'cost', modes: ['quick', 'detail'], kind: 'money', required: true, label: 'Chi phí vận hành mỗi tháng', unit: 'đ/tháng', hint: 'Thức ăn, vệ sinh, điện nước…', detailLabel: 'Thức ăn và vật tư', detailHint: 'Chỉ thức ăn, vật tư. Các khoản khác nhập ở ô riêng bên dưới để không tính trùng.' },
+    { id: 'utilitiesMonthly', group: 'cost', modes: ['detail'], kind: 'money', label: 'Điện, nước, vệ sinh', unit: 'đ/tháng' },
+    { id: 'vetMonthly', group: 'cost', modes: ['detail'], kind: 'money', label: 'Thú y, chăm sóc sức khỏe', unit: 'đ/tháng' },
+    { id: 'unsoldCarePerBird', group: 'cost', modes: ['detail'], kind: 'money', label: 'Chăm sóc chim chưa bán', unit: 'đ/chim/tháng', hint: 'Tính từ tháng sau đợt bán, cho số chim đủ điều kiện nhưng chưa bán được.' },
+    { id: 'shippingPerBird', group: 'cost', modes: ['detail'], kind: 'money', label: 'Vận chuyển, đóng gói, giao dịch', unit: 'đ/chim bán' },
     { id: 'marketingMonthly', group: 'cost', modes: ['detail'], kind: 'money', label: 'Chi phí marketing', unit: 'đ/tháng' },
-    { id: 'miscMonthly', group: 'cost', modes: ['detail'], kind: 'money', label: 'Chi phí phát sinh', unit: 'đ/tháng' },
-    { id: 'laborMonthly', group: 'cost', modes: ['detail'], kind: 'money', label: 'Chi phí công lao động', unit: 'đ/tháng' },
-    { id: 'capitalMonthly', group: 'cost', modes: ['detail'], kind: 'money', label: 'Chi phí vốn (nếu có)', unit: 'đ/tháng', hint: 'Ví dụ tiền lãi nếu vay vốn.' }
+    { id: 'laborMonthly', group: 'cost', modes: ['detail'], kind: 'money', label: 'Nhân công hoặc giá trị thời gian chăm sóc', unit: 'đ/tháng' },
+    { id: 'capitalMonthly', group: 'cost', modes: ['detail'], kind: 'money', label: 'Chi phí vốn (nếu có)', unit: 'đ/tháng', hint: 'Ví dụ tiền lãi nếu vay vốn.' },
+    { id: 'miscMonthly', group: 'cost', modes: ['detail'], kind: 'money', label: 'Chi phí khác', unit: 'đ/tháng' }
   ];
 
-  // Số do người xem tự bấm mới điền, luôn có nhãn "số ví dụ". Không phải số liệu trại.
+  // Số do người xem tự bấm mới điền, luôn có nhãn "số ví dụ". Không phải số liệu trại, không phải báo giá.
   const EXAMPLE = {
     pairs: '3', pricePerPair: '2.000.000', equipmentCost: '6.000.000', otherInitial: '0', reserve: '6.000.000',
-    startSellMonth: '6', participationPct: '60', cyclesPerYear: '2', chicksPerCycle: '3', sellThroughPct: '70',
+    startSellMonth: '6', participationPct: '60', cyclesPerYear: '2', chicksPerCycle: '3', lossPct: '10', sellThroughPct: '70',
     birdsSold: '8', avgPrice: '500.000',
-    opexMonthly: '600.000', vetMonthly: '100.000', shippingPerBird: '30.000', marketingMonthly: '0',
+    opexMonthly: '600.000', utilitiesMonthly: '100.000', vetMonthly: '100.000', unsoldCarePerBird: '20.000', shippingPerBird: '30.000', marketingMonthly: '0',
     miscMonthly: '100.000', laborMonthly: '0', capitalMonthly: '0'
   };
 
@@ -88,7 +100,7 @@
   }
 
   function validate(mode, raw) {
-    const values = {}, errors = {}, missing = [];
+    const values = {}, errors = {}, missing = [], blanks = [];
     let touched = false;
     FIELDS.filter(f => f.modes.includes(mode)).forEach(f => {
       if (!isBlank(raw[f.id])) touched = true;
@@ -96,16 +108,26 @@
       if (r.error) errors[f.id] = r.error;
       else if (r.value === null) {
         if (f.required) missing.push(f.id);
-        values[f.id] = 0; // ô không bắt buộc để trống = 0
+        else if (!f.noTrack) blanks.push(f.id);
+        values[f.id] = 0; // ô không bắt buộc để trống: phép tính dùng 0, kết quả ghi rõ "chưa tính"
       } else values[f.id] = r.value;
     });
-    return { values, errors, missing, touched };
+    return { values, errors, missing, blanks, touched };
+  }
+
+  // Khoản chưa được tính: ở chi tiết là ô để trống; ở nhanh là mọi khoản chỉ có ở chế độ chi tiết.
+  function uncountedLabels(mode, blanks) {
+    const isOut = mode === 'quick'
+      ? f => !f.required && !f.noTrack && !f.modes.includes('quick')
+      : f => blanks.includes(f.id);
+    return FIELDS.filter(isOut).map(f => f.label);
   }
 
   // Nhận xét dùng chung cho cả hai chế độ. Không bao giờ dùng từ "lãi"/"lợi nhuận".
   function commonFlags(r, v) {
     const flags = [];
     const add = (code, level, text) => flags.push({ code, level, text });
+    if (!Number.isSafeInteger(r.totalOut) || !Number.isSafeInteger(r.revenue)) add('TOO_LARGE', 'warn', 'Số quá lớn so với độ chính xác của công cụ. Hãy kiểm tra lại số đã nhập.');
     if (r.totalOut === 0) add('NO_COSTS', 'warn', 'Chưa có khoản chi nào được nhập, nên chưa thể đánh giá việc thu hồi tiền.');
     if (r.revenue === 0) {
       if (v.pairs === 0) add('NO_PAIRS', 'warn', '0 cặp giống nên không có chim để bán. Doanh thu giả định bằng 0.');
@@ -140,56 +162,61 @@
     const netCash12 = revenue - totalOut;
     const r = {
       mode: 'quick', scenario: sc.id, initialInvestment, opex12, totalOut, revenue, birdsSold,
-      netCash12, recovered: recoveredState(totalOut, revenue, netCash12),
+      netCash12, stillToCover: Math.max(0, -netCash12), recovered: recoveredState(totalOut, revenue, netCash12),
       months: null, breakevenMonth: null, relapseMonth: null, cashOutMonth: null, firstSaleMonth: null
     };
     r.flags = commonFlags(r, v);
     if (Math.abs(exact - birdsSold) > 1e-9) r.flags.push({ code: 'ROUNDED_DOWN', level: 'info', text: 'Số chim bán được làm tròn xuống số nguyên: không tính một phần con chim.' });
     if (v.pairs === 0 && v.birdsSold > 0) r.flags.push({ code: 'SOLD_WITHOUT_PAIRS', level: 'info', text: 'Bạn nhập chim bán nhưng có 0 cặp giống, nên công cụ tính 0 chim bán.' });
+    if (birdsSold > 0 && birdsSold < floorSafe(v.birdsSold)) r.flags.push({ code: 'LOW_OUTPUT', level: 'info', text: 'Kịch bản này bán được ' + birdsSold + ' chim, thấp hơn ' + floorSafe(v.birdsSold) + ' chim bạn dự kiến.' });
     return r;
   }
 
-  // Mỗi chu kỳ tạo một đợt bán, cách đều trong năm (12 / số chu kỳ, làm tròn lên), bắt đầu
-  // từ tháng khách chọn. Đợt rơi ngoài tháng 12 KHÔNG tính vào doanh thu. Số chim được làm
-  // tròn theo lũy kế để tổng các đợt nhất quán và không có "một phần con chim".
+  // Mỗi chu kỳ tạo một đợt bán, bắt đầu từ tháng khách chọn. Khoảng cách do khách nhập, nếu trống
+  // thì lấy 12 / số chu kỳ, làm tròn lên. Đợt rơi ngoài tháng 12 KHÔNG tính vào doanh thu. Số chim
+  // được làm tròn theo lũy kế để tổng các đợt nhất quán và không có "một phần con chim".
   function batchSchedule(v, sc) {
     const part = Math.min(1, v.participationPct / 100 * sc.breedingFactor);
     const sell = Math.min(1, v.sellThroughPct / 100 * sc.sellFactor);
-    const healthyPerBatch = v.pairs * part * v.chicksPerCycle;
+    const healthyPerBatch = v.pairs * part * v.chicksPerCycle * (1 - v.lossPct / 100);
     const soldPerBatch = healthyPerBatch * sell;
-    const gap = v.cyclesPerYear > 0 ? Math.ceil(MONTHS / v.cyclesPerYear) : 0;
-    const soldByMonth = new Array(MONTHS + 1).fill(0);
+    const gap = v.cyclesPerYear > 0 ? (v.batchGapMonths > 0 ? v.batchGapMonths : Math.ceil(MONTHS / v.cyclesPerYear)) : 0;
+    const soldByMonth = new Array(MONTHS + 1).fill(0), healthyByMonth = new Array(MONTHS + 1).fill(0), batchMonths = [];
     let healthy = 0, outOfWindow = 0, rounded = false, prevH = 0, prevS = 0;
     for (let k = 1; k <= v.cyclesPerYear; k++) {
       const h = floorSafe(healthyPerBatch * k), s = floorSafe(soldPerBatch * k);
       const month = v.startSellMonth + (k - 1) * gap;
       if (Math.abs(soldPerBatch * k - s) > 1e-9) rounded = true;
-      if (month <= MONTHS) { healthy += h - prevH; soldByMonth[month] += s - prevS; }
+      if (month <= MONTHS) { healthy += h - prevH; healthyByMonth[month] += h - prevH; soldByMonth[month] += s - prevS; batchMonths.push(month); }
       else outOfWindow += h - prevH;
       prevH = h; prevS = s;
     }
-    return { soldByMonth, healthy, outOfWindow, rounded };
+    return { soldByMonth, healthyByMonth, batchMonths, gap, healthy, outOfWindow, rounded };
   }
 
   // CHẾ ĐỘ CHI TIẾT — dòng tiền từng tháng. Tháng 0 = khoản đầu tư ban đầu.
   function simulateDetail(v, sc) {
     const initialInvestment = v.pairs * v.pricePerPair + v.equipmentCost + v.otherInitial;
-    const recurring = Math.round((v.opexMonthly + v.vetMonthly + v.marketingMonthly + v.miscMonthly + v.laborMonthly + v.capitalMonthly) * sc.costFactor);
+    const recurring = Math.round((v.opexMonthly + v.utilitiesMonthly + v.vetMonthly + v.marketingMonthly + v.miscMonthly + v.laborMonthly + v.capitalMonthly) * sc.costFactor);
     const shipPerBird = Math.round(v.shippingPerBird * sc.costFactor);
+    const carePerBird = Math.round(v.unsoldCarePerBird * sc.costFactor);
     const plan = batchSchedule(v, sc);
 
     const months = [];
-    let cum = 0, cumIn = 0, cumOut = 0, birdsSold = 0;
+    let cum = 0, cumIn = 0, cumOut = 0, birdsSold = 0, stock = 0, careTotal = 0;
     let breakevenMonth = null, relapseMonth = null, cashOutMonth = null, firstSaleMonth = null, minBalance = v.reserve;
     for (let m = 0; m <= MONTHS; m++) {
       const sold = plan.soldByMonth[m];
       const inflow = sold * v.avgPrice;
-      const outflow = m === 0 ? initialInvestment : recurring + sold * shipPerBird;
+      // Chim tồn cuối tháng trước phát sinh chi phí chăm sóc trong tháng này.
+      const care = stock * carePerBird;
+      const outflow = m === 0 ? initialInvestment : recurring + sold * shipPerBird + care;
       const net = inflow - outflow;
-      cum += net; cumIn += inflow; cumOut += outflow; birdsSold += sold;
+      cum += net; cumIn += inflow; cumOut += outflow; birdsSold += sold; careTotal += care;
+      stock += plan.healthyByMonth[m] - sold;
       // Tiền mặt = dự phòng + vốn đầu tư đã chuẩn bị riêng + dòng tiền lũy kế (tháng 0 còn đúng khoản dự phòng).
       const balance = v.reserve + initialInvestment + cum;
-      months.push({ month: m, sold, inflow, outflow, net, cum, balance });
+      months.push({ month: m, sold, inflow, outflow, net, cum, balance, stock, care });
       if (sold > 0 && firstSaleMonth === null) firstSaleMonth = m;
       // Chỉ gọi là hòa vốn khi đã thật sự có chi và có thu; số 0 ở tháng 0 không phải hòa vốn.
       if (breakevenMonth === null && cum >= 0 && cumIn > 0 && cumOut > 0) breakevenMonth = m;
@@ -202,7 +229,8 @@
     const r = {
       mode: 'detail', scenario: sc.id, initialInvestment, reserve: v.reserve, opex12, totalOut: cumOut, revenue: cumIn,
       birdsSold, birdsHealthy: plan.healthy, birdsUnsold, birdsOutOfWindow: plan.outOfWindow,
-      netCash12: cum, recovered: recoveredState(cumOut, cumIn, cum),
+      netCash12: cum, stillToCover: Math.max(0, -cum), recovered: recoveredState(cumOut, cumIn, cum),
+      batchMonths: plan.batchMonths, batchGap: plan.gap, batchGapAuto: !(v.batchGapMonths > 0), careTotal,
       months, breakevenMonth, relapseMonth, cashOutMonth, firstSaleMonth,
       extraCashNeeded: Math.max(0, -minBalance),
       flock: { breeders: v.pairs * 2, unsoldChicks: birdsUnsold, referenceValue: v.pairs * v.pricePerPair + birdsUnsold * v.avgPrice },
@@ -220,6 +248,12 @@
       add(before ? 'CASH_OUT_BEFORE_REVENUE' : 'CASH_OUT', 'danger',
         'Điểm gãy dòng tiền: tiền mặt âm từ tháng ' + cashOutMonth + (before ? ', trước khi có khoản thu đầu tiên' : '') + '. Cần có phương án duy trì đàn trước khi bắt đầu.');
     }
+    const potential = floorSafe(v.pairs * v.cyclesPerYear * v.chicksPerCycle);
+    if (birdsSold > 0 && birdsSold < potential) add('LOW_OUTPUT', 'info', 'Sản lượng thực tế có thể thấp hơn dự kiến: theo giả định chỉ bán được ' + birdsSold + ' chim, trong khi ' + potential + ' chim là mức nếu mọi cặp đều sinh sản, không hao hụt và bán hết.');
+    if (birdsUnsold > 0) {
+      if (careTotal > 0) add('UNSOLD_STOCK', 'warn', 'Tồn đàn: ' + birdsUnsold + ' chim chưa bán làm phát sinh thêm ' + formatVnd(careTotal) + ' chi phí chăm sóc trong kỳ.');
+      else add('UNSOLD_STOCK', 'warn', 'Tồn đàn: ' + birdsUnsold + ' chim chưa bán vẫn cần ăn và chăm sóc, nhưng chi phí này chưa được tính trong kết quả.');
+    }
     if (plan.outOfWindow > 0) add('OUT_OF_WINDOW', 'info', plan.outOfWindow + ' chim đến tuổi bán sau tháng 12 nên chưa được tính vào kỳ này.');
     if (plan.rounded) add('ROUNDED_DOWN', 'info', 'Số chim được làm tròn xuống theo từng đợt bán: không tính một phần con chim.');
     if (v.cyclesPerYear > RECOMMENDED_MAX_CYCLES) add('HIGH_CYCLES', 'danger', 'Trên ' + RECOMMENDED_MAX_CYCLES + ' chu kỳ/cặp/năm vượt mức thường được khuyến nghị để bảo vệ sức khỏe chim bố mẹ. Không nên dùng số này để lập kế hoạch.');
@@ -235,7 +269,8 @@
     if (!check.touched) return { ...base, state: 'empty' };
     if (check.missing.length) return { ...base, state: 'incomplete' };
     const sim = mode === 'quick' ? simulateQuick : simulateDetail;
-    return { ...base, state: 'ok', scenarios: SCENARIOS.map(sc => sim(check.values, sc)) };
+    const uncounted = uncountedLabels(mode, check.blanks);
+    return { ...base, state: 'ok', uncounted, scenarios: SCENARIOS.map(sc => ({ ...sim(check.values, sc), uncounted })) };
   }
 
   // Đánh giá 6 câu. Thiếu không gian hoặc thời gian chăm sóc (2 câu đầu) thì chưa nên bắt đầu dù
@@ -253,5 +288,5 @@
     return (n < 0 ? '−' : '') + s + ' đ';
   }
 
-  return { MONTHS, RECOMMENDED_MAX_CYCLES, SCENARIOS, DEFAULT_SCENARIO, FIELDS, EXAMPLE, parseMoney, parseDecimal, validate, run, simulateQuick, simulateDetail, fitResult, formatVnd };
+  return { MONTHS, RECOMMENDED_MAX_CYCLES, SCENARIOS, DEFAULT_SCENARIO, SCALE_PRESETS, FIELDS, EXAMPLE, parseMoney, parseDecimal, validate, run, simulateQuick, simulateDetail, fitResult, formatVnd };
 });

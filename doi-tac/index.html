@@ -3,18 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<!-- Landing page Đối tác V1.0 — HTML tĩnh, không backend, không tracking, không ghi Supabase.
+<!-- Landing page Đối tác V1.1 — HTML tĩnh, không backend, không tracking, không ghi Supabase.
      Mọi phép tính chạy trên trình duyệt (assets/js/doi-tac-calc.js). Đường dẫn asset dạng tuyệt đối như /chon-nhom-choi. -->
 <title>Đối Tác Nuôi Yến Phụng Sinh Sản | Tính Vốn &amp; Chi Phí</title>
-<meta name="description" content="Tìm hiểu mô hình nuôi Yến Phụng sinh sản, cách chuẩn bị giống, lồng trại, thức ăn và mô phỏng dòng tiền 12 tháng. Nhận tư vấn từ Ji.">
+<meta name="description" content="Tìm hiểu cách chuẩn bị chim giống, lồng trại, thời gian chăm sóc và tự mô phỏng dòng tiền 12 tháng trước khi nuôi Yến Phụng sinh sản. Nhận tư vấn từ Ji.">
 <link rel="canonical" href="https://yenphungviet.vercel.app/doi-tac/">
 <meta name="theme-color" content="#3A7358">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="vi_VN">
 <meta property="og:site_name" content="YẾN PHỤNG PET">
 <meta property="og:url" content="https://yenphungviet.vercel.app/doi-tac/">
-<meta property="og:title" content="Nuôi Yến Phụng sinh sản — Bắt đầu đúng, phát triển bền vững">
-<meta property="og:description" content="Tìm hiểu mô hình từ A–Z, tự tính vốn và mô phỏng dòng tiền 12 tháng trước khi bắt đầu cùng Yến Phụng PET.">
+<meta property="og:title" content="Nuôi Yến Phụng sinh sản — Bắt đầu từ quy mô phù hợp, hiểu rõ vốn và rủi ro">
+<meta property="og:description" content="Tìm hiểu cách chuẩn bị chim giống, lồng trại, thời gian chăm sóc và mô phỏng dòng tiền trước khi quyết định bắt đầu cùng Yến Phụng PET.">
 <!-- Ảnh chia sẻ tạm dùng OG chung của website. Thay bằng ảnh riêng khi OWNER cung cấp. -->
 <meta property="og:image" content="https://yenphungviet.vercel.app/assets/brand/og-yenphungpet.jpg">
 <meta property="og:image:width" content="1200">
@@ -59,141 +59,49 @@
     <div class="dtp-hero-grid">
       <div>
         <span class="eyebrow">Yến Phụng PET · Đối tác</span>
-        <h1>Nuôi Yến Phụng sinh sản — Bắt đầu đúng, phát triển bền vững</h1>
-        <p class="dtp-lead">Tìm hiểu mô hình nuôi sinh sản từ A–Z, tự tính vốn và chi phí, chuẩn bị lồng trại và lựa chọn quy mô phù hợp trước khi bắt đầu cùng Yến Phụng PET.</p>
+        <h1>Nuôi Yến Phụng sinh sản — Bắt đầu từ quy mô phù hợp, hiểu rõ vốn và rủi ro.</h1>
+        <p class="dtp-lead">Tìm hiểu cách chuẩn bị chim giống, lồng trại, thời gian chăm sóc và mô phỏng dòng tiền trước khi quyết định bắt đầu cùng Yến Phụng PET.</p>
         <div class="dtp-ctas">
-          <a class="btn btn-primary btn-lg" href="#may-tinh">Tính vốn khởi đầu</a>
-          <a class="btn btn-outline btn-lg" href="#quy-trinh">Khám phá quy trình</a>
-          <a class="btn btn-zalo btn-lg" href="https://zalo.me/0967653899" target="_blank" rel="noopener">Nhận tư vấn từ Ji</a>
+          <a class="btn btn-primary btn-lg" href="#may-tinh">Tính thử vốn khởi đầu</a>
+          <a class="btn btn-outline btn-lg" href="#goi">Xem các gói khởi đầu</a>
+          <a class="btn btn-zalo btn-lg" href="https://zalo.me/0967653899" target="_blank" rel="noopener">Nhắn Zalo Ji</a>
         </div>
-        <p class="dtp-promise">Bắt đầu nuôi Yến Phụng sinh sản có kế hoạch: vốn rõ ràng, quy trình dễ hiểu, chi phí kiểm soát được và có người đồng hành.</p>
+        <p class="dtp-promise">Đây là chương trình tư vấn, cung cấp sản phẩm và hướng dẫn nuôi sinh sản; không phải hợp đồng đại lý, nhượng quyền hay hợp tác đầu tư. Quyền và nghĩa vụ cụ thể chỉ phát sinh theo thỏa thuận được xác nhận.</p>
       </div>
       <figure class="dtp-figure dtp-hero-figure">
-        <img src="/assets/nhom-choi/ss-01-1130.webp" srcset="/assets/nhom-choi/ss-01-640.webp 640w, /assets/nhom-choi/ss-01-1130.webp 1130w" sizes="(max-width: 900px) 100vw, 520px" width="1130" height="706" alt="Ảnh minh họa do AI tạo: hai chú Yến Phụng đậu trên cành cạnh hộp tổ bằng gỗ" fetchpriority="high" decoding="async">
-        <figcaption class="ai-badge">Ảnh minh họa do AI tạo</figcaption>
+        <img src="/assets/nhom-choi/ss-01-1130.webp" srcset="/assets/nhom-choi/ss-01-640.webp 640w, /assets/nhom-choi/ss-01-1130.webp 1130w" sizes="(max-width: 900px) 100vw, 520px" width="1130" height="706" alt="Ảnh minh họa: hai chú Yến Phụng đậu trên cành cạnh hộp tổ bằng gỗ" fetchpriority="high" decoding="async">
+        <figcaption class="ai-badge">Ảnh minh họa</figcaption>
       </figure>
     </div>
     <nav class="dtp-toc" aria-label="Trên trang này">
-      <a href="#vi-sao">Vì sao chọn</a>
-      <a href="#phu-hop">Bạn có phù hợp?</a>
+      <a href="#may-tinh">Tính vốn</a>
+      <a href="#goi">Ba gói</a>
+      <a href="#vi-sao-ji">Vì sao chọn Ji</a>
+      <a href="#bang-chung">Bằng chứng</a>
       <a href="#quy-trinh">Quy trình</a>
-      <a href="#chuan-bi">Chuẩn bị</a>
-      <a href="#may-tinh">Máy tính</a>
-      <a href="#cham-soc">Chăm sóc</a>
+      <a href="#cham-soc">Công sức</a>
       <a href="#sinh-san">Sinh sản</a>
       <a href="#rui-ro">Rủi ro</a>
-      <a href="#goi">Ba quy mô</a>
       <a href="#faq">Câu hỏi</a>
       <a href="#lien-he">Liên hệ</a>
     </nav>
   </section>
 
-  <!-- 2. VÌ SAO CHỌN YẾN PHỤNG -->
-  <section class="wrap" id="vi-sao">
-    <div class="section-head">
-      <span class="eyebrow">Tổng quan</span>
-      <h2>Vì sao chọn Yến Phụng?</h2>
-      <p>Những lý do dưới đây nói về con chim và trải nghiệm nuôi, không phải lời hứa về thu nhập.</p>
-    </div>
-    <ul class="dtp-cards">
-      <li><h3>Thú cưng cần được chăm sóc thật</h3><p>Yến Phụng được nuôi làm thú cưng trong gia đình. Mỗi chú chim cần thức ăn phù hợp, môi trường sạch và sự quan sát đều đặn.</p></li>
-      <li><h3>Đa dạng màu sắc và phenotype</h3><p>Có nhiều màu và dòng để tìm hiểu. Xem thêm tại <a href="/#catalogue">Màu &amp; dòng Yến Phụng</a>.</p></li>
-      <li><h3>Có thể bắt đầu ở quy mô nhỏ</h3><p>Nếu đủ điều kiện, bạn có thể bắt đầu với một vài cặp để học cách vận hành trước khi nghĩ đến việc mở rộng.</p></li>
-      <li><h3>Trải nghiệm trọn hành trình</h3><p>Từ ghép cặp, theo dõi sinh sản đến chăm sóc chim non. Đây là trải nghiệm đòi hỏi sự kiên nhẫn và ghi chép.</p></li>
-      <li><h3>Các nhóm sản phẩm liên quan</h3><p>Nuôi sinh sản gắn với chim, lồng, thức ăn và phụ kiện. Hãy hỏi Ji về những gì hiện có và phù hợp với bạn.</p></li>
-    </ul>
-    <p class="dtp-note">Trang này không đưa ra số liệu về quy mô thị trường hay mức độ dễ bán. Hãy tự tìm hiểu nhu cầu thực tế ở khu vực của bạn trước khi quyết định.</p>
-  </section>
-
-  <!-- 3. BẠN CÓ PHÙ HỢP KHÔNG -->
-  <section class="dtp-band" id="phu-hop">
-    <div class="wrap">
-      <div class="section-head">
-        <span class="eyebrow">Tự đánh giá</span>
-        <h2>Bạn có phù hợp không?</h2>
-        <p>Đánh dấu những điều bạn đã có thể trả lời “có”. Không có thông tin nào được gửi đi.</p>
-      </div>
-      <div class="dtp-panel">
-        <fieldset class="dtp-checks" id="fit-form">
-          <legend class="dtp-sr">Sáu câu tự đánh giá</legend>
-          <label><input type="checkbox" name="fit"><span>Có không gian phù hợp và an toàn?</span></label>
-          <label><input type="checkbox" name="fit"><span>Có thể chăm sóc, quan sát chim mỗi ngày?</span></label>
-          <label><input type="checkbox" name="fit"><span>Có ngân sách dự phòng?</span></label>
-          <label><input type="checkbox" name="fit"><span>Có khả năng duy trì vệ sinh và cách ly chim mới?</span></label>
-          <label><input type="checkbox" name="fit"><span>Chấp nhận rủi ro chim không sinh sản?</span></label>
-          <label><input type="checkbox" name="fit"><span>Có kế hoạch tìm khách mua và tiếp tục chăm sóc chim chưa bán được?</span></label>
-        </fieldset>
-        <div class="dtp-fit-result" id="fit-result" role="status" aria-live="polite" hidden></div>
-        <p class="dtp-small">Đây chỉ là gợi ý để bạn tự cân nhắc, không phải chứng nhận đủ điều kiện kinh doanh.</p>
-        <div class="dtp-ctas">
-          <a class="btn btn-zalo" href="https://zalo.me/0967653899" target="_blank" rel="noopener">Trao đổi với Ji qua Zalo</a>
-          <a class="btn btn-outline" href="/chon-nhom-choi#sinh-san">Đọc về nhóm chơi Sinh Sản</a>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- 4. QUY TRÌNH BẮT ĐẦU -->
-  <section class="wrap" id="quy-trinh">
-    <div class="section-head">
-      <span class="eyebrow">Từng bước</span>
-      <h2>Quy trình bắt đầu</h2>
-      <p>Đi lần lượt, không nên bỏ bước. Chim chỉ được ghép cặp khi đã đủ điều kiện, không ghép quá sớm và không ép sinh sản liên tục.</p>
-    </div>
-    <ol class="dtp-steps">
-      <li><strong>Chuẩn bị điều kiện nuôi</strong><span>Không gian, lồng, khu cách ly và ngân sách.</span></li>
-      <li><strong>Chọn chim phù hợp</strong><span>Hỏi rõ tuổi, giới tính, tình trạng sức khỏe và nguồn gốc đã biết.</span></li>
-      <li><strong>Kiểm tra sức khỏe và cách ly</strong><span>Theo dõi riêng chim mới trước khi cho vào khu nuôi chung.</span></li>
-      <li><strong>Thích nghi</strong><span>Cho chim thời gian ổn định với môi trường và thức ăn.</span></li>
-      <li><strong>Ghép cặp khi đủ điều kiện</strong><span>Đủ tuổi, khỏe mạnh, đã xác định giới tính, tránh cận huyết.</span></li>
-      <li><strong>Theo dõi sinh sản</strong><span>Ghi chép ngày đẻ, ngày nở; hạn chế mở tổ quá thường xuyên.</span></li>
-      <li><strong>Chăm chim non</strong><span>Quan sát bố mẹ có chăm con không; hỏi người có chuyên môn khi có bất thường.</span></li>
-      <li><strong>Cai sữa</strong><span>Chỉ tách khi chim đã tự ăn, tự uống ổn định.</span></li>
-      <li><strong>Xác minh tình trạng chim trước khi bán</strong><span>Bán đúng thông tin đã kiểm tra, không hứa điều chưa biết.</span></li>
-    </ol>
-  </section>
-
-  <!-- 5. DANH SÁCH CHUẨN BỊ -->
-  <section class="dtp-band" id="chuan-bi">
-    <div class="wrap">
-      <div class="section-head">
-        <span class="eyebrow">Tự đánh dấu</span>
-        <h2>Danh sách chuẩn bị</h2>
-        <p>Thông số cụ thể như kích thước lồng hay liều bổ sung dinh dưỡng cần được xác nhận theo từng trường hợp; trang này không tự đưa ra con số chung.</p>
-      </div>
-      <div class="dtp-panel">
-        <p class="dtp-progress" id="prep-progress" role="status" aria-live="polite">Đã chuẩn bị 0/10 nhóm</p>
-        <fieldset class="dtp-checks dtp-checks-2" id="prep-form">
-          <legend class="dtp-sr">Mười nhóm cần chuẩn bị</legend>
-          <label><input type="checkbox" name="prep"><span><b>Chim giống và hồ sơ nguồn gốc</b><br>Thông tin đã biết về tuổi, giới tính và huyết thống.</span></label>
-          <label><input type="checkbox" name="prep"><span><b>Lồng sinh sản đủ không gian</b><br>Chắc chắn, an toàn, chim vận động được. <a href="/#cam-nang/chon-long">Cách chọn lồng</a></span></label>
-          <label><input type="checkbox" name="prep"><span><b>Ổ đẻ phù hợp</b><br>Chỉ đặt khi thật sự có kế hoạch sinh sản.</span></label>
-          <label><input type="checkbox" name="prep"><span><b>Cầu đậu, máng ăn, máng nước</b><br>Dễ vệ sinh, đặt ở vị trí tránh dính phân.</span></label>
-          <label><input type="checkbox" name="prep"><span><b>Thức ăn cân đối, rau củ phù hợp, nguồn canxi theo nhu cầu</b><br><a href="/#cam-nang/yen-phung-an-gi">Yến Phụng ăn gì?</a></span></label>
-          <label><input type="checkbox" name="prep"><span><b>Dụng cụ vệ sinh</b><br><a href="/#cam-nang/ve-sinh-long">Vệ sinh lồng đúng cách</a></span></label>
-          <label><input type="checkbox" name="prep"><span><b>Khu vực cách ly</b><br>Tách riêng chim mới hoặc chim có dấu hiệu bất thường.</span></label>
-          <label><input type="checkbox" name="prep"><span><b>Dụng cụ ghi chép và theo dõi</b><br>Sổ hoặc bảng ghi cặp, lứa, chi phí.</span></label>
-          <label><input type="checkbox" name="prep"><span><b>Phương án chăm sóc thú y</b><br>Biết trước nơi có thể liên hệ bác sĩ thú y có kinh nghiệm về chim.</span></label>
-          <label><input type="checkbox" name="prep"><span><b>Ngân sách dự phòng</b><br>Dùng <a href="#may-tinh">máy tính kinh tế</a> để ước lượng.</span></label>
-        </fieldset>
-      </div>
-      <ul class="dtp-gallery" aria-label="Ảnh minh họa dụng cụ">
-        <li><figure class="dtp-figure"><img src="/assets/nhom-choi/canh-02.webp" width="320" height="320" alt="Ảnh minh họa do AI tạo: lồng và cầu đậu" loading="lazy" decoding="async"><figcaption class="ai-badge">Ảnh minh họa do AI tạo</figcaption></figure></li>
-        <li><figure class="dtp-figure"><img src="/assets/nhom-choi/ss-03.webp" width="320" height="320" alt="Ảnh minh họa do AI tạo: hộp tổ đẻ bằng gỗ" loading="lazy" decoding="async"><figcaption class="ai-badge">Ảnh minh họa do AI tạo</figcaption></figure></li>
-        <li><figure class="dtp-figure"><img src="/assets/nhom-choi/canh-04.webp" width="303" height="303" alt="Ảnh minh họa do AI tạo: khay thức ăn, nước uống và dụng cụ chăm sóc" loading="lazy" decoding="async"><figcaption class="ai-badge">Ảnh minh họa do AI tạo</figcaption></figure></li>
-      </ul>
-    </div>
-  </section>
-
-  <!-- 6. MÁY TÍNH KINH TẾ -->
+  <!-- 2. BẠN CẦN BAO NHIÊU VỐN? (máy tính kinh tế) -->
   <section class="wrap dtp-calc-wrap" id="may-tinh">
     <div class="section-head">
-      <span class="eyebrow">Trọng tâm</span>
-      <h2>Máy tính kinh tế</h2>
-      <p>Nhập số của chính bạn để xem vốn, chi phí và dòng tiền theo giả định. Mọi phép tính chạy ngay trên trình duyệt; số bạn nhập không được gửi đi hay lưu lại.</p>
+      <span class="eyebrow">Tính trước khi mua</span>
+      <h2>Bạn cần bao nhiêu vốn?</h2>
+      <p>Chọn một quy mô để bắt đầu, rồi nhập số của chính bạn. Mọi phép tính chạy ngay trên trình duyệt; số bạn nhập không được gửi đi hay lưu lại.</p>
     </div>
     <p class="dtp-disclaimer" role="note"><strong>Đây là công cụ mô phỏng, không phải dự báo hoặc cam kết kết quả kinh doanh.</strong></p>
     <noscript><p class="dtp-note">Máy tính cần JavaScript để hoạt động. Bạn có thể nhắn Ji qua Zalo 0967653899 để được trao đổi trực tiếp.</p></noscript>
+
+    <fieldset class="dtp-presets">
+      <legend>Quy mô minh họa <span class="dtp-optional">(không phải quy mô phù hợp với mọi người)</span></legend>
+      <div class="dtp-preset-opts" id="calc-presets"></div>
+      <p class="dtp-small" id="calc-preset-note" role="status" aria-live="polite" hidden></p>
+    </fieldset>
 
     <div class="dtp-toolbar">
       <div class="dtp-pills" role="radiogroup" aria-label="Chế độ tính">
@@ -205,12 +113,12 @@
         <button type="button" class="dtp-link-btn" id="calc-clear">Xóa hết</button>
       </div>
     </div>
-    <p class="dtp-example-note" id="calc-example-note" hidden>Đang xem <strong>số ví dụ</strong> để hiểu cách công cụ chạy. Đây không phải số liệu của trại Ji; hãy thay bằng số của bạn và giá thật do Ji báo.</p>
+    <p class="dtp-example-note" id="calc-example-note" hidden>Đang xem <strong>số ví dụ</strong> để hiểu cách công cụ chạy. Đây không phải báo giá hay số liệu của trại Ji; hãy thay bằng số của bạn và giá thật do Ji báo.</p>
 
     <div class="dtp-calc-grid">
       <form class="dtp-panel dtp-calc-form" id="calc-form" novalidate autocomplete="off">
         <div id="calc-fields"></div>
-        <p class="dtp-small">Ô có dấu * là bắt buộc. Ô không bắt buộc để trống được tính là 0.</p>
+        <p class="dtp-small">Ô có dấu * là bắt buộc. Ô không bắt buộc để trống sẽ được ghi là <strong>chưa tính</strong>, không có nghĩa khoản đó bằng 0.</p>
       </form>
       <div class="dtp-calc-out">
         <div id="calc-result" aria-live="polite"></div>
@@ -219,6 +127,7 @@
 
     <div id="calc-detail-out" hidden>
       <h3 class="dtp-sub">Dòng tiền 12 tháng</h3>
+      <p class="dtp-schedule" id="calc-schedule"></p>
       <div class="dtp-chart-card">
         <div class="dtp-chart-head">
           <p id="chart-title" class="dtp-chart-title"></p>
@@ -237,7 +146,7 @@
 
     <div id="calc-scenarios" hidden>
       <h3 class="dtp-sub">Ba kịch bản</h3>
-      <p class="dtp-small">Các hệ số dưới đây do công cụ đặt ra để bạn thấy mức độ ảnh hưởng, <strong>không phải thống kê của trại</strong>. Cơ sở dùng đúng số bạn nhập; vốn ban đầu giữ nguyên ở cả ba kịch bản; số chu kỳ sinh sản không tăng.</p>
+      <p class="dtp-small">Hệ số dưới đây là <strong>giả định minh họa, chưa được trại xác nhận</strong>; không phải xác suất, thống kê hay lời hứa về kết quả. Cơ sở dùng đúng số bạn nhập; vốn ban đầu giữ nguyên ở cả ba kịch bản; số chu kỳ sinh sản không tăng.</p>
       <div class="dtp-scenarios" id="scenario-cards"></div>
     </div>
 
@@ -245,17 +154,21 @@
       <summary>Công thức công cụ đang dùng</summary>
       <ul>
         <li><b>Vốn đầu tư ban đầu</b> = tiền mua giống + thiết bị + các khoản đầu tư ban đầu khác.</li>
-        <li><b>Chi phí vận hành</b> = tổng các khoản chi theo tháng trong 12 tháng (chế độ chi tiết cộng thêm vận chuyển theo số chim bán).</li>
-        <li><b>Số chim bán được mỗi đợt</b> = số cặp × tỷ lệ tham gia × chim non sống khỏe đến tuổi bán × tỷ lệ tiêu thụ, làm tròn xuống số nguyên theo lũy kế.</li>
-        <li><b>Lịch bán</b>: mỗi chu kỳ là một đợt, cách nhau 12 ÷ số chu kỳ tháng, bắt đầu từ tháng bạn chọn. Đợt sau tháng 12 không được tính. Doanh thu không bị chia đều cho 12 tháng.</li>
-        <li><b>Doanh thu</b> = số chim thực sự bán được × giá bán trung bình.</li>
+        <li><b>Vốn dự phòng</b> là tiền để riêng. Công cụ không tính khoản này là chi phí đã tiêu hay doanh thu.</li>
+        <li><b>Chi phí vận hành</b> = tổng các khoản chi theo tháng trong 12 tháng (chế độ chi tiết cộng thêm vận chuyển, đóng gói, giao dịch theo số chim bán và chi phí chăm sóc chim chưa bán).</li>
+        <li><b>Chim đủ điều kiện bán mỗi đợt</b> = số cặp × tỷ lệ tham gia × chim non dự kiến × (1 − hao hụt).</li>
+        <li><b>Số chim bán được mỗi đợt</b> = chim đủ điều kiện × tỷ lệ tiêu thụ, làm tròn xuống số nguyên theo lũy kế.</li>
+        <li><b>Lịch bán</b>: mỗi chu kỳ là một đợt, bắt đầu từ tháng bạn chọn, cách nhau theo khoảng bạn nhập; nếu để trống thì lấy 12 ÷ số chu kỳ, làm tròn lên. Đợt sau tháng 12 không được tính. Doanh thu không bị chia đều cho 12 tháng.</li>
+        <li><b>Chi phí chăm sóc chim chưa bán</b> = số chim tồn cuối tháng trước × chi phí mỗi chim mỗi tháng.</li>
+        <li><b>Doanh thu</b> = số chim thực sự bán được × giá bán bình quân.</li>
         <li><b>Dòng tiền thuần tháng</b> = tiền thực thu trong tháng − tiền thực chi trong tháng.</li>
         <li><b>Dòng tiền lũy kế</b> = tổng dòng tiền thuần từ tháng 0 đến tháng đang xét.</li>
+        <li><b>Còn phải bù để hòa vốn</b> = phần dòng tiền lũy kế còn âm ở cuối tháng 12.</li>
         <li><b>Tiền mặt còn lại</b> = vốn dự phòng + vốn đầu tư đã chuẩn bị + dòng tiền lũy kế. Khi âm là điểm gãy dòng tiền.</li>
         <li><b>Tháng hòa vốn dòng tiền</b> = tháng đầu tiên dòng tiền lũy kế không âm trong kỳ, sau khi đã có khoản thu. Nếu không xảy ra, công cụ không hiển thị tháng nào.</li>
-        <li><b>Kịch bản</b>: Thận trọng (sinh sản ×0,7; tiêu thụ ×0,7; chi phí ×1,15), Cơ sở (×1), Thuận lợi (sinh sản ×1,15; tiêu thụ ×1,15; chi phí ×0,95). Tỷ lệ tối đa 100%. Ở chế độ nhanh, hai hệ số sinh sản và tiêu thụ nhân thẳng vào số chim bán.</li>
+        <li><b>Kịch bản</b> (giả định minh họa): Thận trọng (sinh sản ×0,7; tiêu thụ ×0,7; chi phí ×1,15), Cơ sở (×1), Thuận lợi (sinh sản ×1,15; tiêu thụ ×1,15; chi phí ×0,95). Tỷ lệ tối đa 100%. Ở chế độ nhanh, hai hệ số sinh sản và tiêu thụ nhân thẳng vào số chim bán.</li>
         <li><b>Chế độ nhanh</b> chỉ có tổng 12 tháng vì chưa có lịch bán, nên không có biểu đồ và không có tháng hòa vốn.</li>
-        <li><b>Không bao gồm</b>: chim chết, thuế, khấu hao. Giá trị đàn chim chưa bán không được cộng vào doanh thu hay dòng tiền.</li>
+        <li><b>Không bao gồm</b>: thuế, khấu hao. Giá trị đàn chim chưa bán không được cộng vào doanh thu hay dòng tiền.</li>
       </ul>
     </details>
 
@@ -265,13 +178,167 @@
     </div>
   </section>
 
-  <!-- 7. CÔNG VIỆC CHĂM SÓC -->
+  <!-- 3. BA GÓI KHỞI ĐẦU -->
+  <section class="dtp-band" id="goi">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Chọn quy mô</span>
+        <h2>Ba gói khởi đầu</h2>
+        <p>Danh mục dưới đây là <span class="dtp-tag tag-todo">Đề xuất</span>: gợi ý để bạn hình dung, chưa phải thành phần cố định hay báo giá. Hiện chưa có mục nào ở trạng thái “đã xác nhận”; giá và thành phần thực tế do Ji báo khi tư vấn.</p>
+      </div>
+      <div class="dtp-packs">
+        <article class="dtp-pack">
+          <span class="dtp-pack-scale">1–2 cặp</span>
+          <h3>Gói Trải nghiệm</h3>
+          <dl>
+            <dt>Đối tượng phù hợp</dt><dd>Người mới, muốn học cách nuôi và ghi chép trước khi đầu tư nhiều hơn.</dd>
+            <dt>Quy mô tham khảo</dt><dd>1–2 cặp. Số lượng ít nên kết quả rất phụ thuộc từng cặp; có thể không có chim non để bán trong kỳ.</dd>
+            <dt>Danh mục <span class="dtp-tag tag-todo">Đề xuất</span></dt><dd>Chim giống; lồng sinh sản; ổ đẻ; cầu đậu, máng ăn uống; thức ăn; chỗ cách ly nhỏ.</dd>
+            <dt>Ji có thể cung cấp</dt><dd>Tư vấn qua Zalo, điện thoại. Chim giống, lồng, ổ, thức ăn, phụ kiện: theo hàng thực tế, hãy hỏi Ji đang có gì.</dd>
+            <dt>Bạn cần tự chuẩn bị</dt><dd>Không gian an toàn, thời gian quan sát mỗi ngày, sổ ghi chép, nơi có thể liên hệ thú y.</dd>
+            <dt>Phạm vi hỗ trợ đã xác nhận</dt><dd>Tư vấn qua Zalo, điện thoại. Các hỗ trợ khác chưa được công bố; hãy hỏi Ji trước khi mua.</dd>
+            <dt>Chi phí chưa bao gồm</dt><dd>Chưa có báo giá công khai. Hãy hỏi rõ báo giá gồm gì; thức ăn định kỳ, thú y, điện nước và vận chuyển có thể là khoản riêng.</dd>
+          </dl>
+          <button type="button" class="dtp-link-btn dtp-pack-calc" data-preset="2">Tính thử với 2 cặp</button>
+          <a class="btn btn-zalo btn-block" data-pack="Gói Trải nghiệm (1–2 cặp)" href="https://zalo.me/0967653899" target="_blank" rel="noopener">Nhận tư vấn và báo giá</a>
+        </article>
+        <article class="dtp-pack">
+          <span class="dtp-pack-scale">3–5 cặp</span>
+          <h3>Gói Khởi đầu</h3>
+          <dl>
+            <dt>Đối tượng phù hợp</dt><dd>Người đã từng nuôi chim, có thời gian chăm sóc đều và có ngân sách dự phòng.</dd>
+            <dt>Quy mô tham khảo</dt><dd>3–5 cặp. Công việc và chi phí tăng theo số cặp, kể cả khi chưa có chim bán.</dd>
+            <dt>Danh mục <span class="dtp-tag tag-todo">Đề xuất</span></dt><dd>Chim giống; nhiều lồng sinh sản; ổ đẻ; cầu đậu, máng ăn uống; thức ăn; khu cách ly riêng; sổ theo dõi từng cặp.</dd>
+            <dt>Ji có thể cung cấp</dt><dd>Tư vấn qua Zalo, điện thoại. Chim giống, lồng, ổ, thức ăn, phụ kiện: theo hàng thực tế, hãy hỏi Ji đang có gì.</dd>
+            <dt>Bạn cần tự chuẩn bị</dt><dd>Khu nuôi đủ chỗ cả cho chim non chưa bán, lịch vệ sinh, phương án thú y, kế hoạch tìm người mua.</dd>
+            <dt>Phạm vi hỗ trợ đã xác nhận</dt><dd>Tư vấn qua Zalo, điện thoại. Các hỗ trợ khác chưa được công bố; hãy hỏi Ji trước khi mua.</dd>
+            <dt>Chi phí chưa bao gồm</dt><dd>Chưa có báo giá công khai. Hãy hỏi rõ báo giá gồm gì; thức ăn định kỳ, thú y, điện nước và vận chuyển có thể là khoản riêng.</dd>
+          </dl>
+          <button type="button" class="dtp-link-btn dtp-pack-calc" data-preset="5">Tính thử với 5 cặp</button>
+          <a class="btn btn-zalo btn-block" data-pack="Gói Khởi đầu (3–5 cặp)" href="https://zalo.me/0967653899" target="_blank" rel="noopener">Nhận tư vấn và báo giá</a>
+        </article>
+        <article class="dtp-pack">
+          <span class="dtp-pack-scale">Từ 10 cặp</span>
+          <h3>Gói Mở rộng</h3>
+          <dl>
+            <dt>Đối tượng phù hợp</dt><dd>Người đã có kinh nghiệm nuôi sinh sản, có mặt bằng và có kênh tiếp cận người mua.</dd>
+            <dt>Quy mô tham khảo</dt><dd>Từ 10 cặp. Rủi ro dịch bệnh, vốn và tồn đàn lớn hơn; không nên bắt đầu ngay ở quy mô này nếu chưa từng vận hành quy mô nhỏ.</dd>
+            <dt>Danh mục <span class="dtp-tag tag-todo">Đề xuất</span></dt><dd>Chim giống; hệ thống lồng sinh sản; ổ đẻ; máng ăn uống; thức ăn; khu cách ly; hệ thống ghi chép phả hệ và chi phí.</dd>
+            <dt>Ji có thể cung cấp</dt><dd>Tư vấn qua Zalo, điện thoại. Chim giống, lồng, ổ, thức ăn, phụ kiện: theo hàng thực tế, hãy hỏi Ji đang có gì.</dd>
+            <dt>Bạn cần tự chuẩn bị</dt><dd>Khu nuôi riêng, nhân lực nếu cần, kế hoạch thú y, vốn lưu động lớn hơn và lịch bán có hệ thống.</dd>
+            <dt>Phạm vi hỗ trợ đã xác nhận</dt><dd>Tư vấn qua Zalo, điện thoại. Các hỗ trợ khác chưa được công bố; hãy hỏi Ji trước khi mua.</dd>
+            <dt>Chi phí chưa bao gồm</dt><dd>Chưa có báo giá công khai. Hãy hỏi rõ báo giá gồm gì; thức ăn định kỳ, thú y, điện nước và vận chuyển có thể là khoản riêng.</dd>
+          </dl>
+          <button type="button" class="dtp-link-btn dtp-pack-calc" data-preset="10">Tính thử với 10 cặp</button>
+          <a class="btn btn-zalo btn-block" data-pack="Gói Mở rộng (10 cặp trở lên)" href="https://zalo.me/0967653899" target="_blank" rel="noopener">Nhận tư vấn và báo giá</a>
+        </article>
+      </div>
+      <p class="dtp-small dtp-pack-note">Khi bấm “Nhận tư vấn và báo giá”, tin nhắn mẫu được sao chép và Zalo mở ra; tin nhắn chưa được gửi cho đến khi bạn tự dán và gửi. Bảo hành, đổi trả, hỗ trợ sau bán hay đầu ra: <strong>hiện chưa có chính sách công bố, hãy hỏi Ji để xác nhận</strong>.</p>
+
+      <details class="dtp-fold" id="phu-hop">
+        <summary>Chưa biết chọn gói nào? Tự đánh giá nhanh 6 câu</summary>
+        <fieldset class="dtp-checks" id="fit-form">
+          <legend class="dtp-sr">Sáu câu tự đánh giá</legend>
+          <label><input type="checkbox" name="fit"><span>Có không gian phù hợp và an toàn?</span></label>
+          <label><input type="checkbox" name="fit"><span>Có thể chăm sóc, quan sát chim mỗi ngày?</span></label>
+          <label><input type="checkbox" name="fit"><span>Có ngân sách dự phòng?</span></label>
+          <label><input type="checkbox" name="fit"><span>Có khả năng duy trì vệ sinh và cách ly chim mới?</span></label>
+          <label><input type="checkbox" name="fit"><span>Chấp nhận rủi ro chim không sinh sản?</span></label>
+          <label><input type="checkbox" name="fit"><span>Có kế hoạch tìm khách mua và tiếp tục chăm sóc chim chưa bán được?</span></label>
+        </fieldset>
+        <div class="dtp-fit-result" id="fit-result" role="status" aria-live="polite" hidden></div>
+        <p class="dtp-small">Không có thông tin nào được gửi đi. Đây chỉ là gợi ý để bạn tự cân nhắc, không phải chứng nhận đủ điều kiện kinh doanh. Đọc thêm về <a href="/chon-nhom-choi#sinh-san">nhóm chơi Sinh Sản</a>.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- 4. VÌ SAO NÊN BẮT ĐẦU CÙNG JI -->
+  <section class="wrap" id="vi-sao-ji">
+    <div class="section-head">
+      <span class="eyebrow">Giá trị thực tế</span>
+      <h2>Vì sao nên bắt đầu cùng Ji?</h2>
+      <p>Mỗi mục có ghi rõ trạng thái, để bạn phân biệt điều đang có với điều cần hỏi lại. Đây là mô tả, không phải cam kết bán hàng.</p>
+    </div>
+    <ul class="dtp-cards">
+      <li><span class="dtp-tag tag-on">Dịch vụ đang cung cấp</span><h3>Tư vấn chọn quy mô theo điều kiện nuôi</h3><p>Nhắn Zalo hoặc gọi Ji, nói rõ không gian, thời gian và ngân sách của bạn để cùng cân nhắc nên bắt đầu thế nào.</p></li>
+      <li><span class="dtp-tag tag-on">Dịch vụ đang cung cấp</span><h3>Hướng dẫn chuẩn bị lồng, ổ và dụng cụ</h3><p>Có sẵn bài <a href="/#cam-nang/chon-long">cách chọn lồng</a> và <a href="/#cam-nang/ve-sinh-long">vệ sinh lồng</a>; trường hợp cụ thể có thể hỏi thêm Ji.</p></li>
+      <li><span class="dtp-tag tag-on">Dịch vụ đang cung cấp</span><h3>Giải thích quy trình chăm sóc và sinh sản</h3><p>Đọc <a href="/#cam-nang">Cẩm nang</a> và <a href="/kien-thuc/">Kiến thức</a> trên website, cùng các bước ngay trên trang này.</p></li>
+      <li><span class="dtp-tag tag-todo">Cần xác nhận</span><h3>Minh bạch thông tin chim giống trong phạm vi có hồ sơ</h3><p>Hãy hỏi Ji hồ sơ hiện có của từng chim. Không phải chú chim nào cũng có đủ mọi thông tin.</p></li>
+      <li><span class="dtp-tag tag-todo">Cần xác nhận</span><h3>Cung cấp hoặc tư vấn phụ kiện phù hợp</h3><p>Lồng, thức ăn và phụ kiện tùy hàng hóa thực tế tại thời điểm bạn hỏi.</p></li>
+    </ul>
+    <dl class="dtp-state">
+      <div><dt>Sản phẩm đang có</dt><dd>Xem <a href="/#chim-dang-tim-chu">các nhóm chim tại trại</a>. Website chưa liệt kê lồng, thức ăn, phụ kiện.</dd></div>
+      <div><dt>Dịch vụ đang cung cấp</dt><dd>Tư vấn qua Zalo, điện thoại; Cẩm nang và Kiến thức trên website.</dd></div>
+      <div><dt>Dịch vụ dự kiến</dt><dd>Chưa công bố mục nào.</dd></div>
+      <div><dt>Cần xác nhận</dt><dd>Hồ sơ từng chim, hàng phụ kiện, giá, hỗ trợ sau bán, bảo hành, đầu ra.</dd></div>
+    </dl>
+  </section>
+
+  <!-- 5. BẰNG CHỨNG TỪ TRẠI — chỉ đăng tư liệu thật đã xác minh và có quyền sử dụng. -->
+  <section class="dtp-band" id="bang-chung">
+    <div class="wrap">
+      <div class="dtp-panel dtp-proof-panel">
+        <div>
+          <h2>Bằng chứng từ trại</h2>
+          <p>Trang này chưa đăng ảnh, video hay phản hồi khách hàng từ trại, vì chỉ đăng tư liệu thật đã xác minh và được phép sử dụng. Mọi ảnh trên trang đều là ảnh minh họa, không phải bằng chứng về trại, sản lượng hay chất lượng chim.</p>
+          <p>Bạn có thể nhắn Ji để hỏi xem ảnh, video thực tế, nếu Ji có thể cung cấp.</p>
+        </div>
+        <a class="btn btn-zalo" href="https://zalo.me/0967653899" target="_blank" rel="noopener">Hỏi Ji xem video thực tế</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. QUY TRÌNH NUÔI SINH SẢN -->
+  <section class="wrap" id="quy-trinh">
+    <div class="section-head">
+      <span class="eyebrow">Chín bước</span>
+      <h2>Quy trình nuôi sinh sản</h2>
+      <p>Đi lần lượt, không nên bỏ bước. Chim chỉ được ghép cặp khi đã đủ điều kiện, không ghép quá sớm và không ép sinh sản liên tục.</p>
+    </div>
+    <ol class="dtp-steps">
+      <li><strong>Chuẩn bị điều kiện nuôi</strong><span>Không gian, lồng, khu cách ly và ngân sách.</span></li>
+      <li><strong>Chọn chim giống</strong><span>Hỏi rõ tuổi, giới tính, tình trạng sức khỏe và nguồn gốc đã biết.</span></li>
+      <li><strong>Kiểm tra sức khỏe và cách ly</strong><span>Theo dõi riêng chim mới trước khi cho vào khu nuôi chung.</span></li>
+      <li><strong>Thích nghi</strong><span>Cho chim thời gian ổn định với môi trường và thức ăn.</span></li>
+      <li><strong>Ghép cặp khi đủ điều kiện</strong><span>Đủ tuổi, khỏe mạnh, đã xác định giới tính, tránh cận huyết.</span></li>
+      <li><strong>Theo dõi sinh sản</strong><span>Ghi chép ngày đẻ, ngày nở; hạn chế mở tổ quá thường xuyên.</span></li>
+      <li><strong>Chăm sóc chim non</strong><span>Quan sát bố mẹ có chăm con không; hỏi người có chuyên môn khi có bất thường.</span></li>
+      <li><strong>Cai sữa</strong><span>Chỉ tách khi chim đã tự ăn, tự uống ổn định.</span></li>
+      <li><strong>Xác minh thông tin trước khi bán</strong><span>Bán đúng thông tin đã kiểm tra, không hứa điều chưa biết.</span></li>
+    </ol>
+
+    <details class="dtp-fold" id="chuan-bi">
+      <summary>Danh sách chuẩn bị 10 nhóm (tự đánh dấu)</summary>
+      <p class="dtp-small">Thông số cụ thể như kích thước lồng hay liều bổ sung dinh dưỡng cần được xác nhận theo từng trường hợp; trang này không tự đưa ra con số chung.</p>
+      <p class="dtp-progress" id="prep-progress" role="status" aria-live="polite">Đã chuẩn bị 0/10 nhóm</p>
+      <fieldset class="dtp-checks dtp-checks-2" id="prep-form">
+        <legend class="dtp-sr">Mười nhóm cần chuẩn bị</legend>
+        <label><input type="checkbox" name="prep"><span><b>Chim giống và hồ sơ nguồn gốc</b><br>Thông tin đã biết về tuổi, giới tính và huyết thống.</span></label>
+        <label><input type="checkbox" name="prep"><span><b>Lồng sinh sản đủ không gian</b><br>Chắc chắn, an toàn, chim vận động được. <a href="/#cam-nang/chon-long">Cách chọn lồng</a></span></label>
+        <label><input type="checkbox" name="prep"><span><b>Ổ đẻ phù hợp</b><br>Chỉ đặt khi thật sự có kế hoạch sinh sản.</span></label>
+        <label><input type="checkbox" name="prep"><span><b>Cầu đậu, máng ăn, máng nước</b><br>Dễ vệ sinh, đặt ở vị trí tránh dính phân.</span></label>
+        <label><input type="checkbox" name="prep"><span><b>Thức ăn cân đối, rau củ phù hợp, nguồn canxi theo nhu cầu</b><br><a href="/#cam-nang/yen-phung-an-gi">Yến Phụng ăn gì?</a></span></label>
+        <label><input type="checkbox" name="prep"><span><b>Dụng cụ vệ sinh</b><br><a href="/#cam-nang/ve-sinh-long">Vệ sinh lồng đúng cách</a></span></label>
+        <label><input type="checkbox" name="prep"><span><b>Khu vực cách ly</b><br>Tách riêng chim mới hoặc chim có dấu hiệu bất thường.</span></label>
+        <label><input type="checkbox" name="prep"><span><b>Dụng cụ ghi chép và theo dõi</b><br>Sổ hoặc bảng ghi cặp, lứa, chi phí.</span></label>
+        <label><input type="checkbox" name="prep"><span><b>Phương án chăm sóc thú y</b><br>Biết trước nơi có thể liên hệ bác sĩ thú y có kinh nghiệm về chim.</span></label>
+        <label><input type="checkbox" name="prep"><span><b>Ngân sách dự phòng</b><br>Dùng <a href="#may-tinh">máy tính kinh tế</a> để ước lượng.</span></label>
+      </fieldset>
+      <ul class="dtp-gallery" aria-label="Ảnh minh họa dụng cụ">
+        <li><figure class="dtp-figure"><img src="/assets/nhom-choi/canh-02.webp" width="320" height="320" alt="Ảnh minh họa: lồng và cầu đậu" loading="lazy" decoding="async"><figcaption class="ai-badge">Ảnh minh họa</figcaption></figure></li>
+        <li><figure class="dtp-figure"><img src="/assets/nhom-choi/ss-03.webp" width="320" height="320" alt="Ảnh minh họa: hộp tổ đẻ bằng gỗ" loading="lazy" decoding="async"><figcaption class="ai-badge">Ảnh minh họa</figcaption></figure></li>
+        <li><figure class="dtp-figure"><img src="/assets/nhom-choi/canh-04.webp" width="303" height="303" alt="Ảnh minh họa: khay thức ăn, nước uống và dụng cụ chăm sóc" loading="lazy" decoding="async"><figcaption class="ai-badge">Ảnh minh họa</figcaption></figure></li>
+      </ul>
+    </details>
+  </section>
+
+  <!-- 7. CÔNG SỨC VÀ THỜI GIAN CHĂM SÓC -->
   <section class="dtp-band" id="cham-soc">
     <div class="wrap">
       <div class="section-head">
         <span class="eyebrow">Việc phải làm</span>
-        <h2>Công việc chăm sóc</h2>
-        <p>Thời gian thực tế phụ thuộc vào số chim và cách bố trí trại, nên trang này không hứa một con số cụ thể.</p>
+        <h2>Công sức và thời gian chăm sóc</h2>
+        <p>Số giờ chăm sóc thay đổi theo số chim, thiết kế trại, mức độ tự động hóa và tình trạng sức khỏe, nên trang này không đưa ra một con số cố định.</p>
       </div>
       <div class="dtp-care">
         <div class="dtp-care-card">
@@ -320,10 +387,10 @@
     <div class="section-head">
       <span class="eyebrow">Tham khảo</span>
       <h2>Timeline sinh sản</h2>
-      <p>Các mốc thời gian chỉ mang tính tham khảo. Mỗi cá thể và mỗi trại có thể khác nhau; cần đối chiếu tài liệu chuyên môn và ghi chép thực tế.</p>
+      <p>Đây là mốc sinh học tham khảo, <strong>không phải lịch sản xuất hay lịch thu tiền</strong>. Mỗi cá thể và mỗi trại có thể khác nhau; cần đối chiếu tài liệu chuyên môn và ghi chép thực tế.</p>
     </div>
     <ol class="dtp-timeline">
-      <li><span class="dtp-time">Mái từ khoảng 12 tháng tuổi</span><h3>Chuẩn bị giống trưởng thành, khỏe mạnh</h3><p>Có khả năng sinh sản không đồng nghĩa với đã đủ trưởng thành để ghép đẻ an toàn.</p></li>
+      <li><span class="dtp-time">Mái từ khoảng 12 tháng tuổi</span><h3>Chuẩn bị giống trưởng thành, khỏe mạnh</h3><p>Có khả năng sinh sản không đồng nghĩa với đã đủ trưởng thành để ghép đẻ an toàn. Không ghép chim quá sớm.</p></li>
       <li><span class="dtp-time">Tùy cặp</span><h3>Ghép cặp và theo dõi</h3><p>Không phải cặp nào cũng hợp nhau hay sinh sản. Theo dõi hành vi và tránh ghép cận huyết.</p></li>
       <li><span class="dtp-time">Trứng cách nhau khoảng 1–2 ngày</span><h3>Đẻ trứng</h3><p>Số trứng mỗi lứa thay đổi. Không phải trứng nào cũng có phôi hoặc nở thành công.</p></li>
       <li><span class="dtp-time">Khoảng 18 ngày, có thể tới 21 ngày</span><h3>Ấp trứng</h3><p>Giữ môi trường ổn định và hạn chế làm chim bố mẹ hoảng sợ.</p></li>
@@ -333,130 +400,65 @@
     </ol>
     <div class="dtp-warn" role="note"><strong>Không tự đút bột nếu chưa được hướng dẫn trực tiếp</strong>Đút bột sai kỹ thuật có thể gây sặc, bỏng diều, nhiễm trùng hoặc tử vong. Người mới chỉ nên làm khi có người chuyên môn trực tiếp hướng dẫn.</div>
     <ul class="dtp-gallery" aria-label="Ảnh minh họa giai đoạn sinh sản">
-      <li><figure class="dtp-figure"><img src="/assets/nhom-choi/ss-02.webp" width="320" height="320" alt="Ảnh minh họa do AI tạo: một cặp Yến Phụng trưởng thành" loading="lazy" decoding="async"><figcaption class="ai-badge">Ảnh minh họa do AI tạo</figcaption></figure></li>
-      <li><figure class="dtp-figure"><img src="/assets/nhom-choi/ss-04.webp" width="320" height="320" alt="Ảnh minh họa do AI tạo: trứng trong tổ" loading="lazy" decoding="async"><figcaption class="ai-badge">Ảnh minh họa do AI tạo</figcaption></figure></li>
-      <li><figure class="dtp-figure"><img src="/assets/nhom-choi/ss-05.webp" width="320" height="320" alt="Ảnh minh họa do AI tạo: chim non trong tổ" loading="lazy" decoding="async"><figcaption class="ai-badge">Ảnh minh họa do AI tạo</figcaption></figure></li>
+      <li><figure class="dtp-figure"><img src="/assets/nhom-choi/ss-02.webp" width="320" height="320" alt="Ảnh minh họa: một cặp Yến Phụng trưởng thành" loading="lazy" decoding="async"><figcaption class="ai-badge">Ảnh minh họa</figcaption></figure></li>
+      <li><figure class="dtp-figure"><img src="/assets/nhom-choi/ss-04.webp" width="320" height="320" alt="Ảnh minh họa: trứng trong tổ" loading="lazy" decoding="async"><figcaption class="ai-badge">Ảnh minh họa</figcaption></figure></li>
+      <li><figure class="dtp-figure"><img src="/assets/nhom-choi/ss-05.webp" width="320" height="320" alt="Ảnh minh họa: chim non trong tổ" loading="lazy" decoding="async"><figcaption class="ai-badge">Ảnh minh họa</figcaption></figure></li>
     </ul>
-    <p class="dtp-small">Nguồn đối chiếu: <a href="/kien-thuc/vong-doi-cua-chim-yen-phung/">Vòng đời của chim Yến Phụng</a> (Kiến thức, Yến Phụng PET); <a href="/#cam-nang/sinh-san-ngay-khong">Có nên cho Yến Phụng sinh sản ngay không?</a>; <a href="https://hastingsdc.govt.nz/hastings/reserves/cornwall-park/cornwall-park-bird-aviary/budgerigar/" target="_blank" rel="noopener nofollow">Hastings District Council: Budgerigar</a> (khuyến nghị số lứa, thời gian ấp). Ảnh trong trang không phải bằng chứng về sản lượng, chất lượng chim giống hay kết quả sinh sản.</p>
+    <p class="dtp-small">Nguồn đối chiếu: <a href="/kien-thuc/vong-doi-cua-chim-yen-phung/">Vòng đời của chim Yến Phụng</a> (Kiến thức, Yến Phụng PET); <a href="/#cam-nang/sinh-san-ngay-khong">Có nên cho Yến Phụng sinh sản ngay không?</a>; <a href="https://hastingsdc.govt.nz/hastings/reserves/cornwall-park/cornwall-park-bird-aviary/budgerigar/" target="_blank" rel="noopener nofollow">Hastings District Council: Budgerigar</a> (khuyến nghị số lứa, thời gian ấp); <a href="https://bcsa.com.au/breeding-budgerigars/weaning-chicks/" target="_blank" rel="noopener nofollow">Budgerigar Council of South Australia: cai sữa chim non</a>. Ảnh trong trang không phải bằng chứng về sản lượng, chất lượng chim giống hay kết quả sinh sản.</p>
   </section>
 
-  <!-- 9. RỦI RO VÀ SAI LẦM -->
+  <!-- 9. RỦI RO VÀ PHƯƠNG ÁN PHÒNG NGỪA -->
   <section class="dtp-band" id="rui-ro">
     <div class="wrap">
       <div class="section-head">
         <span class="eyebrow">Đọc kỹ trước khi mua</span>
-        <h2>Rủi ro và sai lầm thường gặp</h2>
-        <p>Mười vấn đề nên biết, kèm cách phòng ngừa thực tế.</p>
+        <h2>Rủi ro và phương án phòng ngừa</h2>
+        <p>Mười vấn đề nên biết, kèm cách phòng ngừa thực tế. Phòng ngừa giúp giảm rủi ro, không loại bỏ được rủi ro.</p>
       </div>
+      <p class="dtp-risk-key" role="note"><strong>Doanh thu chỉ hình thành khi thực tế có chim đủ điều kiện bán và có người mua.</strong></p>
       <ol class="dtp-risks">
-        <li><h3>Mua chim chưa đủ điều kiện sinh sản</h3><p>Hỏi rõ tuổi và tình trạng trước khi mua. Chưa đủ tuổi thì nuôi tiếp, chưa ghép.</p></li>
-        <li><h3>Ghép cặp không phù hợp</h3><p>Quan sát sự tương thích; có phương án tách cặp nếu chim đánh nhau hoặc không chăm con.</p></li>
-        <li><h3>Không xác minh giới tính</h3><p>Hỏi căn cứ xác định trống mái, nhất là với chim non và một số dòng khó phân biệt. <a href="/kien-thuc/phan-biet-yen-phung-trong-mai/">Cách phân biệt</a></p></li>
-        <li><h3>Không quản lý phả hệ, trùng huyết</h3><p>Ghi nguồn gốc từng chim, đánh dấu cá thể và tránh ghép chim cùng huyết thống.</p></li>
+        <li><h3>Chim không sinh sản</h3><p>Không phải cặp nào cũng sinh sản. Tính trước chi phí nuôi trong thời gian chờ; thử nhập 0% tỷ lệ tham gia vào máy tính để xem ảnh hưởng.</p></li>
+        <li><h3>Trứng không có phôi hoặc không nở</h3><p>Ghi lại từng lứa để phát hiện cặp có vấn đề. Giữ môi trường ổn định, hạn chế làm chim hoảng sợ.</p></li>
+        <li><h3>Chim non không sống đến tuổi bán</h3><p>Quan sát bố mẹ có chăm con không và hỏi người có chuyên môn sớm khi có bất thường. Nhập tỷ lệ hao hụt vào máy tính.</p></li>
+        <li><h3>Bệnh và cách ly</h3><p>Có lịch vệ sinh cố định, khu cách ly riêng cho chim mới và chim bất thường, biết trước nơi liên hệ thú y.</p></li>
+        <li><h3>Chọn sai giới tính hoặc chim chưa đủ điều kiện</h3><p>Hỏi rõ tuổi và căn cứ xác định trống mái trước khi mua. Chưa đủ tuổi thì nuôi tiếp, chưa ghép. <a href="/kien-thuc/phan-biet-yen-phung-trong-mai/">Cách phân biệt</a></p></li>
+        <li><h3>Ghép cặp không phù hợp, trùng huyết</h3><p>Ghi nguồn gốc từng chim, tránh ghép cùng huyết thống; có phương án tách cặp nếu chim đánh nhau hoặc không chăm con.</p></li>
         <li><h3>Thiếu không gian</h3><p>Chỉ tăng số cặp khi lồng và khu nuôi còn đủ chỗ, kể cả chỗ cho chim non chưa bán.</p></li>
-        <li><h3>Vệ sinh và cách ly không đạt</h3><p>Có lịch vệ sinh cố định và khu cách ly riêng cho chim mới, chim có dấu hiệu bất thường.</p></li>
-        <li><h3>Khẩu phần không cân đối</h3><p>Không chỉ dùng một loại hạt. Bổ sung theo nhu cầu và hỏi người có chuyên môn khi cần. <a href="/kien-thuc/yen-phung-thich-an-gi/">Yến Phụng thích ăn gì?</a></p></li>
-        <li><h3>Ép sinh sản quá mức</h3><p>Giới hạn số lứa, cho cặp nghỉ phục hồi. Không lập kế hoạch tài chính dựa trên việc đẻ liên tục.</p></li>
-        <li><h3>Không ghi chép chi phí</h3><p>Ghi mọi khoản chi theo tháng và đối chiếu định kỳ với số đã nhập vào máy tính.</p></li>
-        <li><h3>Không có kế hoạch tiêu thụ và chăm sóc chim tồn đàn</h3><p>Tính trước tiền và chỗ nuôi cho chim chưa bán được. Chim tồn vẫn cần ăn và chăm sóc mỗi ngày.</p></li>
+        <li><h3>Giá bán và nhu cầu thị trường thay đổi</h3><p>Không lập kế hoạch dựa trên một mức giá. Tự tìm hiểu nhu cầu thực tế ở khu vực của bạn và thử giá thấp hơn trong máy tính.</p></li>
+        <li><h3>Tồn đàn, chi phí nuôi chim chưa bán</h3><p>Chim tồn vẫn cần ăn và chăm sóc mỗi ngày. Tính trước tiền và chỗ nuôi; nhập chi phí chăm sóc chim chưa bán vào máy tính.</p></li>
+        <li><h3>Không có đầu ra</h3><p>Trang này không cam kết đầu ra. Hãy lập kế hoạch tìm người mua trước khi tăng đàn, và có phương án nếu chưa bán được.</p></li>
       </ol>
     </div>
   </section>
 
-  <!-- 10. BA GÓI KHỞI ĐẦU -->
-  <section class="wrap" id="goi">
-    <div class="section-head">
-      <span class="eyebrow">Chọn quy mô</span>
-      <h2>Ba gói khởi đầu</h2>
-      <p>Mô tả dưới đây giúp bạn hình dung quy mô. Giá và thành phần thực tế của từng gói do Ji báo khi tư vấn; không phải gói nào cũng đã gồm đủ phụ kiện.</p>
-    </div>
-    <div class="dtp-packs">
-      <article class="dtp-pack">
-        <span class="dtp-pack-scale">1–2 cặp</span>
-        <h3>Gói Trải nghiệm</h3>
-        <dl>
-          <dt>Phù hợp với</dt><dd>Người mới, muốn học cách nuôi và ghi chép trước khi đầu tư nhiều hơn.</dd>
-          <dt>Có thể cần chuẩn bị</dt><dd>Lồng sinh sản, ổ đẻ, cầu đậu, máng ăn uống, thức ăn, chỗ cách ly nhỏ.</dd>
-          <dt>Mục tiêu học tập</dt><dd>Hiểu chu trình sinh sản, tập quan sát và ghi chép chi phí.</dd>
-          <dt>Giới hạn cần biết</dt><dd>Số lượng ít nên kết quả rất phụ thuộc vào từng cặp. Có thể không có chim non để bán trong kỳ.</dd>
-        </dl>
-        <a class="btn btn-zalo btn-block" data-pack="Gói Trải nghiệm (1–2 cặp)" href="https://zalo.me/0967653899" target="_blank" rel="noopener">Nhận tư vấn và báo giá</a>
-      </article>
-      <article class="dtp-pack">
-        <span class="dtp-pack-scale">3–5 cặp</span>
-        <h3>Gói Khởi đầu</h3>
-        <dl>
-          <dt>Phù hợp với</dt><dd>Người đã từng nuôi chim, có thời gian chăm sóc đều và có ngân sách dự phòng.</dd>
-          <dt>Có thể cần chuẩn bị</dt><dd>Nhiều lồng sinh sản, khu cách ly riêng, sổ theo dõi từng cặp, phương án thú y.</dd>
-          <dt>Mục tiêu vận hành</dt><dd>Xây quy trình chăm sóc lặp lại được, theo dõi phả hệ và dòng tiền theo tháng.</dd>
-          <dt>Giới hạn cần biết</dt><dd>Khối lượng công việc và chi phí tăng theo số cặp, kể cả khi chưa có chim bán. Đầu ra cần do bạn lập kế hoạch.</dd>
-        </dl>
-        <a class="btn btn-zalo btn-block" data-pack="Gói Khởi đầu (3–5 cặp)" href="https://zalo.me/0967653899" target="_blank" rel="noopener">Nhận tư vấn và báo giá</a>
-      </article>
-      <article class="dtp-pack">
-        <span class="dtp-pack-scale">10 cặp trở lên</span>
-        <h3>Gói Mở rộng</h3>
-        <dl>
-          <dt>Phù hợp với</dt><dd>Người đã có kinh nghiệm nuôi sinh sản, có mặt bằng và có kênh tiếp cận khách mua.</dd>
-          <dt>Có thể cần chuẩn bị</dt><dd>Khu nuôi riêng, hệ thống ghi chép, nhân lực nếu cần, kế hoạch thú y và vốn lưu động lớn hơn.</dd>
-          <dt>Mục tiêu vận hành</dt><dd>Quản lý đàn, phả hệ, chi phí và lịch bán một cách có hệ thống.</dd>
-          <dt>Giới hạn cần biết</dt><dd>Rủi ro dịch bệnh, vốn và tồn đàn lớn hơn. Không nên bắt đầu ngay ở quy mô này nếu chưa từng vận hành quy mô nhỏ.</dd>
-        </dl>
-        <a class="btn btn-zalo btn-block" data-pack="Gói Mở rộng (10 cặp trở lên)" href="https://zalo.me/0967653899" target="_blank" rel="noopener">Nhận tư vấn và báo giá</a>
-      </article>
-    </div>
-    <p class="dtp-small dtp-pack-note">Khi bấm nút, tin nhắn mẫu ghi quy mô bạn quan tâm được sao chép để bạn dán vào Zalo. Thông tin về bảo hành, đổi trả, hỗ trợ sau bán hay đầu ra: <strong>liên hệ Ji để xác nhận</strong>.</p>
-  </section>
-
-  <!-- 11. BẰNG CHỨNG VÀ FAQ -->
-  <section class="dtp-band" id="bang-chung">
-    <div class="wrap">
-      <div class="section-head">
-        <span class="eyebrow">Thông tin thật</span>
-        <h2>Bằng chứng từ trại</h2>
-        <p>Chỉ đăng khi có tư liệu thật và được phép công bố. Những mục dưới đây đang được cập nhật.</p>
-      </div>
-      <ul class="dtp-proof">
-        <li><strong>Ảnh trại thật</strong><span>Đang cập nhật</span></li>
-        <li><strong>Video chăm sóc thật</strong><span>Đang cập nhật</span></li>
-        <li><strong>Hồ sơ chim và nhật ký sinh sản</strong><span>Đang cập nhật</span></li>
-        <li><strong>Phản hồi khách có sự đồng ý</strong><span>Đang cập nhật</span></li>
-      </ul>
-      <p class="dtp-small">Muốn xem tình hình thực tế ngay? Hãy hỏi Ji qua Zalo. Xem thêm <a href="/#chim-dang-tim-chu">các nhóm chim tại trại</a>.</p>
-    </div>
-  </section>
-
+  <!-- 10. FAQ -->
   <section class="wrap" id="faq">
     <div class="section-head">
       <span class="eyebrow">Giải đáp</span>
       <h2>Câu hỏi thường gặp</h2>
     </div>
     <div class="dtp-faq">
-      <details><summary>Người mới có nên bắt đầu với bao nhiêu cặp?</summary><p>Không có con số đúng cho mọi người. Nếu chưa từng nuôi sinh sản, quy mô nhỏ 1–2 cặp giúp bạn học quy trình với rủi ro thấp hơn. Hãy trao đổi với Ji về không gian, thời gian và ngân sách của bạn.</p></details>
-      <details><summary>Cần bao nhiêu diện tích?</summary><p>Tùy số cặp, loại lồng và cách bố trí, nên trang này chưa đưa ra con số chung. Lồng phải đủ để chim dang cánh và vận động, ngoài ra cần chỗ cho khu cách ly và chim non chưa bán. Liên hệ Ji để xác nhận theo không gian thực tế của bạn.</p></details>
-      <details><summary>Chim không sinh sản thì sao?</summary><p>Đây là tình huống có thật và cần tính trước. Khả năng sinh sản phụ thuộc giới tính, độ tuổi, sức khỏe, sự tương thích của cặp và điều kiện nuôi. Hãy thử nhập 0% tỷ lệ tham gia vào máy tính để xem ảnh hưởng. Chính sách đổi hoặc hỗ trợ trong trường hợp này: liên hệ Ji để xác nhận.</p></details>
+      <details><summary>Người mới nên bắt đầu bao nhiêu cặp?</summary><p>Không có con số đúng cho mọi người. Nếu chưa từng nuôi sinh sản, quy mô nhỏ 1–2 cặp giúp bạn học quy trình với số vốn ít hơn. Hãy trao đổi với Ji về không gian, thời gian và ngân sách của bạn.</p></details>
       <details><summary>Bao lâu có thể có chim con?</summary><p>Không có mốc chắc chắn. Tham khảo: chim cần đủ tuổi và thời gian thích nghi trước khi ghép; ấp trứng khoảng 18 ngày hoặc lâu hơn; chim non cai sữa khoảng 5–8 tuần tuổi. Một số cặp có thể cần lâu hơn hoặc không sinh sản.</p></details>
-      <details><summary>Có phải cặp nào cũng đẻ không?</summary><p>Không. Không có cam kết mọi cặp đều sinh sản. Không phải trứng nào cũng nở và không phải chim non nào cũng sống đến tuổi bán.</p></details>
-      <details><summary>Nếu chưa bán được chim con thì sao?</summary><p>Bạn vẫn cần cho ăn, chăm sóc và có chỗ nuôi cho những chú chim đó. Vì vậy nên có kế hoạch tìm khách mua từ trước và để dành tiền dự phòng. Công cụ tính cũng không cộng chim chưa bán vào doanh thu.</p></details>
-      <details><summary>Có cần giấy tờ nguồn gốc không?</summary><p>Với nuôi sinh sản, thông tin nguồn gốc giúp tránh ghép cận huyết nên rất nên có và nên ghi chép lại. Loại hồ sơ đi kèm từng chim tại trại: liên hệ Ji để xác nhận.</p></details>
-      <details><summary>Ji có hỗ trợ sau bán không?</summary><p>Chính sách hỗ trợ sau bán chưa được công bố trên trang này. Liên hệ Ji để xác nhận trước khi mua.</p></details>
-      <details><summary>Có được cam kết đầu ra không?</summary><p>Trang này không đưa ra cam kết bao tiêu hay cam kết thu nhập. Bạn nên tự lập kế hoạch tìm khách mua. Nếu có thỏa thuận riêng về đầu ra: liên hệ Ji để xác nhận.</p></details>
+      <details><summary>Chi phí phát sinh gồm những gì?</summary><p>Thường gồm thức ăn, vật tư, điện nước, vệ sinh, thú y, vận chuyển, chi phí chăm sóc chim chưa bán và thời gian của bạn. Số tiền tùy điều kiện từng người. Ở chế độ chi tiết của máy tính, ô nào để trống sẽ được ghi là chưa tính.</p></details>
+      <details><summary>Nếu chim không sinh sản thì sao?</summary><p>Đây là tình huống có thật và cần tính trước: không phải cặp nào cũng đẻ, không phải trứng nào cũng nở. Khả năng sinh sản phụ thuộc giới tính, độ tuổi, sức khỏe, sự tương thích của cặp và điều kiện nuôi. Hiện chưa có chính sách đổi hay hỗ trợ được công bố cho trường hợp này; hãy hỏi Ji để xác nhận trước khi mua.</p></details>
+      <details><summary>Nếu không bán được chim con thì sao?</summary><p>Bạn vẫn cần cho ăn, chăm sóc và có chỗ nuôi cho những chú chim đó. Vì vậy nên có kế hoạch tìm người mua từ trước và để dành tiền dự phòng. Công cụ tính không cộng chim chưa bán vào doanh thu.</p></details>
+      <details><summary>Ji có bao tiêu hay cam kết đầu ra không?</summary><p>Trang này không đưa ra cam kết bao tiêu hay cam kết thu nhập, và hiện chưa có chính sách đầu ra được công bố. Bạn nên tự lập kế hoạch tìm người mua. Nếu có thỏa thuận riêng, hãy xác nhận rõ với Ji.</p></details>
+      <details><summary>Giấy tờ và nguồn gốc chim cần kiểm tra gì?</summary><p>Nên hỏi tuổi, giới tính và căn cứ xác định, tình trạng sức khỏe, nguồn gốc và huyết thống đã biết để tránh ghép cận huyết, rồi ghi chép lại. Loại hồ sơ đi kèm từng chim tại trại: hãy hỏi Ji để xác nhận; trang này không khẳng định giấy tờ của từng cá thể.</p></details>
+      <details><summary>Ji hỗ trợ sau bán trong phạm vi nào?</summary><p>Phạm vi hỗ trợ sau bán chưa được công bố trên trang này. Hãy hỏi Ji để xác nhận trước khi mua.</p></details>
+      <details><summary>“Đối tác” ở đây có nghĩa là gì?</summary><p>Đây là chương trình tư vấn, cung cấp sản phẩm và hướng dẫn nuôi sinh sản, không phải hợp đồng đại lý, nhượng quyền hay hợp tác đầu tư. Quyền và nghĩa vụ cụ thể chỉ phát sinh theo thỏa thuận được xác nhận.</p></details>
+      <details><summary>Cần bao nhiêu diện tích?</summary><p>Tùy số cặp, loại lồng và cách bố trí, nên trang này chưa đưa ra con số chung. Lồng phải đủ để chim dang cánh và vận động, ngoài ra cần chỗ cho khu cách ly và chim non chưa bán. Hãy hỏi Ji theo không gian thực tế của bạn.</p></details>
       <details><summary>Nên chuẩn bị vốn dự phòng thế nào?</summary><p>Không có con số chung. Ở chế độ chi tiết của máy tính, hãy xem tháng nào tiền mặt bị âm và phần “tiền cần có thêm” trong kịch bản Thận trọng. Nên có đủ tiền để nuôi đàn cả khi chim chậm sinh sản hoặc chậm bán.</p></details>
     </div>
     <p class="dtp-small dtp-more">Đọc thêm: <a href="/#cam-nang">Cẩm nang nuôi Yến Phụng</a> · <a href="/kien-thuc/">Kiến thức chuyên sâu</a> · <a href="/#catalogue">Màu &amp; dòng</a> · <a href="/chon-nhom-choi">Chọn nhóm chơi</a></p>
   </section>
 
-  <!-- 12. CTA CUỐI TRANG — chỉ soạn tin nhắn để khách tự gửi. Không gửi tự động, không ghi Supabase. -->
+  <!-- 11. CTA CUỐI TRANG — chỉ soạn tin nhắn để khách tự gửi. Không gửi tự động, không ghi Supabase. -->
   <section class="wrap dtp-end" id="lien-he">
     <div class="contact-card dtp-end-card">
       <div>
-        <h2>Bắt đầu nhỏ, chăm sóc đúng, phát triển theo khả năng của bạn.</h2>
-        <p>Chưa cần mua ngay. Hãy trao đổi với Ji về không gian, thời gian, ngân sách và mục tiêu để chọn cách bắt đầu phù hợp.</p>
-        <div class="contact-actions">
-          <a class="btn btn-zalo btn-lg" id="end-zalo" href="https://zalo.me/0967653899" target="_blank" rel="noopener">Nhắn Zalo Ji</a>
-          <a class="btn btn-outline btn-lg" href="tel:0967653899">Gọi 0967653899</a>
-          <a class="btn btn-outline btn-lg" href="#may-tinh">Quay lại máy tính kinh tế</a>
-        </div>
+        <h2>Bắt đầu từ quy mô phù hợp với điều kiện của bạn.</h2>
+        <p>Chưa cần mua ngay. Hãy trao đổi với Ji về không gian, thời gian, ngân sách và mục tiêu trước khi quyết định.</p>
       </div>
     </div>
     <form class="dtp-panel dtp-msg" id="msg-form" novalidate>
@@ -465,13 +467,19 @@
         <div class="dtp-pills">
           <label class="pill-opt"><input type="radio" name="msg-scale" value="Gói Trải nghiệm (1–2 cặp)"><span>Trải nghiệm: 1–2 cặp</span></label>
           <label class="pill-opt"><input type="radio" name="msg-scale" value="Gói Khởi đầu (3–5 cặp)"><span>Khởi đầu: 3–5 cặp</span></label>
-          <label class="pill-opt"><input type="radio" name="msg-scale" value="Gói Mở rộng (10 cặp trở lên)"><span>Mở rộng: 10 cặp trở lên</span></label>
+          <label class="pill-opt"><input type="radio" name="msg-scale" value="Gói Mở rộng (10 cặp trở lên)"><span>Mở rộng: từ 10 cặp</span></label>
           <label class="pill-opt"><input type="radio" name="msg-scale" value="Chưa xác định"><span>Chưa xác định</span></label>
         </div>
       </fieldset>
-      <label class="dtp-msg-label" for="msg-text">Tin nhắn mẫu <span class="dtp-optional">(có thể sửa)</span></label>
-      <textarea id="msg-text" rows="5"></textarea>
-      <button type="button" class="btn btn-outline btn-block" id="msg-copy">Sao chép tin nhắn</button>
+      <div class="dtp-review" id="msg-review"></div>
+      <label class="dtp-include" id="msg-include-wrap" hidden><input type="checkbox" id="msg-include"><span>Kèm tóm tắt mô phỏng vào tin nhắn</span></label>
+      <label class="dtp-msg-label" for="msg-text">Thông tin tư vấn <span class="dtp-optional">(có thể sửa)</span></label>
+      <textarea id="msg-text" rows="8"></textarea>
+      <div class="dtp-msg-actions">
+        <button type="button" class="btn btn-outline" id="msg-copy">Sao chép thông tin tư vấn</button>
+        <a class="btn btn-zalo" id="end-zalo" href="https://zalo.me/0967653899" target="_blank" rel="noopener">Mở Zalo Ji</a>
+        <a class="btn btn-outline" href="tel:0967653899">Gọi 0967653899</a>
+      </div>
       <p class="dtp-small">Tin nhắn chỉ nằm trên máy của bạn và không được gửi tự động. Sau khi sao chép, hãy mở Zalo và dán vào khung chat với Ji. Không mở được Zalo? Lưu số <a href="tel:0967653899">0967653899</a> vào Zalo rồi nhắn tin.</p>
     </form>
   </section>

@@ -237,8 +237,8 @@
   .kt-filter{white-space:normal;text-align:left;line-height:1.25;padding:8px 11px;display:flex;justify-content:space-between;align-items:center;gap:6px}
   .kt-filter:first-child{grid-column:1/-1;justify-content:center}
 }
-/* Menu 4 mục (thêm Đối tác): màn rất hẹp thì xuống dòng, không tràn ngang */
+/* Menu 4 mục (thêm Đối tác): màn rất hẹp thì thu gọn để vẫn một hàng, không tràn ngang */
 @media (max-width:400px){
-  .kt-nav{flex-wrap:wrap;gap:2px}
-  .kt-nav a{padding-inline:8px}
+  .kt-nav{gap:0;justify-content:space-between}
+  .kt-nav a{padding-inline:4px;font-size:13px}
 }
