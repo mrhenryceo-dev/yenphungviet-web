@@ -367,5 +367,14 @@ t('fitResult: 3 mức, thiếu không gian/thời gian thì chưa nên bắt đ�
   assert.equal(C.fitResult([true, false, true, true, true, true]), 'learn');
   assert.equal(C.fitResult([false, false, false, false, false, false]), 'learn');
 });
+t('số cặp và số chim hiểu dấu ngăn nghìn; 7,5 chim vẫn là số lẻ', () => {
+  for (const s of ['1.000', '1,000']) {
+    assert.equal(C.validate('quick', { birdsSold: s }).values.birdsSold, 1000, s);
+    assert.equal(C.validate('quick', { pairs: s }).values.pairs, 1000, s);
+  }
+  assert.equal(C.validate('quick', { birdsSold: '7,5' }).values.birdsSold, 7.5);
+  assert.ok(C.validate('quick', { pairs: '2.000' }).errors.pairs, 'vượt tối đa 1000 cặp phải báo lỗi, không thành 2 cặp');
+  assert.equal(C.validate('detail', { chicksPerCycle: '2,500' }).values.chicksPerCycle, 2.5);
+});
 
 console.log(`\n${n} test đạt.`);

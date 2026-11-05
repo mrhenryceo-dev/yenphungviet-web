@@ -236,7 +236,8 @@
       return;
     }
     const r = run.scenarios.find(s => s.scenario === viewScenario);
-    res.innerHTML = renderResult(r);
+    // Trên điện thoại kết quả nằm xa nhãn phía trên form nên nhắc lại ngay cạnh số.
+    res.innerHTML = (usingExamplePrice() ? '<p class="dtp-example-note">Kết quả này dùng <strong>số ví dụ</strong>, không phải báo giá của Ji.</p>' : '') + renderResult(r);
     scen.hidden = false;
     renderScenarios(run);
     if (r.mode === 'detail') {
@@ -255,8 +256,16 @@
     renderOutput();
   }
 
+  // Nhãn "số ví dụ" đi theo giá ví dụ: còn giá đó trong ô thì còn nhãn, kể cả khi khách sửa ô khác.
+  let exampleFilled = false;
+  const usingExamplePrice = () => exampleFilled && C.parseMoney(form.elements.pricePerPair.value) === C.parseMoney(C.EXAMPLE.pricePerPair);
+  function syncExampleNote() {
+    if (!usingExamplePrice()) exampleFilled = false;
+    $('calc-example-note').hidden = !exampleFilled;
+  }
+
   form.addEventListener('input', e => {
-    $('calc-example-note').hidden = true;
+    syncExampleNote();
     if (e.target.name === 'pairs') syncPreset();
     recalc();
   });
@@ -272,14 +281,15 @@
   $('calc-example').addEventListener('click', () => {
     C.FIELDS.forEach(f => { form.elements[f.id].value = C.EXAMPLE[f.id] || ''; });
     viewScenario = C.DEFAULT_SCENARIO;
+    exampleFilled = true;
+    syncExampleNote();
     syncPreset();
     recalc();
-    $('calc-example-note').hidden = false;
   });
   $('calc-clear').addEventListener('click', () => {
     form.reset();
     viewScenario = C.DEFAULT_SCENARIO;
-    $('calc-example-note').hidden = true;
+    syncExampleNote();
     syncPreset();
     recalc();
   });
@@ -297,8 +307,7 @@
     const preset = C.SCALE_PRESETS.find(p => p.pairs === pairs);
     form.elements.pairs.value = String(pairs);
     if (preset.data) Object.keys(preset.data).forEach(id => { form.elements[id].value = preset.data[id]; });
-    else presetNote.textContent = 'Đã điền ' + pairs + ' cặp. Trang chưa có giá đã xác nhận nên các ô tiền vẫn để trống: hãy nhập số của bạn hoặc hỏi Ji báo giá.';
-    $('calc-example-note').hidden = true;
+    else presetNote.textContent = 'Đã điền ' + pairs + ' cặp. Trang chưa có giá đã xác nhận nên công cụ không tự điền ô tiền: hãy nhập số của bạn hoặc hỏi Ji báo giá.';
     syncPreset();
     pickScale(preset.pack);
     recalc();
@@ -335,7 +344,7 @@
   function buildMessage(scale) {
     const r = viewedResult();
     const summary = r && includeBox.checked
-      ? 'Kết quả mô phỏng mình tự tính (kịch bản ' + C.SCENARIOS.find(s => s.id === r.scenario).label + ', số giả định):\n' + summaryLines(r).map(l => '- ' + l).join('\n') + '\n\n'
+      ? 'Kết quả mô phỏng mình tự tính (kịch bản ' + C.SCENARIOS.find(s => s.id === r.scenario).label + ', ' + (usingExamplePrice() ? 'dùng số ví dụ trên trang, không phải báo giá' : 'số giả định') + '):\n' + summaryLines(r).map(l => '- ' + l).join('\n') + '\n\n'
       : '';
     return 'Chào Ji, mình đã đọc trang nuôi Yến Phụng sinh sản trên website Yến Phụng PET.\n\n'
       + 'Quy mô mình quan tâm: ' + (scale || '...') + '\n\n' + summary

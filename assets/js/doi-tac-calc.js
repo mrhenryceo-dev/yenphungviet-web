@@ -27,7 +27,7 @@
   // kind: money (đồng, số nguyên) · int · decimal · percent. modes: chế độ dùng ô này.
   // Ô không bắt buộc để trống được ghi là "chưa tính" (trừ noTrack), dù phép tính coi là 0.
   const FIELDS = [
-    { id: 'pairs', group: 'invest', modes: ['quick', 'detail'], kind: 'int', required: true, max: 1000, label: 'Số cặp giống', unit: 'cặp' },
+    { id: 'pairs', group: 'invest', modes: ['quick', 'detail'], kind: 'int', grouped: true, required: true, max: 1000, label: 'Số cặp giống', unit: 'cặp' },
     { id: 'pricePerPair', group: 'invest', modes: ['quick', 'detail'], kind: 'money', required: true, label: 'Giá mua mỗi cặp', unit: 'đ/cặp' },
     { id: 'equipmentCost', group: 'invest', modes: ['quick', 'detail'], kind: 'money', required: true, label: 'Chi phí lồng, ổ, thiết bị ban đầu', unit: 'đ' },
     { id: 'otherInitial', group: 'invest', modes: ['detail'], kind: 'money', label: 'Khoản đầu tư ban đầu khác', unit: 'đ' },
@@ -41,7 +41,7 @@
     { id: 'lossPct', group: 'output', modes: ['detail'], kind: 'percent', label: 'Hao hụt, chim không đủ điều kiện bán', unit: '%', hint: 'Phần chim non không sống đến tuổi bán hoặc chưa đủ điều kiện bán.' },
     { id: 'sellThroughPct', group: 'output', modes: ['detail'], kind: 'percent', required: true, label: 'Tỷ lệ tiêu thụ', unit: '%', hint: 'Phần chim đủ điều kiện thực sự bán được trong kỳ.' },
 
-    { id: 'birdsSold', group: 'output', modes: ['quick'], kind: 'decimal', required: true, max: 100000, label: 'Số chim thực tế dự kiến bán trong 12 tháng', unit: 'chim', hint: 'Do bạn tự ước lượng, không phải kết quả sinh sản chắc chắn.' },
+    { id: 'birdsSold', group: 'output', modes: ['quick'], kind: 'decimal', grouped: true, required: true, max: 100000, label: 'Số chim thực tế dự kiến bán trong 12 tháng', unit: 'chim', hint: 'Do bạn tự ước lượng, không phải kết quả sinh sản chắc chắn.' },
     { id: 'avgPrice', group: 'output', modes: ['quick', 'detail'], kind: 'money', required: true, label: 'Giá bán bình quân mỗi chim', unit: 'đ/chim' },
 
     { id: 'opexMonthly', group: 'cost', modes: ['quick', 'detail'], kind: 'money', required: true, label: 'Chi phí vận hành mỗi tháng', unit: 'đ/tháng', hint: 'Thức ăn, vệ sinh, điện nước…', detailLabel: 'Thức ăn và vật tư', detailHint: 'Chỉ thức ăn, vật tư. Các khoản khác nhập ở ô riêng bên dưới để không tính trùng.' },
@@ -85,8 +85,11 @@
   // Làm tròn xuống có chống sai số dấu phẩy động (4.2/0.7*0.7 không được thành 5.999…).
   const floorSafe = x => Math.floor(x + 1e-9);
 
+  // Ô đếm số lượng lớn (grouped): "1.000" là một nghìn, không phải 1.
+  const looksGrouped = raw => /^\d{1,3}([.,]\d{3})+$/.test(String(raw).trim());
+
   function checkField(f, raw) {
-    const n = f.kind === 'money' ? parseMoney(raw) : parseDecimal(raw);
+    const n = f.kind === 'money' || (f.grouped && looksGrouped(raw)) ? parseMoney(raw) : parseDecimal(raw);
     if (n === null) return { value: null };
     if (!Number.isFinite(n)) {
       return { error: f.kind === 'money' ? 'Nhập số tiền hợp lệ, không âm. Ví dụ: 1.500.000' : 'Nhập số hợp lệ, không âm.' };
