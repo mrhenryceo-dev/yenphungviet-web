@@ -87,12 +87,20 @@ t('Gói: đủ các mục, không có giá, không có mục "đã xác nhận" 
   assert.ok(!html.includes('Phạm vi hỗ trợ đã xác nhận'));
   assert.equal(count(packs, /Chưa có chính sách công bố/g), 3);
 });
+t('Nhãn tư vấn: thay "Dịch vụ đang cung cấp", không có nhãn dịch vụ cũ', () => {
+  assert.ok(!html.includes('Dịch vụ đang cung cấp'));
+  assert.equal(count(html, /<span class="dtp-tag tag-on">Tư vấn lựa chọn quy mô nuôi<\/span>/g), 3);
+  assert.equal(count(html, /<dt>Tư vấn lựa chọn quy mô nuôi<\/dt>/g), 1);
+});
 t('Timeline: mỗi mốc có nguồn riêng, không khẳng định chắc chắn', () => {
   const tl = html.slice(html.indexOf('class="dtp-timeline"'), html.indexOf('</ol>', html.indexOf('class="dtp-timeline"')));
   const items = tl.split('<li>').slice(1);
   assert.equal(items.length, 7);
   for (const i of items) assert.ok(/class="dtp-src">Nguồn: <a href="[^"]+"/.test(i), i);
   assert.ok(tl.includes('khoảng 1–3 ngày, tùy nguồn'));
+  assert.ok(tl.includes('Mái từ khoảng 12 tháng, trống từ khoảng 10 tháng tuổi'));
+  assert.ok(tl.includes('Từ khoảng 3–4 tuần đến khoảng 5–8 tuần tuổi, tùy nguồn'));
+  assert.ok(!html.includes('cai sữa xong') && !html.includes('thường xong'));
   assert.ok(tl.includes('tối đa 2 lứa mỗi năm, hoặc không quá một lần mỗi năm'));
   for (const u of tl.match(/href="http[^"]+"[^>]*>/g)) assert.ok(/target="_blank" rel="noopener nofollow"/.test(u), u);
 });
