@@ -81,9 +81,20 @@ t('Đủ 6 câu tự đánh giá, 10 nhóm chuẩn bị, 9 bước, 10 rủi ro,
 });
 t('Gói: đủ các mục, không có giá, không có mục "đã xác nhận" giả', () => {
   const packs = html.slice(html.indexOf('class="dtp-packs"'), html.indexOf('dtp-pack-note'));
-  for (const d of ['Đối tượng phù hợp', 'Quy mô tham khảo', 'Danh mục', 'Ji có thể cung cấp', 'Bạn cần tự chuẩn bị', 'Phạm vi hỗ trợ đã xác nhận', 'Chi phí chưa bao gồm']) assert.equal(count(packs, new RegExp('<dt>' + d, 'g')), 3, d);
+  for (const d of ['Đối tượng phù hợp', 'Quy mô tham khảo', 'Danh mục', 'Ji có thể cung cấp', 'Bạn cần tự chuẩn bị', 'Hỗ trợ sau bán', 'Chi phí chưa bao gồm']) assert.equal(count(packs, new RegExp('<dt>' + d, 'g')), 3, d);
   assert.ok(!/\d[\d.,]*\s*(đ\b|đồng|triệu|VND)/i.test(packs), 'không được có giá trong gói');
   assert.ok(!/Đã xác nhận<\/span>/.test(html));
+  assert.ok(!html.includes('Phạm vi hỗ trợ đã xác nhận'));
+  assert.equal(count(packs, /Chưa có chính sách công bố/g), 3);
+});
+t('Timeline: mỗi mốc có nguồn riêng, không khẳng định chắc chắn', () => {
+  const tl = html.slice(html.indexOf('class="dtp-timeline"'), html.indexOf('</ol>', html.indexOf('class="dtp-timeline"')));
+  const items = tl.split('<li>').slice(1);
+  assert.equal(items.length, 7);
+  for (const i of items) assert.ok(/class="dtp-src">Nguồn: <a href="[^"]+"/.test(i), i);
+  assert.ok(tl.includes('khoảng 1–3 ngày, tùy nguồn'));
+  assert.ok(tl.includes('tối đa 2 lứa mỗi năm, hoặc không quá một lần mỗi năm'));
+  for (const u of tl.match(/href="http[^"]+"[^>]*>/g)) assert.ok(/target="_blank" rel="noopener nofollow"/.test(u), u);
 });
 t('Bằng chứng: không còn ô "Đang cập nhật", không có ảnh trong khối bằng chứng', () => {
   assert.ok(!text.includes('Đang cập nhật'));
