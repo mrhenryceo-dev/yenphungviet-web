@@ -315,8 +315,9 @@
   $('calc-presets').addEventListener('change', e => { if (e.target.name === 'calc-preset') applyPreset(Number(e.target.value)); });
   document.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => {
     applyPreset(Number(b.dataset.preset));
-    $('may-tinh').scrollIntoView();
+    // Đưa đúng ô giá vào giữa màn hình: trên điện thoại bàn phím bật lên ngay khi ô nhận focus.
     form.elements.pricePerPair.focus({ preventScroll: true });
+    form.elements.pricePerPair.scrollIntoView({ block: 'center' });
   }));
   $('scenario-cards').addEventListener('click', e => {
     const b = e.target.closest('button[data-sc]');

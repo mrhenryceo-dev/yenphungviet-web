@@ -25,12 +25,22 @@
 
 /* Header */
 .dtp .header-inner{flex-wrap:nowrap}
-.dtp-nav{display:none}
+.dtp-nav{display:flex}
+.dtp-nav a{text-decoration:none;font-weight:600;color:var(--ink-soft) !important;border-radius:100px;display:inline-flex;align-items:center;white-space:nowrap}
+.dtp-nav a:hover,.dtp-nav a[aria-current]{color:var(--green-dark) !important;background:var(--green-dim)}
 .dtp-head-zalo{flex-shrink:0;display:none}
+/* Điện thoại: menu thành hàng thứ hai; header không dính để dành chỗ cho nội dung (đã có thanh liên hệ dưới đáy). */
+@media (max-width:760px){
+  .dtp header{position:static}
+  .dtp .header-inner{flex-wrap:wrap;row-gap:0}
+  .dtp-nav{order:3;flex:1 0 100%;justify-content:space-between;border-top:1px solid var(--border);padding-top:4px}
+  .dtp-nav a{font-size:13px;padding:6px 8px;min-height:38px}
+  .dtp-hero .back-link{display:none}
+}
+@media (max-width:359px){.dtp-nav a{font-size:12.5px;padding:6px 4px}}
 @media (min-width:761px){
-  .dtp-nav{display:flex;gap:2px;margin-left:auto}
-  .dtp-nav a{text-decoration:none;font-size:14px;font-weight:600;color:var(--ink-soft) !important;padding:8px 12px;border-radius:100px;min-height:44px;display:inline-flex;align-items:center;white-space:nowrap}
-  .dtp-nav a:hover,.dtp-nav a[aria-current]{color:var(--green-dark) !important;background:var(--green-dim)}
+  .dtp-nav{gap:2px;margin-left:auto}
+  .dtp-nav a{font-size:14px;padding:8px 12px;min-height:44px}
   .dtp-head-zalo{display:inline-flex}
 }
 
@@ -156,7 +166,7 @@
 .dtp-stats > div{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);font-size:15px;line-height:1.4}
 .dtp-stats > div:last-child{border-bottom:none}
 .dtp-stats dt{color:var(--ink-soft)}
-.dtp-stats dd{font-weight:600;text-align:right;font-variant-numeric:tabular-nums;overflow-wrap:break-word}
+.dtp-stats dd{font-weight:600;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .dtp-stats .is-key{font-size:17px}
 .dtp-stats .is-key dt{color:var(--ink);font-weight:600}
 .dtp-stats .is-note dd{white-space:normal;font-weight:500;color:var(--ink-soft);font-size:14px;max-width:62%}
@@ -207,7 +217,7 @@
 .dtp-sc-f{font-size:13.5px;line-height:1.45;color:var(--ink-soft);margin:2px 0 8px}
 .dtp-sc dl > div{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);font-size:14px;line-height:1.35}
 .dtp-sc dt{color:var(--ink-soft)}
-.dtp-sc dd{font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.dtp-sc dd{font-weight:600;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .dtp-sc-btn{margin-top:auto;padding-top:10px}
 .dtp-sc-btn button{width:100%;min-height:44px;border-radius:100px;border:1.5px solid var(--green-dark);background:none;color:var(--green-dark);font-weight:600;font-size:14.5px;cursor:pointer}
 .dtp-sc.is-active .dtp-sc-btn button{background:var(--green-dark);color:#fff}
