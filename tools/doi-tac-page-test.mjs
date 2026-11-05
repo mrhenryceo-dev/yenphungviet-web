@@ -29,6 +29,10 @@ t('Không có schema, tracking, form ghi dữ liệu, Supabase hay dịch vụ A
   assert.ok(!/openai|anthropic|api\.|fetch\(|XMLHttpRequest|sendBeacon|localStorage|sessionStorage/i.test(js.replace(/\/\/.*$/gm, '')));
   assert.ok(!/<form[^>]*\baction=/i.test(html));
 });
+t('Giá trong số ví dụ được ghi rõ là minh họa, không phải báo giá của Ji', () => {
+  assert.ok(js.includes("pricePerPair: '2.000.000'"));
+  assert.ok(text.includes('Giá 2.000.000 đ/cặp ở đây chỉ là số minh họa, không phải báo giá của Ji'));
+});
 t('Không có tuyên bố bị cấm', () => {
   const banned = [/thu nhập thụ động/i, /không tốn công/i, /cam kết lợi nhuận/i, /bao tiêu đầu ra/i, /đảm bảo sinh sản/i, /chắc chắn (có lãi|sinh lời)/i, /hoàn vốn (sau|trong) \d/i, /chỉ mất \d+ phút/i, /lợi nhuận \d/i, /dễ bán/,
     /dễ kiếm tiền/i, /lợi nhuận ổn định/i, /thu hồi vốn nhanh/i, /bảo hành sinh sản/i, /cam kết có chim con/i, /mua lại/i, /hỗ trợ trọn đời/i, /lợi nhuận chắc chắn/i];
