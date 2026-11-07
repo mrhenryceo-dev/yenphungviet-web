@@ -1,157 +1,117 @@
-// Trang /doi-tac/ — test nội dung tĩnh theo đặc tả OWNER (chạy: node tools/doi-tac-page-test.mjs). Không gọi mạng.
+// Trang /doi-tac/ V2.0 — test nội dung tĩnh theo brief OWNER (chạy: node tools/doi-tac-page-test.mjs). Không gọi mạng.
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
-import * as R from '../assets/kt/render.mjs';
+import { readFileSync, existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 
-const read = p => readFile(new URL('../' + p, import.meta.url), 'utf8');
-const html = await read('doi-tac/index.html');
-const js = (await read('assets/js/doi-tac.js')) + (await read('assets/js/doi-tac-calc.js'));
-const text = html.replace(/<!--[\s\S]*?-->/g, ' ').replace(/<(script|style)[\s\S]*?<\/\1>/g, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
-
-let n = 0; const t = (name, fn) => { fn(); n++; console.log('✓', name); };
+const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+const html = readFileSync(join(root, 'doi-tac/index.html'), 'utf8');
+const js = readFileSync(join(root, 'assets/js/doi-tac.js'), 'utf8');
+const guides = readFileSync(join(root, 'data/guides.js'), 'utf8');
+const main = html.slice(html.indexOf('<main'), html.indexOf('</main>'));
+const text = main.replace(/<!--[\s\S]*?-->/g, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
 const count = (s, re) => (s.match(re) || []).length;
+let n = 0;
+const t = (name, fn) => { fn(); n++; console.log('✓ ' + name); };
 
-t('SEO: title, meta, canonical, OG đúng đặc tả', () => {
-  assert.ok(html.includes('<title>Đối Tác Nuôi Yến Phụng Sinh Sản | Tính Vốn &amp; Chi Phí</title>'));
-  assert.ok(html.includes('content="Tìm hiểu cách chuẩn bị chim giống, lồng trại, thời gian chăm sóc và tự mô phỏng dòng tiền 12 tháng trước khi nuôi Yến Phụng sinh sản. Nhận tư vấn từ Ji."'));
-  assert.ok(html.includes('<link rel="canonical" href="https://yenphungviet.vercel.app/doi-tac/">'));
-  assert.ok(html.includes('property="og:url" content="https://yenphungviet.vercel.app/doi-tac/"'));
-  assert.ok(html.includes('property="og:image" content="https://yenphungviet.vercel.app/assets/brand/og-yenphungpet.jpg"'));
-});
-t('Đúng một H1, có nhiều H2', () => {
-  assert.equal(count(html, /<h1[\s>]/g), 1);
-  assert.ok(count(html, /<h2[\s>]/g) >= 10);
-});
-t('Không có schema, tracking, form ghi dữ liệu, Supabase hay dịch vụ AI', () => {
-  assert.ok(!/application\/ld\+json|schema\.org/i.test(html));
-  assert.ok(!/gtag|googletagmanager|fbq\(|facebook\.net|hotjar|clarity\.ms/i.test(html + js));
-  assert.ok(!/supabase/i.test(html.replace(/<!--[\s\S]*?-->/g, '') + js.replace(/\/\/.*$/gm, '')));
-  assert.ok(!/openai|anthropic|api\.|fetch\(|XMLHttpRequest|sendBeacon|localStorage|sessionStorage/i.test(js.replace(/\/\/.*$/gm, '')));
-  assert.ok(!/<form[^>]*\baction=/i.test(html));
-});
-t('Giá trong số ví dụ được ghi rõ là minh họa, không phải báo giá của Ji', () => {
-  assert.ok(js.includes("pricePerPair: '2.000.000'"));
-  assert.ok(text.includes('Giá 2.000.000 đ/cặp ở đây chỉ là số minh họa, không phải báo giá của Ji'));
-});
-t('Gói: câu mở đầu không mâu thuẫn với dòng phạm vi hỗ trợ; ghi chú quy mô không nói sai về ô tiền', () => {
-  assert.ok(!text.includes('Hiện chưa có mục nào ở trạng thái'));
-  assert.ok(text.includes('Chưa có món nào trong danh mục ở trạng thái “đã xác nhận”'));
-  assert.ok(!js.includes('các ô tiền vẫn để trống'));
-});
-t('Không có tuyên bố bị cấm', () => {
-  const banned = [/thu nhập thụ động/i, /không tốn công/i, /cam kết lợi nhuận/i, /bao tiêu đầu ra/i, /đảm bảo sinh sản/i, /chắc chắn (có lãi|sinh lời)/i, /hoàn vốn (sau|trong) \d/i, /chỉ mất \d+ phút/i, /lợi nhuận \d/i, /dễ bán/,
-    /dễ kiếm tiền/i, /lợi nhuận ổn định/i, /thu hồi vốn nhanh/i, /bảo hành sinh sản/i, /cam kết có chim con/i, /mua lại/i, /hỗ trợ trọn đời/i, /lợi nhuận chắc chắn/i];
-  for (const re of banned) assert.ok(!re.test(text), 'cụm bị cấm: ' + re);
-  // "bao tiêu" chỉ được xuất hiện trong câu FAQ nói rõ là không cam kết.
-  assert.ok(text.includes('Trang này không đưa ra cam kết bao tiêu'));
-  assert.equal(count(text, /bao tiêu/g), 2);
-  assert.ok(!/lãi/i.test(js.replace(/\/\/.*$/gm, '').replace(/tiền lãi/g, '')), 'code không được dùng từ "lãi" cho kết quả');
-  assert.ok(!/đồng hồ đếm|còn \d+ suất|chỉ còn \d+/i.test(text), 'không đếm ngược/giới hạn giả');
-});
-t('Thông điệp và tiêu đề bắt buộc có mặt', () => {
+t('Hero: đúng tiêu đề, giới thiệu, thông điệp, CTA và định hướng theo brief', () => {
+  assert.equal(count(html, /<h1>/g), 1);
   for (const s of [
-    'Nuôi Yến Phụng sinh sản — Bắt đầu từ quy mô phù hợp, hiểu rõ vốn và rủi ro.',
-    'Tìm hiểu cách chuẩn bị chim giống, lồng trại, thời gian chăm sóc và mô phỏng dòng tiền trước khi quyết định bắt đầu cùng Yến Phụng PET.',
-    'Tính thử vốn khởi đầu', 'Xem các gói khởi đầu', 'Nhắn Zalo Ji',
-    'Bạn cần bao nhiêu vốn?', 'Vì sao nên bắt đầu cùng Ji?', 'Bằng chứng từ trại', 'Quy trình nuôi sinh sản', 'Công sức và thời gian chăm sóc', 'Timeline sinh sản', 'Rủi ro và phương án phòng ngừa',
-    'Đây là công cụ mô phỏng, không phải dự báo hoặc cam kết kết quả kinh doanh.',
-    'Bắt đầu từ quy mô phù hợp với điều kiện của bạn.',
-    'Doanh thu chỉ hình thành khi thực tế có chim đủ điều kiện bán và có người mua.',
-    'Số giờ chăm sóc thay đổi theo số chim, thiết kế trại, mức độ tự động hóa và tình trạng sức khỏe',
-    'không phải lịch sản xuất hay lịch thu tiền',
-    'chỉ phát sinh theo thỏa thuận được xác nhận',
-    'Sao chép thông tin tư vấn', 'Mở Zalo Ji', 'Gọi 0967653899', 'Gói Trải nghiệm', 'Gói Khởi đầu', 'Gói Mở rộng'
-  ]) assert.ok(text.includes(s) || js.includes(s), 'thiếu: ' + s);
+    'Góc chia sẻ bí quyết và lộ trình nuôi Yến Phụng sinh sản dành cho những người đam mê',
+    'Hãy cùng Ji đi từng bước, khám phá mô hình nuôi Yến Phụng sinh sản — từ chọn chim giống, chuẩn bị tổ ấm đến chăm sóc những chú chim non đầu tiên nhé!',
+    'Nuôi vì đam mê – Chăm bằng kiến thức – Phát triển bằng kinh nghiệm.',
+    'Khám phá hành trình', 'Bí quyết từ Ji', 'Nhắn Zalo tư vấn',
+    'Việc tìm hiểu kỹ giúp bạn đưa ra quyết định đúng đắn nhất. Hãy cùng Ji lựa chọn quy mô phù hợp với không gian, thời gian và ngân sách của mình nhé!',
+  ]) assert.ok(text.includes(s), s);
 });
-t('Thứ tự section đúng lệnh V1.1, đúng 11 khối', () => {
-  const order = ['dtp-hero', 'id="may-tinh"', 'id="goi"', 'id="vi-sao-ji"', 'id="bang-chung"', 'id="quy-trinh"', 'id="cham-soc"', 'id="sinh-san"', 'id="rui-ro"', 'id="faq"', 'id="lien-he"'];
-  const pos = order.map(s => html.indexOf('<section') >= 0 ? html.search(new RegExp('<section[^>]*' + s)) : -1);
-  pos.forEach((p, i) => assert.ok(p > 0 && (i === 0 || p > pos[i - 1]), order[i]));
-  assert.equal(count(html, /<section[\s>]/g), 11);
+t('Sáu chương đúng thứ tự', () => {
+  const ids = ['the-gioi', 'hanh-trinh', 'chuan-bi', 'bi-quyet', 'phat-trien', 'cung-ji'];
+  let last = -1;
+  for (const id of ids) {
+    const i = main.indexOf('id="' + id + '"');
+    assert.ok(i > last, id);
+    assert.ok(main.includes('href="#' + id + '"'), 'mục lục ' + id);
+    last = i;
+  }
+  for (const h of ['Khám phá thế giới Yến Phụng', 'Hành trình từ cặp chim đến đàn chim non', 'Bắt đầu một trại nhỏ cần chuẩn bị gì?', 'Bí quyết chăm sóc từ Ji', 'Từ đam mê đến cơ hội phát triển', 'Đam mê sẽ dễ bắt đầu hơn khi có người đồng hành'])
+    assert.ok(main.includes('<h2>' + h + '</h2>'), h);
 });
-t('Đủ 6 câu tự đánh giá, 10 nhóm chuẩn bị, 9 bước, 10 rủi ro, FAQ, 3 gói', () => {
-  assert.equal(count(html, /name="fit"/g), 6);
-  assert.equal(count(html, /name="prep"/g), 10);
-  assert.equal(count(html.slice(html.indexOf('class="dtp-steps"'), html.indexOf('id="chuan-bi"')), /<li>/g), 9);
-  assert.equal(count(html.slice(html.indexOf('class="dtp-risks"'), html.indexOf('id="faq"')), /<li>/g), 10);
-  assert.ok(count(html.slice(html.indexOf('class="dtp-faq"'), html.indexOf('id="lien-he"')), /<details>/g) >= 8);
-  for (const q of ['Người mới nên bắt đầu bao nhiêu cặp?', 'Bao lâu có thể có chim con?', 'Chi phí phát sinh gồm những gì?', 'Nếu chim không sinh sản thì sao?', 'Nếu không bán được chim con thì sao?', 'Ji có bao tiêu hay cam kết đầu ra không?', 'Giấy tờ và nguồn gốc chim cần kiểm tra gì?', 'Ji hỗ trợ sau bán trong phạm vi nào?']) assert.ok(text.includes(q), q);
-  assert.equal(count(html, /class="dtp-pack"/g), 3);
-  assert.equal(count(html, />Nhận tư vấn và báo giá</g), 3);
+t('Đã bỏ máy tính vốn, ba gói và CTA tính thử', () => {
+  for (const s of ['Tính thử', 'Máy tính', 'máy tính', 'dòng tiền', 'Chế độ nhanh', 'Chế độ chi tiết', 'Gói Trải nghiệm', 'Gói Khởi đầu', 'Gói Mở rộng', 'hòa vốn', 'báo giá']) assert.ok(!html.includes(s), s);
+  assert.ok(!html.includes('doi-tac-calc'));
+  assert.ok(!js.includes('DoiTacCalc'));
+  assert.ok(!existsSync(join(root, 'assets/js/doi-tac-calc.js')));
 });
-t('Gói: đủ các mục, không có giá, không có mục "đã xác nhận" giả', () => {
-  const packs = html.slice(html.indexOf('class="dtp-packs"'), html.indexOf('dtp-pack-note'));
-  for (const d of ['Đối tượng phù hợp', 'Quy mô tham khảo', 'Danh mục', 'Ji có thể cung cấp', 'Bạn cần tự chuẩn bị', 'Hỗ trợ sau bán', 'Chi phí chưa bao gồm']) assert.equal(count(packs, new RegExp('<dt>' + d, 'g')), 3, d);
-  assert.ok(!/\d[\d.,]*\s*(đ\b|đồng|triệu|VND)/i.test(packs), 'không được có giá trong gói');
-  assert.ok(!/Đã xác nhận<\/span>/.test(html));
-  assert.ok(!html.includes('Phạm vi hỗ trợ đã xác nhận'));
-  assert.equal(count(packs, /Chưa có chính sách công bố/g), 3);
+t('Không có số tiền, số liệu doanh thu hay ngôn ngữ hứa hẹn', () => {
+  assert.ok(!/\d[\d.,]*\s*(đ\b|đồng|triệu|VND)/i.test(text));
+  for (const s of ['làm giàu', 'thu nhập', 'bao tiêu', 'chắc chắn sinh sản', 'chắc chắn có', 'hoàn vốn', 'lợi nhuận', 'cam kết', 'chưa xác nhận', 'chưa có chính sách']) assert.ok(!text.toLowerCase().includes(s), s);
 });
-t('Nhãn tư vấn: thay "Dịch vụ đang cung cấp", không có nhãn dịch vụ cũ', () => {
-  assert.ok(!html.includes('Dịch vụ đang cung cấp'));
-  assert.equal(count(html, /<span class="dtp-tag tag-on">Tư vấn lựa chọn quy mô nuôi<\/span>/g), 3);
-  assert.equal(count(html, /<dt>Tư vấn lựa chọn quy mô nuôi<\/dt>/g), 1);
+t('Không tự công bố thông tin chưa xác minh', () => {
+  assert.ok(!/\d+\s*năm kinh nghiệm/.test(text));
+  assert.ok(!/chứng chỉ|bằng cấp|giải thưởng/i.test(text));
+  assert.ok(!html.includes('application/ld+json'), 'không có schema đánh giá');
 });
-t('Timeline: mỗi mốc có nguồn riêng, không khẳng định chắc chắn', () => {
-  const tl = html.slice(html.indexOf('class="dtp-timeline"'), html.indexOf('</ol>', html.indexOf('class="dtp-timeline"')));
-  const items = tl.split('<li>').slice(1);
-  assert.equal(items.length, 7);
-  for (const i of items) assert.ok(/class="dtp-src">Nguồn: <a href="[^"]+"/.test(i), i);
-  assert.ok(tl.includes('khoảng 1–3 ngày, tùy nguồn'));
-  assert.ok(tl.includes('Mái từ khoảng 12 tháng, trống từ khoảng 10 tháng tuổi'));
-  assert.ok(tl.includes('Từ khoảng 3–4 tuần đến khoảng 5–8 tuần tuổi, tùy nguồn'));
-  assert.ok(!html.includes('cai sữa xong') && !html.includes('thường xong'));
-  assert.ok(tl.includes('tối đa 2 lứa mỗi năm, hoặc không quá một lần mỗi năm'));
-  for (const u of tl.match(/href="http[^"]+"[^>]*>/g)) assert.ok(/target="_blank" rel="noopener nofollow"/.test(u), u);
+t('Ba CTA chính đúng câu chữ và vị trí', () => {
+  const pos = s => main.indexOf(s);
+  const c1 = pos('>Ji ơi, mình muốn tìm hiểu cách nuôi Yến Phụng sinh sản!<');
+  const c2 = pos('>Nhắn Ji để được hướng dẫn bắt đầu<');
+  const c3 = pos('>Mình muốn bắt đầu một trại Yến Phụng nhỏ!<');
+  assert.ok(c1 > 0 && c1 < pos('id="the-gioi"'));
+  assert.ok(c2 > pos('id="hanh-trinh"') && c2 < pos('id="chuan-bi"'));
+  assert.ok(c3 > pos('id="cung-ji"'));
 });
-t('Bằng chứng: không còn ô "Đang cập nhật", không có ảnh trong khối bằng chứng', () => {
-  assert.ok(!text.includes('Đang cập nhật'));
-  const sec = html.slice(html.indexOf('id="bang-chung"'), html.indexOf('id="quy-trinh"'));
-  assert.ok(!sec.includes('<img'));
-  assert.ok(sec.includes('https://zalo.me/0967653899'));
+t('Liên hệ: mọi link Zalo và tel đúng số; không báo đã tự gửi', () => {
+  const links = html.match(/href="(https:\/\/zalo\.me\/[^"]*|tel:[^"]*)"/g);
+  assert.ok(links.length >= 6);
+  for (const l of links) assert.ok(/zalo\.me\/0967653899"|tel:0967653899"/.test(l), l);
+  assert.ok(!/đã gửi/i.test(html + js));
+  assert.ok(js.includes('Hãy dán vào Zalo'));
+  for (const a of html.match(/<a [^>]*zalo\.me[^>]*>/g)) assert.ok(/target="_blank" rel="noopener"/.test(a), a);
 });
-t('Ảnh: nhãn "Ảnh minh họa", không tự tuyên bố nguồn AI vì chưa xác minh; không có ảnh ngoài', () => {
-  const main = html.slice(html.indexOf('<main'), html.indexOf('</main>'));
+t('Không fetch, tracking hay gửi dữ liệu', () => {
+  assert.ok(!/fetch\(|XMLHttpRequest|sendBeacon|localStorage|gtag|fbq/i.test(js + html));
+  assert.ok(!/<form/.test(html));
+});
+t('Ảnh: đều có nhãn minh họa, tồn tại trên đĩa, không dùng ảnh đút bột, kích thước rõ', () => {
   const imgs = main.match(/<img [^>]+>/g);
-  assert.ok(imgs.length >= 7);
+  assert.ok(imgs.length >= 15);
   for (const i of imgs) {
     assert.ok(/alt="Ảnh minh họa: /.test(i), i);
-    assert.ok(/src="\/assets\//.test(i), i);
     assert.ok(/width="\d+" height="\d+"/.test(i), i);
+    assert.ok(existsSync(join(root, i.match(/src="\/([^"]+)"/)[1])), i);
+    assert.ok(!i.includes('pet-03'), 'không dùng ảnh đút bột');
   }
-  assert.equal(count(main, /<figcaption class="ai-badge">Ảnh minh họa<\/figcaption>/g), imgs.length);
-  assert.ok(!/do AI tạo/.test(text) && !/ảnh trại thật/i.test(text));
-  assert.equal(count(main, /loading="lazy"/g), imgs.length - 1); // chỉ ảnh hero tải ngay
+  assert.equal(count(main, /<figcaption[^>]*>Ảnh minh họa<\/figcaption>/g), imgs.length);
+  assert.ok(main.includes('không phải ảnh trại'));
+  assert.equal(count(main, /loading="lazy"/g), imgs.length - 1);
 });
-t('Liên hệ: mọi link Zalo và tel đúng số 0967653899', () => {
-  const links = html.match(/href="(https:\/\/zalo\.me\/[^"]*|tel:[^"]*)"/g);
-  assert.ok(links.length >= 8);
-  for (const l of links) assert.ok(l === 'href="https://zalo.me/0967653899"' || l === 'href="tel:0967653899"', l);
+t('Hành trình: tám chặng, mốc có nguồn, giữ lưu ý đút bột', () => {
+  const line = main.slice(main.indexOf('class="v2-line"'), main.indexOf('class="v2-sources"'));
+  assert.equal(count(line, /<li>/g), 8);
+  for (const s of ['khoảng 12 tháng', 'khoảng 10 tháng', 'khoảng 1–3 ngày', 'khoảng 18 ngày', 'khoảng 4–5 tuần']) assert.ok(line.includes(s), s);
+  assert.ok(line.includes('không tự đút bột khi chưa được hướng dẫn trực tiếp'));
+  const src = main.slice(main.indexOf('class="v2-sources"'), main.indexOf('class="v2-inline-cta"'));
+  for (const s of ['askavet.com', 'hastingsdc.govt.nz', 'bcsa.com.au/breeding-budgerigars/', 'bcsa.com.au/breeding/eggs/management/', 'bcsa.com.au/breeding-budgerigars/weaning-chicks/', '/kien-thuc/vong-doi-cua-chim-yen-phung/']) assert.ok(src.includes(s), s);
+  for (const u of src.match(/href="http[^"]+"[^>]*>/g)) assert.ok(/target="_blank" rel="noopener nofollow"/.test(u), u);
 });
-t('CTA Zalo có ở đủ 5 vị trí đặc tả', () => {
-  const sec = id => { const i = html.indexOf('id="' + id + '"'); return html.slice(i, html.indexOf('</section>', i)); };
-  for (const id of ['may-tinh', 'goi', 'bang-chung', 'lien-he']) assert.ok(sec(id).includes('https://zalo.me/0967653899'), id);
-  assert.ok(html.slice(html.indexOf('dtp-hero'), html.indexOf('id="may-tinh"')).includes('https://zalo.me/0967653899'), 'hero');
+t('Link nội bộ chỉ trỏ tới bài và mục đang có', () => {
+  const existing = ['vong-doi-cua-chim-yen-phung', 'phan-biet-yen-phung-trong-mai', 'yen-phung-thich-an-gi'];
+  for (const [, slug] of main.matchAll(/href="\/kien-thuc\/([^"/]+)\/"/g)) assert.ok(existing.includes(slug), slug);
+  for (const [, id] of main.matchAll(/href="\/#cam-nang\/([^"]+)"/g)) assert.ok(guides.includes("id:'" + id + "'"), id);
+  for (const [, id] of main.matchAll(/href="#([^"]+)"/g)) assert.ok(main.includes('id="' + id + '"'), id);
+  assert.equal(count(main.slice(main.indexOf('class="v2-tip-list"'), main.indexOf('id="phat-trien"')), /<h3>/g), 7);
 });
-t('Anchor nội bộ đều trỏ tới id có thật', () => {
-  const ids = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]));
-  const anchors = [...html.matchAll(/href="#([^"]+)"/g)].map(m => m[1]);
-  assert.ok(anchors.length >= 12);
-  for (const a of anchors) assert.ok(ids.has(a), '#' + a);
+t('SEO: title, mô tả, canonical, Open Graph và cụm từ tự nhiên', () => {
+  assert.ok(html.includes('<link rel="canonical" href="https://yenphungviet.vercel.app/doi-tac/">'));
+  const title = html.match(/<title>(.*)<\/title>/)[1];
+  const desc = html.match(/<meta name="description" content="([^"]+)"/)[1];
+  assert.ok(title.length <= 80, title);
+  assert.ok(desc.length <= 170, desc);
+  for (const p of ['og:title', 'og:description', 'og:image', 'og:url', 'og:type']) assert.ok(html.includes('property="' + p + '"'), p);
+  for (const k of ['nuôi Yến Phụng sinh sản', 'Cách nuôi Yến Phụng sinh sản', 'Kinh nghiệm nuôi', 'Lồng nuôi Yến Phụng sinh sản', 'Chim Yến Phụng giống', 'chăm sóc chim Yến Phụng non']) assert.ok(html.includes(k), k);
 });
-t('Internal link tới Kiến thức, Cẩm nang, danh mục chim', () => {
-  for (const h of ['/kien-thuc/"', '/#cam-nang"', '/#catalogue"', '/#chim-dang-tim-chu"', '/chon-nhom-choi']) assert.ok(html.includes('href="' + h), h);
-});
-t('Link mở tab mới đều có rel noopener', () => {
-  for (const a of html.match(/<a [^>]*target="_blank"[^>]*>/g)) assert.ok(/rel="noopener/.test(a), a);
-});
-t('Sitemap có /doi-tac/ và giữ các trang cũ', () => {
-  const x = R.sitemapXml([]);
-  assert.ok(x.includes('<loc>https://yenphungviet.vercel.app/doi-tac/</loc>'));
-  assert.ok(x.includes('<loc>https://yenphungviet.vercel.app/chon-nhom-choi</loc>'));
+t('Menu trang chủ dẫn tới /doi-tac/', () => {
+  assert.ok(readFileSync(join(root, 'index.html'), 'utf8').includes('href="/doi-tac/"'));
 });
 
-const home = await read('index.html');
-t('Menu trang chủ dẫn tới /doi-tac/', () => assert.ok(home.includes('<a href="/doi-tac/" data-nav="doi-tac">Đối tác</a>')));
-
-console.log(`\n${n} test đạt.`);
+console.log('\n' + n + ' test đạt.');

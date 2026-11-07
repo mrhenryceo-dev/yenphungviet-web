@@ -1,412 +1,56 @@
-// Trang /doi-tac/ — giao diện: checklist, máy tính, biểu đồ, tin nhắn mẫu. Công thức nằm ở doi-tac-calc.js.
-// Chỉ chạy trong trình duyệt của khách. KHÔNG gửi dữ liệu đi đâu, KHÔNG ghi Supabase, KHÔNG lưu số đã nhập.
-
+// Trang /doi-tac/ V2.0. Không gửi dữ liệu đi đâu: chỉ sao chép câu chào và đánh dấu checklist trên máy người xem.
 (function () {
-  const C = window.DoiTacCalc;
-  const $ = id => document.getElementById(id);
-  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  const vnd = C.formatVnd;
-
-  // ---------- Tự đánh giá & danh sách chuẩn bị ----------
-  const FIT_TEXT = {
-    learn: ['Nên tìm hiểu thêm trước khi bắt đầu', 'Hãy chuẩn bị thêm các điều kiện còn thiếu, nhất là không gian và thời gian chăm sóc. Bạn vẫn có thể hỏi Ji để biết nên bắt đầu chuẩn bị từ đâu.'],
-    consider: ['Có thể cân nhắc quy mô trải nghiệm', 'Bạn đã có một phần điều kiện. Nên học với quy mô nhỏ và rà lại những câu chưa đánh dấu.'],
-    talk: ['Có thể trao đổi với Ji về kế hoạch khởi đầu', 'Hãy chuẩn bị số liệu về không gian, thời gian, ngân sách và mục tiêu để trao đổi cụ thể hơn.']
-  };
-  const fitBoxes = [...document.querySelectorAll('input[name="fit"]')];
-  $('fit-form').addEventListener('change', () => {
-    const [title, body] = FIT_TEXT[C.fitResult(fitBoxes.map(b => b.checked))];
-    const box = $('fit-result');
-    box.hidden = false;
-    box.innerHTML = '<strong>' + esc(title) + '</strong>' + esc(body);
-  });
-  const prepBoxes = [...document.querySelectorAll('input[name="prep"]')];
-  $('prep-form').addEventListener('change', () => {
-    $('prep-progress').textContent = 'Đã chuẩn bị ' + prepBoxes.filter(b => b.checked).length + '/' + prepBoxes.length + ' nhóm';
-  });
-
-  // ---------- Ô nhập ----------
-  const GROUPS = [['invest', 'Đầu tư ban đầu'], ['output', 'Sản lượng và doanh thu giả định'], ['cost', 'Chi phí']];
-  const INPUTMODE = { money: 'numeric', int: 'numeric', decimal: 'decimal', percent: 'decimal' };
-  $('calc-fields').innerHTML = GROUPS.map(([g, title]) => '<fieldset class="dtp-group"><legend>' + title + '</legend>'
-    + C.FIELDS.filter(f => f.group === g).map(f => {
-      const describe = 'h-' + f.id + ' e-' + f.id;
-      return '<div class="dtp-field" data-field="' + f.id + '" data-modes="' + f.modes.join(' ') + '">'
-        + '<label for="f-' + f.id + '">' + esc(f.label) + (f.required ? ' *' : '') + '</label>'
-        + '<div class="dtp-input"><input id="f-' + f.id + '" name="' + f.id + '" type="text" inputmode="' + INPUTMODE[f.kind] + '" aria-describedby="' + describe + '"' + (f.required ? ' aria-required="true"' : '') + '>'
-        + '<span class="dtp-unit">' + esc(f.unit) + '</span></div>'
-        + '<p class="dtp-field-hint" id="h-' + f.id + '"' + (f.hint ? '' : ' hidden') + '>' + esc(f.hint || '') + '</p>'
-        + '<p class="dtp-field-err" id="e-' + f.id + '" hidden></p></div>';
-    }).join('') + '</fieldset>').join('');
-
-  const form = $('calc-form');
-  const getMode = () => document.querySelector('input[name="calc-mode"]:checked').value;
-  const rawValues = () => { const o = {}; C.FIELDS.forEach(f => { o[f.id] = form.elements[f.id].value; }); return o; };
-  let viewScenario = C.DEFAULT_SCENARIO;
-  let lastRun = null;
-
-  function applyMode() {
-    const mode = getMode();
-    form.querySelectorAll('.dtp-field').forEach(el => { el.hidden = !el.dataset.modes.split(' ').includes(mode); });
-    // Ô dùng chung nhưng ở chế độ chi tiết chỉ là một phần chi phí nên đổi nhãn và gợi ý.
-    C.FIELDS.filter(f => f.detailLabel).forEach(f => {
-      const detail = mode === 'detail';
-      form.querySelector('label[for="f-' + f.id + '"]').textContent = (detail ? f.detailLabel : f.label) + (f.required ? ' *' : '');
-      $('h-' + f.id).textContent = detail ? f.detailHint : f.hint;
-    });
-  }
-
-  function showErrors(run) {
-    C.FIELDS.forEach(f => {
-      const wrap = form.querySelector('[data-field="' + f.id + '"]');
-      const err = $('e-' + f.id), msg = run.errors[f.id];
-      wrap.classList.toggle('has-err', !!msg);
-      form.elements[f.id].setAttribute('aria-invalid', msg ? 'true' : 'false');
-      err.hidden = !msg; err.textContent = msg || '';
-    });
-  }
-
-  // ---------- Kết quả ----------
-  const statusOf = r => {
-    if (r.recovered === null) return ['st-na', 'Chưa đủ dữ liệu để đánh giá việc thu hồi tiền', 'Hãy nhập các khoản chi của bạn.'];
-    if (r.recovered) return ['st-ok', 'Theo giả định: đã thu hồi đủ tiền chi ra sau 12 tháng', 'Đây là kết quả mô phỏng, không phải kết quả thực tế.'];
-    return ['st-no', 'Theo giả định: chưa thu hồi đủ tiền chi ra sau 12 tháng', 'Đây là kết quả mô phỏng, không phải kết quả thực tế.'];
-  };
-  const row = (label, value, cls) => '<div class="' + (cls || '') + '"><dt>' + esc(label) + '</dt><dd>' + esc(value) + '</dd></div>';
-  const birds = n => n + ' chim';
-
-  function renderResult(r) {
-    const [cls, title, sub] = statusOf(r);
-    const breakeven = r.mode === 'detail'
-      ? (r.breakevenMonth === null ? 'Chưa hòa vốn trong 12 tháng' : 'Tháng ' + r.breakevenMonth)
-      : (r.recovered === null ? 'Chưa đủ dữ liệu' : r.recovered ? 'Có, chưa rõ tháng' : 'Chưa hòa vốn trong 12 tháng');
-    const kpis = row('Vốn đầu tư ban đầu', vnd(r.initialInvestment))
-      + row('Chi phí vận hành 12 tháng', vnd(r.opex12))
-      + row('Doanh thu giả định', vnd(r.revenue))
-      + row('Dòng tiền lũy kế 12 tháng', vnd(r.netCash12), 'is-key')
-      + row('Hòa vốn', breakeven)
-      + row('Còn phải bù để hòa vốn', vnd(r.stillToCover));
-    let rows = row('Số chim bán được (giả định)', birds(r.birdsSold));
-    if (r.mode === 'detail') {
-      rows += row('Vốn dự phòng (chưa phải chi phí)', r.uncounted.includes('Vốn lưu động/dự phòng ban đầu') ? 'Chưa tính' : vnd(r.reserve))
-        + row('Tổng tiền đã chi trong kỳ', vnd(r.totalOut))
-        + row('Tháng có thể bắt đầu bán chim', r.firstSaleMonth === null ? 'Chưa có trong kỳ' : 'Tháng ' + r.firstSaleMonth)
-        + row('Điểm gãy dòng tiền', r.cashOutMonth === null ? 'Không có trong kỳ' : 'Tháng ' + r.cashOutMonth)
-        + row('Tiền cần có thêm để không âm', vnd(r.extraCashNeeded))
-        + row('Doanh thu − chi phí vận hành', vnd(r.operatingGap))
-        + row('Lợi nhuận kế toán', 'Chưa đủ dữ liệu (khấu hao, giá trị đàn, thuế)', 'is-note')
-        + row('Đàn chim còn lại cuối kỳ', r.flock.breeders + ' chim giống, ' + r.flock.unsoldChicks + ' chim non chưa bán. Tham khảo khoảng ' + vnd(r.flock.referenceValue) + ', không phải tiền mặt và không cộng vào doanh thu.', 'is-note');
-    }
-    const uncounted = r.uncounted.length ? '<li class="lv-warn"><b>Chưa được tính:</b> ' + esc(r.uncounted.join('; ')) + '. Kết quả thực tế có thể xấu hơn.</li>' : '';
-    const flags = (r.flags.length || uncounted) ? '<ul class="dtp-flags">' + uncounted + r.flags.map(f => '<li class="lv-' + f.level + '">' + esc(f.text) + '</li>').join('') + '</ul>' : '';
-    const scLabel = C.SCENARIOS.find(s => s.id === r.scenario).label;
-    return '<div class="dtp-result"><div class="dtp-status ' + cls + '">' + esc(title) + '<small>' + esc(sub) + ' Kịch bản: ' + esc(scLabel) + '.</small></div>'
-      + '<dl class="dtp-kpis">' + kpis + '</dl><dl class="dtp-stats">' + rows + '</dl>' + flags
-      + (r.mode === 'quick' ? '<p class="dtp-result-foot">Chế độ nhanh chưa có lịch bán nên không chia doanh thu theo tháng và không xác định tháng hòa vốn. Dùng chế độ chi tiết để xem dòng tiền từng tháng.</p>' : '')
-      + '<p class="dtp-result-foot">Đây là công cụ mô phỏng, không phải dự báo hoặc cam kết kết quả kinh doanh.</p></div>';
-  }
-
-  function renderTable(r) {
-    const num = v => '<td' + (v < 0 ? ' class="neg"' : '') + '>' + vnd(v) + '</td>';
-    const head = '<caption class="dtp-sr">Thu, chi và số dư từng tháng, kịch bản ' + esc(C.SCENARIOS.find(s => s.id === r.scenario).label) + '</caption><thead><tr>'
-      + ['Tháng', 'Chim bán', 'Thu', 'Chi', 'Dòng tiền tháng', 'Lũy kế', 'Tiền mặt còn lại', 'Chim tồn', 'Ghi chú'].map(h => '<th scope="col">' + h + '</th>').join('') + '</tr></thead>';
-    const rows = r.months.map(m => {
-      const notes = [];
-      if (m.month === 0) notes.push('Đầu tư ban đầu');
-      if (m.month === r.firstSaleMonth) notes.push('Bắt đầu bán');
-      else if (m.sold > 0) notes.push('Đợt bán');
-      if (m.month === r.breakevenMonth) notes.push('Hòa vốn dòng tiền');
-      if (m.month === r.cashOutMonth) notes.push('Điểm gãy dòng tiền');
-      const cls = m.month === r.cashOutMonth ? 'is-out' : m.sold > 0 ? 'is-sale' : '';
-      return '<tr class="' + cls + '"><td>' + m.month + '</td><td>' + m.sold + '</td>' + num(m.inflow) + num(m.outflow) + num(m.net) + num(m.cum) + num(m.balance) + '<td>' + m.stock + '</td><td>' + notes.join('; ') + '</td></tr>';
-    }).join('');
-    const foot = '<tfoot><tr><td>Tổng</td><td>' + r.birdsSold + '</td>' + num(r.revenue) + num(r.totalOut) + num(r.netCash12) + '<td></td><td></td><td></td><td></td></tr></tfoot>';
-    $('calc-table').innerHTML = head + '<tbody>' + rows + '</tbody>' + foot;
-  }
-
-  // Trục Y: mốc tròn, viết gọn theo triệu.
-  function niceTicks(min, max) {
-    const span = Math.max(max - min, 1);
-    const raw = span / 4, pow = Math.pow(10, Math.floor(Math.log10(raw)));
-    const step = [1, 2, 2.5, 5, 10].map(k => k * pow).find(s => s >= raw);
-    const ticks = [];
-    for (let v = Math.floor(min / step) * step; v <= Math.ceil(max / step) * step + 1e-6; v += step) ticks.push(v);
-    return ticks;
-  }
-  const compact = v => {
-    if (v === 0) return '0';
-    const a = Math.abs(v), sign = v < 0 ? '−' : '';
-    if (a >= 1e6) return sign + String(+(a / 1e6).toFixed(1)).replace('.', ',') + ' tr';
-    return sign + Math.round(a / 1e3) + ' k';
-  };
-
-  function renderChart(r) {
-    const box = $('calc-chart');
-    const W = Math.max(box.clientWidth, 300), H = W < 560 ? 280 : 340;
-    const pad = { l: 48, r: 14, t: 26, b: 34 };
-    const vals = r.months.flatMap(m => [m.cum, m.balance]);
-    const ticks = niceTicks(Math.min(0, ...vals), Math.max(0, ...vals));
-    const yMin = ticks[0], yMax = ticks[ticks.length - 1];
-    const x = m => pad.l + (W - pad.l - pad.r) * m / C.MONTHS;
-    const y = v => pad.t + (H - pad.t - pad.b) * (1 - (v - yMin) / ((yMax - yMin) || 1));
-    const line = key => r.months.map((m, i) => (i ? 'L' : 'M') + x(m.month).toFixed(1) + ' ' + y(m[key]).toFixed(1)).join(' ');
-
-    let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(chartSummary(r)) + '">';
-    ticks.forEach(t => {
-      s += '<line x1="' + pad.l + '" x2="' + (W - pad.r) + '" y1="' + y(t) + '" y2="' + y(t) + '" stroke="' + (t === 0 ? 'rgba(42,46,31,0.55)' : 'var(--grid)') + '"/>'
-        + '<text x="' + (pad.l - 6) + '" y="' + (y(t) + 4) + '" text-anchor="end">' + compact(t) + '</text>';
-    });
-    const every = W < 480 ? 2 : 1;
-    r.months.forEach(m => { if (m.month % every === 0) s += '<text x="' + x(m.month) + '" y="' + (H - pad.b + 18) + '" text-anchor="middle">' + m.month + '</text>'; });
-    s += '<text x="' + (W - pad.r) + '" y="' + (H - 4) + '" text-anchor="end">Tháng</text>';
-    s += '<path d="' + line('balance') + '" fill="none" stroke="var(--c-bal)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>'
-      + '<path d="' + line('cum') + '" fill="none" stroke="var(--c-cum)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
-    // Đợt bán: chấm trên đường lũy kế. Hòa vốn/gãy dòng tiền: chấm + nhãn chữ (không chỉ dùng màu).
-    r.months.filter(m => m.sold > 0).forEach(m => { s += '<circle cx="' + x(m.month) + '" cy="' + y(m.cum) + '" r="4.5" fill="var(--c-cum)" stroke="#fff" stroke-width="2"/>'; });
-    const mark = (month, value, label, color, above) => {
-      const px = x(month), py = y(value), anchor = px > W * 0.75 ? 'end' : px < W * 0.25 ? 'start' : 'middle';
-      return '<circle cx="' + px + '" cy="' + py + '" r="5.5" fill="' + color + '" stroke="#fff" stroke-width="2"/>'
-        + '<text class="m-label" x="' + px + '" y="' + (above ? py - 12 : py + 20) + '" text-anchor="' + anchor + '">' + label + '</text>';
-    };
-    if (r.breakevenMonth !== null) s += mark(r.breakevenMonth, r.months[r.breakevenMonth].cum, 'Hòa vốn T' + r.breakevenMonth, 'var(--c-cum)', true);
-    if (r.cashOutMonth !== null) s += mark(r.cashOutMonth, r.months[r.cashOutMonth].balance, 'Gãy dòng tiền T' + r.cashOutMonth, 'var(--red)', false);
-    s += '<line class="dtp-cross" y1="' + pad.t + '" y2="' + (H - pad.b) + '" x1="0" x2="0" stroke="rgba(42,46,31,0.4)" visibility="hidden"/></svg><div class="dtp-tip" hidden></div>';
-    box.innerHTML = s;
-
-    // Rê chuột hoặc chạm để xem từng tháng; số liệu đầy đủ nằm ở bảng ngay bên dưới.
-    const svg = box.querySelector('svg'), tip = box.querySelector('.dtp-tip'), cross = box.querySelector('.dtp-cross');
-    const onMove = e => {
-      const rect = svg.getBoundingClientRect();
-      const px = (e.clientX - rect.left) * (W / rect.width);
-      const month = Math.max(0, Math.min(C.MONTHS, Math.round((px - pad.l) / (W - pad.l - pad.r) * C.MONTHS)));
-      const m = r.months[month];
-      cross.setAttribute('x1', x(month)); cross.setAttribute('x2', x(month)); cross.setAttribute('visibility', 'visible');
-      tip.hidden = false;
-      tip.innerHTML = '<b>Tháng ' + month + (m.sold ? ' · bán ' + m.sold + ' chim' : '') + '</b>Lũy kế: ' + vnd(m.cum) + '<br>Tiền mặt: ' + vnd(m.balance);
-      const tw = tip.offsetWidth, cx = x(month) * (rect.width / W);
-      tip.style.left = Math.max(0, Math.min(rect.width - tw, cx - tw / 2)) + 'px';
-    };
-    const onLeave = () => { tip.hidden = true; cross.setAttribute('visibility', 'hidden'); };
-    svg.addEventListener('pointermove', onMove);
-    svg.addEventListener('pointerdown', onMove);
-    svg.addEventListener('pointerleave', onLeave);
-  }
-
-  function chartSummary(r) {
-    return 'Biểu đồ dòng tiền lũy kế 12 tháng. Cuối kỳ ' + vnd(r.netCash12) + '. '
-      + (r.breakevenMonth === null ? 'Chưa có tháng hòa vốn trong kỳ. ' : 'Hòa vốn ở tháng ' + r.breakevenMonth + '. ')
-      + (r.cashOutMonth === null ? 'Không có điểm gãy dòng tiền.' : 'Điểm gãy dòng tiền ở tháng ' + r.cashOutMonth + '.')
-      + ' Số liệu đầy đủ trong bảng bên dưới.';
-  }
-
-  function factorText(sc) {
-    const f = n => '×' + String(n).replace('.', ',');
-    return 'Sinh sản ' + f(sc.breedingFactor) + ' · Tiêu thụ ' + f(sc.sellFactor) + ' · Chi phí ' + f(sc.costFactor);
-  }
-
-  function renderScenarios(run) {
-    $('scenario-cards').innerHTML = run.scenarios.map(r => {
-      const sc = C.SCENARIOS.find(s => s.id === r.scenario), active = r.scenario === viewScenario;
-      const extra = r.mode === 'detail'
-        ? row('Hòa vốn dòng tiền', r.breakevenMonth === null ? 'Chưa có' : 'Tháng ' + r.breakevenMonth) + row('Gãy dòng tiền', r.cashOutMonth === null ? 'Không có' : 'Tháng ' + r.cashOutMonth) + row('Tiền cần có thêm', vnd(r.extraCashNeeded))
-        : '';
-      return '<article class="dtp-sc' + (active ? ' is-active' : '') + '"><h4>' + esc(sc.label) + '</h4><p class="dtp-sc-f">' + factorText(sc) + '</p>'
-        + '<dl>' + row('Chim bán được', birds(r.birdsSold)) + row('Doanh thu giả định', vnd(r.revenue)) + row('Chi phí vận hành', vnd(r.opex12)) + row('Dòng tiền thuần', vnd(r.netCash12)) + extra + '</dl>'
-        + '<div class="dtp-sc-btn"><button type="button" data-sc="' + r.scenario + '" aria-pressed="' + active + '">' + (active ? 'Đang xem' : 'Xem kịch bản này') + '</button></div></article>';
-    }).join('');
-  }
-
-  // Lịch bán là giả định: nói rõ đang dùng gì và sửa ở đâu.
-  function scheduleText(r) {
-    if (!r.batchMonths.length) return 'Lịch bán giả định: chưa có đợt bán nào trong 12 tháng.';
-    return 'Lịch bán giả định: tháng ' + r.batchMonths.join(', ') + (r.batchMonths.length > 1 ? ', cách nhau ' + r.batchGap + ' tháng' : '') + (r.batchGapAuto ? ' (tự lấy 12 ÷ số chu kỳ)' : ' (theo số bạn nhập)') + '. Sửa ở ô “Tháng bắt đầu có chim bán” và “Khoảng cách giữa các đợt bán”.';
-  }
-
-  function renderOutput() {
-    const run = lastRun;
-    const res = $('calc-result'), detailOut = $('calc-detail-out'), scen = $('calc-scenarios');
-    renderReview();
-    if (run.state !== 'ok') {
-      detailOut.hidden = true; scen.hidden = true;
-      if (run.state === 'invalid') res.innerHTML = '<div class="dtp-empty"><strong>Có ô nhập chưa hợp lệ.</strong> Hãy sửa các ô được đánh dấu để xem kết quả. Công cụ không tính với dữ liệu sai.</div>';
-      else if (run.state === 'incomplete') {
-        const names = run.missing.map(id => C.FIELDS.find(f => f.id === id).label);
-        res.innerHTML = '<div class="dtp-empty"><strong>Còn thiếu ' + names.length + ' ô bắt buộc:</strong> ' + esc(names.join('; ')) + '.</div>';
-      } else res.innerHTML = '<div class="dtp-empty"><strong>Kết quả sẽ hiện ở đây.</strong> Hãy nhập số của bạn, hoặc bấm “Điền số ví dụ” để xem cách công cụ chạy. Công cụ không điền sẵn số liệu nào.</div>';
-      return;
-    }
-    const r = run.scenarios.find(s => s.scenario === viewScenario);
-    // Trên điện thoại kết quả nằm xa nhãn phía trên form nên nhắc lại ngay cạnh số.
-    res.innerHTML = (usingExamplePrice() ? '<p class="dtp-example-note">Kết quả này dùng <strong>số ví dụ</strong>, không phải báo giá của Ji.</p>' : '') + renderResult(r);
-    scen.hidden = false;
-    renderScenarios(run);
-    if (r.mode === 'detail') {
-      detailOut.hidden = false;
-      $('calc-schedule').textContent = scheduleText(r);
-      $('chart-title').textContent = 'Kịch bản ' + C.SCENARIOS.find(s => s.id === r.scenario).label + ' · số giả định';
-      renderChart(r);
-      renderTable(r);
-    } else detailOut.hidden = true;
-  }
-
-  function recalc() {
-    applyMode();
-    lastRun = C.run(getMode(), rawValues());
-    showErrors(lastRun);
-    renderOutput();
-  }
-
-  // Nhãn "số ví dụ" đi theo giá ví dụ: còn giá đó trong ô thì còn nhãn, kể cả khi khách sửa ô khác.
-  let exampleFilled = false;
-  const usingExamplePrice = () => exampleFilled && C.parseMoney(form.elements.pricePerPair.value) === C.parseMoney(C.EXAMPLE.pricePerPair);
-  function syncExampleNote() {
-    if (!usingExamplePrice()) exampleFilled = false;
-    $('calc-example-note').hidden = !exampleFilled;
-  }
-
-  form.addEventListener('input', e => {
-    syncExampleNote();
-    if (e.target.name === 'pairs') syncPreset();
-    recalc();
-  });
-  form.addEventListener('submit', e => e.preventDefault());
-  // Rời ô tiền → viết lại có dấu chấm cho dễ đọc (không đổi trong lúc đang gõ để con trỏ không nhảy).
-  form.addEventListener('focusout', e => {
-    const f = C.FIELDS.find(x => x.id === e.target.name);
-    if (!f || f.kind !== 'money') return;
-    const n = C.parseMoney(e.target.value);
-    if (Number.isFinite(n)) e.target.value = vnd(n).replace(' đ', '');
-  });
-  document.querySelectorAll('input[name="calc-mode"]').forEach(r => r.addEventListener('change', recalc));
-  $('calc-example').addEventListener('click', () => {
-    C.FIELDS.forEach(f => { form.elements[f.id].value = C.EXAMPLE[f.id] || ''; });
-    viewScenario = C.DEFAULT_SCENARIO;
-    exampleFilled = true;
-    syncExampleNote();
-    syncPreset();
-    recalc();
-  });
-  $('calc-clear').addEventListener('click', () => {
-    form.reset();
-    viewScenario = C.DEFAULT_SCENARIO;
-    syncExampleNote();
-    syncPreset();
-    recalc();
-  });
-
-  // ---------- Ba quy mô minh họa ----------
-  // Chỉ điền số cặp. Bộ số ví dụ của từng quy mô chỉ được tải khi OWNER đã xác nhận (preset.data).
-  $('calc-presets').innerHTML = C.SCALE_PRESETS.map(p => '<label class="pill-opt"><input type="radio" name="calc-preset" value="' + p.pairs + '"><span>' + p.pairs + ' cặp: ' + esc(p.label) + '</span></label>').join('');
-  const presetNote = $('calc-preset-note');
-  function syncPreset() {
-    const current = form.elements.pairs.value.trim();
-    document.querySelectorAll('input[name="calc-preset"]').forEach(i => { i.checked = i.value === current; });
-    presetNote.hidden = !C.SCALE_PRESETS.some(p => String(p.pairs) === current);
-  }
-  function applyPreset(pairs) {
-    const preset = C.SCALE_PRESETS.find(p => p.pairs === pairs);
-    form.elements.pairs.value = String(pairs);
-    if (preset.data) Object.keys(preset.data).forEach(id => { form.elements[id].value = preset.data[id]; });
-    else presetNote.textContent = 'Đã điền ' + pairs + ' cặp. Trang chưa có giá đã xác nhận nên công cụ không tự điền ô tiền: hãy nhập số của bạn hoặc hỏi Ji báo giá.';
-    syncPreset();
-    pickScale(preset.pack);
-    recalc();
-  }
-  $('calc-presets').addEventListener('change', e => { if (e.target.name === 'calc-preset') applyPreset(Number(e.target.value)); });
-  document.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => {
-    applyPreset(Number(b.dataset.preset));
-    // Đưa đúng ô giá vào giữa màn hình: trên điện thoại bàn phím bật lên ngay khi ô nhận focus.
-    form.elements.pricePerPair.focus({ preventScroll: true });
-    form.elements.pricePerPair.scrollIntoView({ block: 'center' });
-  }));
-  $('scenario-cards').addEventListener('click', e => {
-    const b = e.target.closest('button[data-sc]');
-    if (!b) return;
-    viewScenario = b.dataset.sc;
-    renderOutput();
-    const again = document.querySelector('button[data-sc="' + viewScenario + '"]');
-    if (again) again.focus();
-  });
-  let resizeTimer;
-  window.addEventListener('resize', () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => { if (lastRun && lastRun.state === 'ok' && getMode() === 'detail') renderChart(lastRun.scenarios.find(s => s.scenario === viewScenario)); }, 150);
-  });
-
-  // ---------- Tin nhắn mẫu + sao chép ----------
-  const msgBox = $('msg-text'), msgForm = $('msg-form'), includeBox = $('msg-include');
-  const viewedResult = () => (lastRun && lastRun.state === 'ok' ? lastRun.scenarios.find(s => s.scenario === viewScenario) : null);
-  const pairsEntered = () => form.elements.pairs.value.trim();
-  function summaryLines(r) {
-    const breakeven = r.mode === 'detail' && r.breakevenMonth !== null ? 'tháng ' + r.breakevenMonth : (r.recovered ? 'có, chưa rõ tháng' : 'chưa hòa vốn trong 12 tháng');
-    return ['Số cặp: ' + pairsEntered(), 'Vốn đầu tư ban đầu: ' + vnd(r.initialInvestment), 'Chi phí vận hành 12 tháng: ' + vnd(r.opex12), 'Doanh thu giả định: ' + vnd(r.revenue), 'Dòng tiền lũy kế 12 tháng: ' + vnd(r.netCash12), 'Hòa vốn: ' + breakeven];
-  }
-  const pickedScale = () => { const el = msgForm.querySelector('input[name="msg-scale"]:checked'); return el ? el.value : ''; };
-  function buildMessage(scale) {
-    const r = viewedResult();
-    const summary = r && includeBox.checked
-      ? 'Kết quả mô phỏng mình tự tính (kịch bản ' + C.SCENARIOS.find(s => s.id === r.scenario).label + ', ' + (usingExamplePrice() ? 'dùng số ví dụ trên trang, không phải báo giá' : 'số giả định') + '):\n' + summaryLines(r).map(l => '- ' + l).join('\n') + '\n\n'
-      : '';
-    return 'Chào Ji, mình đã đọc trang nuôi Yến Phụng sinh sản trên website Yến Phụng PET.\n\n'
-      + 'Quy mô mình quan tâm: ' + (scale || '...') + '\n\n' + summary
-      + 'Nhờ Ji tư vấn và báo giá giúp mình.';
-  }
-  function pickScale(scale) {
-    const input = msgForm.querySelector('input[name="msg-scale"][value="' + scale + '"]');
-    if (input) input.checked = true;
-    msgBox.value = buildMessage(scale);
-  }
-  // Xem lại kết quả ngay ở cuối trang; chỉ khi khách tự đánh dấu thì số mới vào tin nhắn.
-  function renderReview() {
-    const r = viewedResult(), hadSummary = includeBox.checked;
-    $('msg-include-wrap').hidden = !r;
-    if (!r) {
-      includeBox.checked = false;
-      $('msg-review').innerHTML = 'Chưa có kết quả mô phỏng. <a href="#may-tinh">Tính thử vốn khởi đầu</a>';
-    } else {
-      $('msg-review').innerHTML = '<strong>Kết quả mô phỏng của bạn</strong> (giả định, kịch bản ' + esc(C.SCENARIOS.find(s => s.id === r.scenario).label) + ')<ul>' + summaryLines(r).map(l => '<li>' + esc(l) + '</li>').join('') + '</ul><a href="#may-tinh">Xem lại máy tính</a>';
-    }
-    if (hadSummary) msgBox.value = buildMessage(pickedScale());
-  }
-  includeBox.addEventListener('change', () => { msgBox.value = buildMessage(pickedScale()); });
-  msgBox.value = buildMessage('');
-  msgForm.addEventListener('change', e => { if (e.target.name === 'msg-scale') msgBox.value = buildMessage(pickedScale()); });
-  msgForm.addEventListener('submit', e => e.preventDefault());
-  recalc();
+  'use strict';
 
   function legacyCopy(text) {
-    try {
-      const ta = document.createElement('textarea');
-      ta.value = text; ta.setAttribute('readonly', '');
-      ta.style.position = 'fixed'; ta.style.opacity = '0';
-      document.body.appendChild(ta); ta.select();
-      const ok = document.execCommand('copy');
-      document.body.removeChild(ta);
-      return ok;
-    } catch (e) { return false; }
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    ta.remove();
+    return ok;
   }
   function copyText(text) {
     if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text).then(() => true, () => legacyCopy(text));
     return Promise.resolve(legacyCopy(text));
   }
+
+  const toast = document.getElementById('toast');
   let toastTimer;
-  function showToast(text) {
-    const t = $('toast');
-    t.textContent = text; t.classList.add('show');
-    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 3600);
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 4200);
   }
-  $('msg-copy').addEventListener('click', () => {
-    copyText(msgBox.value.trim()).then(ok => {
-      showToast(ok ? 'Đã sao chép tin nhắn. Hãy dán vào Zalo để gửi cho Ji.' : 'Chưa sao chép được. Hãy chọn và sao chép trong khung tin nhắn.');
-      if (!ok) { msgBox.focus(); msgBox.select(); }
+
+  // Nút Zalo: link vẫn mở bình thường; nếu sao chép được thì nhắc khách dán để tự gửi.
+  document.querySelectorAll('a[data-msg]').forEach(a => a.addEventListener('click', () => {
+    copyText(a.dataset.msg).then(ok => {
+      showToast(ok ? 'Đã sao chép câu chào. Hãy dán vào Zalo rồi gửi cho Ji nhé!' : 'Zalo đang mở, bạn hãy chào Ji một câu nhé!');
     });
-  });
-  // Nút báo giá theo gói và nút Zalo cuối trang: sao chép tin nhắn rồi để link Zalo mở như thường.
-  document.querySelectorAll('[data-pack]').forEach(a => a.addEventListener('click', () => {
-    pickScale(a.dataset.pack);
-    copyText(msgBox.value).then(ok => showToast(ok ? 'Đã sao chép tin nhắn về ' + a.dataset.pack + '. Hãy dán vào Zalo để gửi cho Ji.' : 'Zalo đang mở. Bạn nhắn Ji quy mô mình quan tâm nhé.'));
   }));
-  $('end-zalo').addEventListener('click', () => {
-    copyText(msgBox.value.trim()).then(ok => { if (ok) showToast('Đã sao chép tin nhắn. Hãy dán vào Zalo để gửi cho Ji.'); });
-  });
+
+  const boxes = document.querySelectorAll('#prep-form input[type="checkbox"]');
+  const progress = document.getElementById('prep-progress');
+  boxes.forEach(b => b.addEventListener('change', () => {
+    const n = [...boxes].filter(x => x.checked).length;
+    progress.textContent = n === boxes.length ? 'Đủ 8/8 món rồi! Nhắn Ji để cùng xem lại nhé.' : 'Bạn đã có ' + n + '/8 món';
+  }));
+
+  // Hiện dần khi cuộn; bỏ qua nếu người xem chọn giảm chuyển động hoặc trình duyệt không hỗ trợ.
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window) {
+    const items = document.querySelectorAll('.v2-stories article, .v2-mosaic li, .v2-line li, .v2-tip-list li, .v2-steps li');
+    const io = new IntersectionObserver(entries => entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.remove('v2-pre'); io.unobserve(e.target); }
+    }), { rootMargin: '0px 0px -6% 0px' });
+    items.forEach(el => {
+      if (el.getBoundingClientRect().top > window.innerHeight) { el.classList.add('v2-pre'); io.observe(el); }
+    });
+  }
 })();
